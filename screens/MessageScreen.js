@@ -31,12 +31,12 @@ import { ResizeMode, Video } from 'expo-av';
     const [message, setMessage] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const {userId, setUserId} = useContext(UserType);
-    const { recipentId, userName } = route.params;
+    // const { recipentId, userName } = route.params;
+    const { senderId, recipentId, userName } = route.params || {};
+
     const [getMessage, setGetMessage]=useState([])
     // const [recipentData, setRecipentData]= useState([]);
   
-
- 
     const [selectedVideo, setSelectedVideo] = useState(null);
     const [videoRef, setVideoRef] = useState(null);
 
@@ -68,14 +68,25 @@ import { ResizeMode, Video } from 'expo-av';
     },[]);
 
     const fetchMessages = async()=>{
+      
+      console.log("test",userId, recipentId, senderId);
         try {
-            const response = await axios.get(
-             `${mainURL}/get-messages/${userId}/${recipentId}`).then((res)=>{
+          const url = senderId
+            ? `${mainURL}/get-messages/${senderId}/${recipentId}`
+            : `${mainURL}/get-messages/${userId}/${recipentId}`;
+            const response = await axios.get(url).then((res)=>{
                  
                 setGetMessage(res.data.message);
             })
         } catch (error) {
-            console.log("Error", error);
+            console.log('Error:', error); 
+            if (error.response) {
+                console.log('Server Error:', error.response.data); 
+            } else if (error.request) {
+                console.log('Network Error:', error.request); 
+            } else {
+                console.log('Other Error:', error.message); 
+            }
         }
     }
 
