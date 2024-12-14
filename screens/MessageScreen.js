@@ -24,14 +24,16 @@ import { mainURL } from "../Utils/urls";
 import { Box,Text } from "native-base";
 import * as ImagePicker from "expo-image-picker"
 import { ResizeMode, Video } from 'expo-av';
-  const MessageSrceen = ({route}) => {
+
+  const MessageSrceen = () => {
     const [showEmojiSelector, setShowEmojiSelector] = useState(false);
     const navigation = useNavigation();
     const [selectedImage, setSelectedImage] = useState("")
     const [message, setMessage] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const {userId, setUserId} = useContext(UserType);
-    // const { recipentId, userName } = route.params;
+
+    const route = useRoute();
     const { senderId, recipentId, userName } = route.params || {};
 
     const [getMessage, setGetMessage]=useState([])
@@ -39,10 +41,26 @@ import { ResizeMode, Video } from 'expo-av';
   
     const [selectedVideo, setSelectedVideo] = useState(null);
     const [videoRef, setVideoRef] = useState(null);
+    const [seletedMessages,setSelectedMessages]=useState([]);
+    const scrollViewRef = useRef(null);
 
     const handleVideoPress = (videoUrl) => {
       setSelectedVideo(videoUrl); // Open the clicked video
     };
+
+    useEffect(()=>{
+      scrollToBottom();
+    },[])
+
+    const scrollToBottom = ()=>{
+      if(scrollViewRef.current) {
+        scrollViewRef.current.scrollToEnd({animated:false})
+      }
+    }
+
+    const handleContentSizeChange=()=>{
+      scrollToBottom();
+    }
 
     const handleCloseVideo = async () => {
       if (videoRef) {
@@ -52,24 +70,63 @@ import { ResizeMode, Video } from 'expo-av';
     };
 
     useLayoutEffect(()=>{
-        navigation.setOptions({
-            headerTitle:"",
-            headerLeft:()=>(
-                <>
-                    <Box flex={1} width={"sm"} flexDirection={"row"} alignItems={"center"} >
-                        <Ionicons name="arrow-back-outline" size={24} color="black" onPress={()=> navigation.goBack()}/>
-                        <Image width={30} height={30} borderRadius={15} resizeMode="cover" 
+      navigation.setOptions({
+          headerTitle:"",
+          headerLeft:()=>(
+              <>
+                  <Box flex={1} width={"sm"} flexDirection={"row"} alignItems={"center"} >
+                      <Ionicons name="arrow-back-outline" size={24} color="black" onPress={()=> navigation.goBack()}/>
+                      {seletedMessages.length > 0 ? (
+                        <Box>
+                          <Text style={{fontWeight:500, fontSize:16}}>{seletedMessages.length}</Text>
+                        </Box>
+                      ): (
+                        <>
+                          <Image width={30} height={30} borderRadius={15} resizeMode="cover" 
                             source={{uri:"https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"}} style={{marginHorizontal:10}}/>
-                        <Text fontSize={"lg"} fontWeight={"bold"}>{userName}</Text>
-                    </Box>
-                </>
-            )
+                          <Text fontSize={"lg"} fontWeight={"bold"}>{userName}</Text>
+                        </>
+                      
+                       )}
+                      
+                  </Box>
+              </>
+          ),
+          headerRight:()=> seletedMessages.length > 0 ? (
+            <Box flexDirection={"row"} alignItems={"center"} style={{gap:10}}>
+              <Ionicons name="arrow-redo-sharp" size={24} color="black" />
+              <Ionicons name="arrow-undo" size={24} color="black" />
+              <Entypo name="star" size={24} color="black" />
+              <Entypo name="trash" size={24} color="black" onPress={()=> deleteMessage(seletedMessages)}/>
+            </Box>
+          ) : null
+      })
+  },[seletedMessages]);
+
+
+    const deleteMessage = async(messageIds)=>{
+      const formData = messageIds;
+      try {
+        const response = await axios.post(`${mainURL}/deleteMessages/`, {messages: formData}).then((res)=>{
+          setSelectedMessages((prevMessage)=> prevMessage.filter((id) => !messageIds.includes(id)))
+          fetchMessages();
         })
-    },[]);
+      } catch (error) {
+        console.log('Error:', error); // Log error details
+            if (error.response) {
+                console.log('Server Error:', error.response.data); // Server-side error
+            } else if (error.request) {
+                console.log('Network Error:', error.request); // Network-related issue
+            } else {
+                console.log('Other Error:', error.message); // Any other error
+            }
+      }
+    }
+
+    
 
     const fetchMessages = async()=>{
-      
-      console.log("test",userId, recipentId, senderId);
+      console.log(userId, recipentId)
         try {
           const url = senderId
             ? `${mainURL}/get-messages/${senderId}/${recipentId}`
@@ -151,7 +208,6 @@ import { ResizeMode, Video } from 'expo-av';
                 formData.append("message", message);
             }
 
-            console.log(formData)
             const response = await axios.post(
                 `${mainURL}/messages/`,
                 formData,
@@ -198,8 +254,6 @@ import { ResizeMode, Video } from 'expo-av';
             aspect: [4, 3],
             quality: 1,
           });
-
-          console.log(result)
         if(!result.canceled){
             // sendMessage("image", result.assets[0].uri);
             const asset = result.assets[0];
@@ -208,11 +262,24 @@ import { ResizeMode, Video } from 'expo-av';
             sendMessage(isVideo ? "video" : "image", asset.uri, asset.duration, asset.fileName);
         }
     }
+
+    const handleDeleteMessage = (message)=>{
+      console.log("long pressed")
+      const isSelected = seletedMessages.includes(message._id);
+
+      if(isSelected){
+        setSelectedMessages((preMessage)=> preMessage.filter((id)=> id !== message._id))
+      }else{
+        setSelectedMessages((preMessage)=> [...preMessage, message._id])
+      }
+    }
+    console.log(seletedMessages)
     return (
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#F0F0F0" }}>
-        <ScrollView>
+        <ScrollView ref={scrollViewRef} contentContainerStyle={{flexGrow:1}} onContentSizeChange={handleContentSizeChange}>
           {getMessage.map((item, index)=>{
             if(item.messageType === 'text'){
+              const isSelected = seletedMessages.includes(item._id)
                 return(
                     <Pressable key={index} style={[
                         item?.senderId?._id ===userId ? {
@@ -229,9 +296,9 @@ import { ResizeMode, Video } from 'expo-av';
                             margin:10,
                             maxWidth:'60%',
                             borderRadius:7
-                        }
-                    ]}>
-                        <Text fontSize={13} textAlign={"left"} fontWeight={"medium"}>{item?.message}</Text>
+                        }, isSelected && {width: "100%", backgroundColor:"#D2FFCD"}
+                    ]} onLongPress={()=> handleDeleteMessage(item)}>
+                        <Text fontSize={13} textAlign={isSelected ? 'right' : 'left'} fontWeight={"medium"}>{item?.message}</Text>
                         <Text style={styles.infoText}>{formatTime(item.timeStamp)}</Text>
                     </Pressable>
                 )

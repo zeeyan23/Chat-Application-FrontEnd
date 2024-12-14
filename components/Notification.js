@@ -19,6 +19,7 @@ const NotificationHandler = () => {
         navigation.navigate("MessageScreen", {
           senderId: data.senderId,
           recipentId: data.recepientId,
+          userName: data.userName
         });
       }
     });

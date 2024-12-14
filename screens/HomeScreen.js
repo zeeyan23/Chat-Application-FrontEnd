@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { Box, useDisclose, IconButton, Stagger, HStack, Icon, Center, NativeBaseProvider, Button } from 'native-base';
+import { Box, useDisclose, IconButton, Stagger, HStack, Icon, Center, NativeBaseProvider, Button, Pressable } from 'native-base';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from "@react-navigation/native";
 import { useLayoutEffect, useState } from "react";
@@ -21,7 +21,8 @@ function HomeScreen(){
     const navigation = useNavigation();
     const [data, setData]= useState([]);
     const [requestSent, setRequestSent]=useState(false);
-
+    const [friendRequests, setFriendRequests]=useState([]);
+    const [userFriends, setUserFriends]=useState([]);
     useLayoutEffect(()=>{
         navigation.setOptions({
             headerTitle:"",
@@ -35,6 +36,50 @@ function HomeScreen(){
             )
         })
     },[]);
+
+    useEffect(()=>{
+        const fetchFriendRequests = async ()=>{
+            
+            const response = await axios.get(
+                `${mainURL}/friend-requests/sent/${userId}`).then((res)=>{
+                    const data= res.json()
+                    setFriendRequests(data);
+                }).catch((error)=>{
+                    console.log('Error:', error); 
+                    if (error.response) {
+                        console.log('Server Error:', error.response.data); 
+                    } else if (error.request) {
+                        console.log('Network Error:', error.request); 
+                    } else {
+                        console.log('Other Error:', error.message); 
+                    }
+                })
+        }
+
+        fetchFriendRequests();
+    },[]);
+
+    useEffect(()=>{
+        const fetchUserFriends = async ()=>{
+            
+            const response = await axios.get(
+                `${mainURL}/friends/${userId}`).then((res)=>{
+                    const data= res.json()
+                    setUserFriends(data);
+                }).catch((error)=>{
+                    console.log('Error:', error); 
+                    if (error.response) {
+                        console.log('Server Error:', error.response.data); 
+                    } else if (error.request) {
+                        console.log('Network Error:', error.request); 
+                    } else {
+                        console.log('Other Error:', error.message); 
+                    }
+                })
+        }
+
+        fetchUserFriends();
+    },[])
 
     useEffect(()=>{
         const fetchUsers = async ()=>{
@@ -95,7 +140,45 @@ function HomeScreen(){
                             </VStack>
                             <Spacer />
                             <Box alignSelf={"center"}>
-                                <Button size={"sm"} onPress={()=>handleFriendRequest(item._id)}>Add Friend</Button>
+                            {userFriends.includes(item._id) ? (
+                                <Pressable
+                                style={{
+                                    backgroundColor: "#82CD47",
+                                    padding: 10,
+                                    width: 105,
+                                    borderRadius: 6,
+                                }}
+                                >
+                                <Text style={{ textAlign: "center", color: "white" }}>Friends</Text>
+                                </Pressable>
+                            ) : requestSent || friendRequests.some((friend) => friend._id === item._id) ? (
+                                <Pressable
+                                style={{
+                                    backgroundColor: "gray",
+                                    padding: 10,
+                                    width: 105,
+                                    borderRadius: 6,
+                                }}
+                                >
+                                <Text style={{ textAlign: "center", color: "white", fontSize: 13 }}>
+                                    Request Sent
+                                </Text>
+                                </Pressable>
+                            ) : (
+                                <Pressable
+                                onPress={() => handleFriendRequest( item._id)}
+                                style={{
+                                    backgroundColor: "#567189",
+                                    padding: 10,
+                                    borderRadius: 6,
+                                    width: 105,
+                                }}
+                                >
+                                <Text style={{ textAlign: "center", color: "white", fontSize: 13 }}>
+                                    Add Friend
+                                </Text>
+                                </Pressable>
+                            )}
                             </Box>
                         </HStack>
                     </Box>
