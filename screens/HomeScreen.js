@@ -20,9 +20,10 @@ function HomeScreen(){
     const {userId, setUserId} = useContext(UserType);
     const navigation = useNavigation();
     const [data, setData]= useState([]);
-    const [requestSent, setRequestSent]=useState(false);
+    const [requestSent, setRequestSent]=useState([]);
     const [friendRequests, setFriendRequests]=useState([]);
     const [userFriends, setUserFriends]=useState([]);
+
     useLayoutEffect(()=>{
         navigation.setOptions({
             headerTitle:"",
@@ -40,53 +41,52 @@ function HomeScreen(){
     useEffect(()=>{
         const fetchFriendRequests = async ()=>{
             
-            const response = await axios.get(
-                `${mainURL}/friend-requests/sent/${userId}`).then((res)=>{
-                    const data= res.json()
-                    setFriendRequests(data);
-                }).catch((error)=>{
-                    console.log('Error:', error); 
-                    if (error.response) {
-                        console.log('Server Error:', error.response.data); 
-                    } else if (error.request) {
-                        console.log('Network Error:', error.request); 
-                    } else {
-                        console.log('Other Error:', error.message); 
-                    }
-                })
+            try {
+                const response = await axios.get(`${mainURL}/friend-requests/sent/${userId}`);
+                setFriendRequests(response.data); // Use `response.data`
+            } catch (error) {
+                console.log("Error:", error);
+                if (error.response) {
+                    console.log("Server Error:", error.response.data);
+                } else if (error.request) {
+                    console.log("Network Error:", error.request);
+                } else {
+                    console.log("Other Error:", error.message);
+                }
+            }
         }
 
         fetchFriendRequests();
-    },[]);
+    },[userId]);
 
     useEffect(()=>{
         const fetchUserFriends = async ()=>{
-            
-            const response = await axios.get(
-                `${mainURL}/friends/${userId}`).then((res)=>{
-                    const data= res.json()
-                    setUserFriends(data);
-                }).catch((error)=>{
-                    console.log('Error:', error); 
-                    if (error.response) {
-                        console.log('Server Error:', error.response.data); 
-                    } else if (error.request) {
-                        console.log('Network Error:', error.request); 
-                    } else {
-                        console.log('Other Error:', error.message); 
-                    }
-                })
+            try {
+                const response = await axios.get(`${mainURL}/friends/${userId}`);
+                setUserFriends(response.data); // Use `response.data`
+            } catch (error) {
+                console.log("Error:", error);
+                if (error.response) {
+                    console.log("Server Error:", error.response.data);
+                } else if (error.request) {
+                    console.log("Network Error:", error.request);
+                } else {
+                    console.log("Other Error:", error.message);
+                }
+            }
         }
 
         fetchUserFriends();
-    },[])
+    },[userId])
 
     useEffect(()=>{
         const fetchUsers = async ()=>{
             const token = await AsyncStorage.getItem("authToken");
+            console.log("token", token)
             const decodedToken = jwtDecode(token);
             const userId = decodedToken.userId;
             setUserId(userId);
+            console.log(userId)
             const response = await axios.get(
                 `${mainURL}/all_users/${userId}`).then((res)=>{
                     setData(res.data)
@@ -106,12 +106,13 @@ function HomeScreen(){
     },[]);
 
     const handleFriendRequest = async(recipent_id)=>{
+        try {
         const data={currentUserId: userId, selectedUserId: recipent_id};
         console.log(data)
-        try {
+        
             const response = await axios.post(
                 `${mainURL}/friend-request/`, data).then((res)=>{
-                    setRequestSent(true);
+                    setRequestSent((prev) => [...prev, recipent_id]);
             })
         } catch (error) {
             console.log('Error:', error); 
@@ -151,7 +152,7 @@ function HomeScreen(){
                                 >
                                 <Text style={{ textAlign: "center", color: "white" }}>Friends</Text>
                                 </Pressable>
-                            ) : requestSent || friendRequests.some((friend) => friend._id === item._id) ? (
+                            ) : requestSent.includes(item._id) || friendRequests.some((friend) => friend._id === item._id) ? (
                                 <Pressable
                                 style={{
                                     backgroundColor: "gray",

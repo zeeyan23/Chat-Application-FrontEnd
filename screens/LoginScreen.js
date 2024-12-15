@@ -25,6 +25,8 @@ function LoginScreen(){
 
                 if(token){
                     navigation.navigate("Home");
+                }else {
+
                 }
             } catch (error) {
                 console.log("error", error)
@@ -104,37 +106,80 @@ function LoginScreen(){
     };
 
 
+    // async function SignInHandler() {
+    //     let expoPushToken = null;
+    //     try {
+    //         expoPushToken = await registerForPushNotificationsAsync();
+    //     } catch (error) {
+    //         console.log('Error during push token registration:', error);
+    //     }
+
+    //     console.log('Expo Push Token (from login):', expoPushToken);
+
+    //     setData((prevData) => ({
+    //         ...prevData, 
+    //         expoPushToken : expoPushToken,
+    //     }));
+    //     try {
+    //         const response = await axios.post(
+    //             `${mainURL}/user_login/`,
+    //             { ...formData, expoPushToken },
+    //             {
+    //                 headers: {
+    //                     'Content-Type': 'application/json',
+    //                 }
+    //             }
+    //         ).then((response)=>{
+    //             console.log(response.status)
+    //             const token = response.data.token;
+    //             AsyncStorage.setItem("authToken", token);
+    //             navigation.navigate('Home');
+    //         });
+
+            
+    //     } catch (error) {
+    //         console.log('Error:', error); // Log error details
+    //         if (error.response) {
+    //             console.log('Server Error:', error.response.data); // Server-side error
+    //         } else if (error.request) {
+    //             console.log('Network Error:', error.request); // Network-related issue
+    //         } else {
+    //             console.log('Other Error:', error.message); // Any other error
+    //         }
+    //     }
+    // }
+
     async function SignInHandler() {
         let expoPushToken = null;
+    
         try {
             expoPushToken = await registerForPushNotificationsAsync();
         } catch (error) {
             console.log('Error during push token registration:', error);
         }
-
+    
         console.log('Expo Push Token (from login):', expoPushToken);
-
+    
         setData((prevData) => ({
             ...prevData, 
-            expoPushToken : expoPushToken,
+            expoPushToken: expoPushToken,
         }));
+    
         try {
             const response = await axios.post(
                 `${mainURL}/user_login/`,
-                { ...formData, expoPushToken },
+                { ...formData, expoPushToken: expoPushToken || 'null' }, // Handle null tokens gracefully
                 {
                     headers: {
                         'Content-Type': 'application/json',
                     }
                 }
-            ).then((response)=>{
-                console.log(response.status)
-                const token = response.data.token;
-                AsyncStorage.setItem("authToken", token);
-                navigation.navigate('Home');
-            });
-
-            
+            );
+    
+            console.log(response.status);
+            const token = response.data.token;
+            await AsyncStorage.setItem("authToken", token); // Ensure async storage is awaited
+            navigation.navigate('Home');
         } catch (error) {
             console.log('Error:', error); // Log error details
             if (error.response) {
@@ -146,7 +191,7 @@ function LoginScreen(){
             }
         }
     }
-
+    
     return(
         <Center w="100%" style={styles.container}>
             <Box safeArea p="2" py="8" w="90%" maxW="290">

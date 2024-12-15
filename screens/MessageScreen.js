@@ -54,7 +54,7 @@ import { ResizeMode, Video } from 'expo-av';
 
     const scrollToBottom = ()=>{
       if(scrollViewRef.current) {
-        scrollViewRef.current.scrollToEnd({animated:false})
+        scrollViewRef.current.scrollToEnd({animated:true})
       }
     }
 
