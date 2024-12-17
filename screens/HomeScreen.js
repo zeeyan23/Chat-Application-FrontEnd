@@ -12,16 +12,20 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import axios from "axios";
 import { mainURL } from "../Utils/urls";
 import { jwtDecode } from "jwt-decode"
+import io from "socket.io-client";
 import {  FlatList, Heading, Avatar, VStack, Spacer,Text } from "native-base";
 
 function HomeScreen(){
 
+    const socket = io(`${mainURL}`);
     const { isOpen, onToggle} = useDisclose();
     const {userId, setUserId} = useContext(UserType);
     const navigation = useNavigation();
-    const [data, setData]= useState([]);
     const [requestSent, setRequestSent]=useState([]);
+
+    const [data, setData]= useState([]);
     const [friendRequests, setFriendRequests]=useState([]);
+    const [friendRequestsReceived, setFriendRequestsReceived]=useState([]);
     const [userFriends, setUserFriends]=useState([]);
 
     useLayoutEffect(()=>{
@@ -32,78 +36,88 @@ function HomeScreen(){
             ),
             headerRight:()=>(
                 <View>
-                    <SimpleLineIcons name="settings" size={24} color="black" />
+                    <SimpleLineIcons name="settings" size={24} color="black" onPress={()=> console.log("excuted")}/>
                 </View>
             )
         })
     },[]);
 
-    useEffect(()=>{
-        const fetchFriendRequests = async ()=>{
-            
-            try {
-                const response = await axios.get(`${mainURL}/friend-requests/sent/${userId}`);
-                setFriendRequests(response.data); // Use `response.data`
-            } catch (error) {
-                console.log("Error:", error);
-                if (error.response) {
-                    console.log("Server Error:", error.response.data);
-                } else if (error.request) {
-                    console.log("Network Error:", error.request);
-                } else {
-                    console.log("Other Error:", error.message);
-                }
-            }
-        }
+    // useEffect(()=> {
+    //     const fetchUser = async () => {
+    //         const token = await AsyncStorage.getItem("authToken");
+    //         const decodedToken = jwtDecode(token);
+    //         const userId = decodedToken.userId;
+    //         setUserId(userId);
 
-        fetchFriendRequests();
-    },[userId]);
+    //         const usersResponse = await axios.get(`${mainURL}/all_users/${userId}`);
+    //         setData(usersResponse.data);
 
-    useEffect(()=>{
-        const fetchUserFriends = async ()=>{
-            try {
-                const response = await axios.get(`${mainURL}/friends/${userId}`);
-                setUserFriends(response.data); // Use `response.data`
-            } catch (error) {
-                console.log("Error:", error);
-                if (error.response) {
-                    console.log("Server Error:", error.response.data);
-                } else if (error.request) {
-                    console.log("Network Error:", error.request);
-                } else {
-                    console.log("Other Error:", error.message);
-                }
-            }
-        }
+    //         const sentRequestsResponse = await axios.get(`${mainURL}/friend-requests/sent/${userId}`);
+    //         setFriendRequests(sentRequestsResponse.data);
 
-        fetchUserFriends();
-    },[userId])
+    //         const sentRequestsReceivedResponse = await axios.get(`${mainURL}/friend-requests/received/${userId}`);
+    //         setFriendRequestsReceived(sentRequestsReceivedResponse.data);
 
-    useEffect(()=>{
-        const fetchUsers = async ()=>{
+    //         const friendsResponse = await axios.get(`${mainURL}/friends/${userId}`);
+    //         setUserFriends(friendsResponse.data);
+
+    //     }
+
+    //     fetchUser();
+    // },[])
+
+    useEffect(() => {
+        const fetchUser = async () => {
             const token = await AsyncStorage.getItem("authToken");
-            console.log("token", token)
             const decodedToken = jwtDecode(token);
             const userId = decodedToken.userId;
             setUserId(userId);
-            console.log(userId)
-            const response = await axios.get(
-                `${mainURL}/all_users/${userId}`).then((res)=>{
-                    setData(res.data)
-                }).catch((error)=>{
-                    console.log('Error:', error); 
-                    if (error.response) {
-                        console.log('Server Error:', error.response.data); 
-                    } else if (error.request) {
-                        console.log('Network Error:', error.request); 
-                    } else {
-                        console.log('Other Error:', error.message); 
-                    }
-                })
-        }
 
-        fetchUsers();
-    },[]);
+            // Fetch initial data via API calls
+            const usersResponse = await axios.get(`${mainURL}/all_users/${userId}`);
+            setData(usersResponse.data);
+
+            const sentRequestsResponse = await axios.get(`${mainURL}/friend-requests/sent/${userId}`);
+            setFriendRequests(sentRequestsResponse.data);
+
+            const sentRequestsReceivedResponse = await axios.get(`${mainURL}/friend-requests/received/${userId}`);
+            setFriendRequestsReceived(sentRequestsReceivedResponse.data);
+
+            const friendsResponse = await axios.get(`${mainURL}/friends/${userId}`);
+            setUserFriends(friendsResponse.data);
+
+            // Connect the socket to listen for real-time updates
+            socket.emit("join", { userId }); // Tell the server to associate this socket with the user
+        };
+
+        fetchUser();
+
+        // Real-time updates
+
+        socket.on("friendRequestReceived", (data) => {
+            setFriendRequestsReceived((prev) => [...prev, data]);
+        });
+
+        socket.on("friendRequestSent", (data) => {
+            setFriendRequests((prev) => [...prev, data]);
+        });
+
+        socket.on("friendRequestAccepted", (data) => {
+            setUserFriends((prev) => [...prev, data]);
+            setFriendRequestsReceived((prev) =>
+                prev.filter((req) => req.senderId !== data.senderId)
+            );
+        });
+
+        return () => {
+            socket.disconnect(); // Cleanup on component unmount
+        };
+    }, []);
+
+    
+    console.log("All users", data);
+    console.log("Friend Requests", friendRequests)
+    console.log("user Friends", userFriends)
 
     const handleFriendRequest = async(recipent_id)=>{
         try {
@@ -131,7 +145,7 @@ function HomeScreen(){
         <Box style={styles.container}>
             <Box style={{ flex: 1, width: "100%" }}>
                 <FlatList
-                data={data.users}
+                data={data}
                 renderItem={({ item }) => (
                     <Box borderBottomWidth="1" borderColor="muted.300" pl={["2", "4"]} pr={["2", "5"]} py="2">
                         <HStack space={[2, 3]} justifyContent="space-between">
@@ -152,7 +166,7 @@ function HomeScreen(){
                                 >
                                 <Text style={{ textAlign: "center", color: "white" }}>Friends</Text>
                                 </Pressable>
-                            ) : requestSent.includes(item._id) || friendRequests.some((friend) => friend._id === item._id) ? (
+                            ) : requestSent.includes(item._id) || friendRequestsReceived.some((friend) => friend._id === item._id) || friendRequests.some((friend) => friend._id === item._id) ? (
                                 <Pressable
                                 style={{
                                     backgroundColor: "gray",
@@ -162,7 +176,9 @@ function HomeScreen(){
                                 }}
                                 >
                                 <Text style={{ textAlign: "center", color: "white", fontSize: 13 }}>
-                                    Request Sent
+                                {friendRequestsReceived.some((friend) => friend._id === item._id)
+                                ? "Request Received"
+                                : "Request Sent"}
                                 </Text>
                                 </Pressable>
                             ) : (

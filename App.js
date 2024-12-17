@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import { NativeBaseProvider } from 'native-base';
@@ -11,10 +11,11 @@ import FriendsScreen from './screens/FriendsScreen';
 import ChatScreen from './screens/ChatScreen';
 import MessageScreen from './screens/MessageScreen';
 import NotificationHandler from './components/Notification';
+import ForwardMessagesScreen from './screens/ForwardMessagesScreen';
 
 export default function App() {
 
-  const Stack= createNativeStackNavigator();
+  const Stack= createStackNavigator();
 
   return (
     <UserContext>
@@ -28,7 +29,8 @@ export default function App() {
               title: 'Friend Requests',
             }}/>
             <Stack.Screen name="Chats" component={ChatScreen}/>
-            <Stack.Screen name="MessageScreen" component={MessageScreen}/>
+            <Stack.Screen name="MessageScreen" component={MessageScreen}  options={{ headerShown: true }}/>
+            <Stack.Screen name="MessageForwardScreen" component={ForwardMessagesScreen}  options={{ headerShown: true }}/>
           </Stack.Navigator>
           <NotificationHandler />
         </NavigationContainer>

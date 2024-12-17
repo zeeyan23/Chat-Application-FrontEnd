@@ -24,7 +24,9 @@ function LoginScreen(){
                 const token = await AsyncStorage.getItem("authToken");
 
                 if(token){
+                    // await AsyncStorage.clear();
                     navigation.navigate("Home");
+
                 }else {
 
                 }
