@@ -12,6 +12,7 @@ import ChatScreen from './screens/ChatScreen';
 import MessageScreen from './screens/MessageScreen';
 import NotificationHandler from './components/Notification';
 import ForwardMessagesScreen from './screens/ForwardMessagesScreen';
+import StarredMessagesScreen from './screens/StarredMessagesScreen';
 
 export default function App() {
 
@@ -24,13 +25,14 @@ export default function App() {
           <Stack.Navigator>
             <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}}/>
             <Stack.Screen name="Register" component={RegisterScreen} options={{headerShown: false}}/>
-            <Stack.Screen name="Home" component={HomeScreen}/>
+            <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="FriendRequests" component={FriendsScreen} options={{
               title: 'Friend Requests',
             }}/>
             <Stack.Screen name="Chats" component={ChatScreen}/>
             <Stack.Screen name="MessageScreen" component={MessageScreen}  options={{ headerShown: true }}/>
             <Stack.Screen name="MessageForwardScreen" component={ForwardMessagesScreen}  options={{ headerShown: true }}/>
+            <Stack.Screen name="StarredMessageScreen" component={StarredMessagesScreen}  options={{ headerShown: true }}/>
           </Stack.Navigator>
           <NotificationHandler />
         </NavigationContainer>

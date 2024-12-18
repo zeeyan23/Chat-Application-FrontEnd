@@ -11,8 +11,6 @@ function UserChat({ item }) {
   const {userId, setUserId} = useContext(UserType);
   const [messages, setMessages]=useState([]);
 
-  console.log(item);
-
   const fetchMessages = async()=>{
       try {
           const response = await axios.get(`${mainURL}/get-messages/${userId}/${item._id}`).then((res)=>{
@@ -43,7 +41,6 @@ function UserChat({ item }) {
 
   const lastMessage = getLastMessage();
 
-  console.log(lastMessage)
   function formatTime(time){
     const options= {hour: "numeric", minute:"numeric"}
     return new Date(time).toLocaleString("en-US",options)

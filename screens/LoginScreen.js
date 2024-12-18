@@ -159,8 +159,7 @@ function LoginScreen(){
         } catch (error) {
             console.log('Error during push token registration:', error);
         }
-    
-        console.log('Expo Push Token (from login):', expoPushToken);
+
     
         setData((prevData) => ({
             ...prevData, 

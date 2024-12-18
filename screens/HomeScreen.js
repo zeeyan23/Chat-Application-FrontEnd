@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { Box, useDisclose, IconButton, Stagger, HStack, Icon, Center, NativeBaseProvider, Button, Pressable } from 'native-base';
+import { Box, useDisclose, IconButton, Stagger, HStack, Icon, Center, NativeBaseProvider, Button, Pressable, Menu, HamburgerIcon } from 'native-base';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from "@react-navigation/native";
 import { useLayoutEffect, useState } from "react";
@@ -32,12 +32,21 @@ function HomeScreen(){
         navigation.setOptions({
             headerTitle:"",
             headerLeft:()=>(
-                <Text>Chat App</Text>
+                <Box paddingLeft={4}>
+                    <Text fontWeight={"bold"} fontSize={16}>Chat App</Text>
+                </Box>
             ),
             headerRight:()=>(
-                <View>
-                    <SimpleLineIcons name="settings" size={24} color="black" onPress={()=> console.log("excuted")}/>
-                </View>
+                <Box w="90%" alignItems="flex-end" paddingRight={4}>
+                    <Menu w="190" trigger={triggerProps => {
+                    return <Pressable accessibilityLabel="More options menu" {...triggerProps}>
+                    <HamburgerIcon />
+                  </Pressable>;
+                    }}>
+                        <Menu.Item onPress={() => navigation.navigate('StarredMessageScreen')}>Starred Messages</Menu.Item>
+                        <Menu.Item>Settings</Menu.Item>
+                    </Menu>
+                </Box>
             )
         })
     },[]);
@@ -115,14 +124,12 @@ function HomeScreen(){
     }, []);
 
     
-    console.log("All users", data);
-    console.log("Friend Requests", friendRequests)
-    console.log("user Friends", userFriends)
+
 
     const handleFriendRequest = async(recipent_id)=>{
         try {
         const data={currentUserId: userId, selectedUserId: recipent_id};
-        console.log(data)
+       
         
             const response = await axios.post(
                 `${mainURL}/friend-request/`, data).then((res)=>{
@@ -224,13 +231,13 @@ function HomeScreen(){
                 <IconButton variant="solid" borderRadius="full" size="lg" onPress={onToggle} bg="cyan.400" icon={<Icon as={MaterialCommunityIcons} size="6" name="dots-horizontal" color="warmGray.50" _dark={{ color: "warmGray.50" }} />} />
             </HStack>
         </Box>
-
     )
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        paddingHorizontal:4,
         backgroundColor:"white"
     }
 })

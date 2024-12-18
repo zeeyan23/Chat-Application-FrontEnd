@@ -35,7 +35,7 @@ function ForwardMessagesScreen({ route, navigation }){
     
 
       // Send Forwarded Message
-      console.log(selectedFriends)
+      
       const handleForwardMessage = async () => {
         try {
           await Promise.all(

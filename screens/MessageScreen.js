@@ -221,7 +221,6 @@ const MessageSrceen = () => {
       fetchMessages();
   },[])
 
-  console.log(getMessage)
   // useEffect(()=>{
   //     const fetchRecipentData = async()=>{
   //         try {
@@ -435,7 +434,7 @@ const MessageSrceen = () => {
                               color: '#FFD700', // Golden color for the star
                             }}
                           >
-                            <Entypo name="star" size={10} color="white"/>
+                            <Entypo name="star" size={10} color="#828282"/>
                           </Text>
                         )}
                     </Text>

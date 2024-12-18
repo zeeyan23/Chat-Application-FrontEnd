@@ -8,12 +8,12 @@ const NotificationHandler = () => {
 
   useEffect(() => {
     const subscription = Notifications.addNotificationReceivedListener((notification) => {
-      console.log("Notification received:", notification);
+     
     });
 
     const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const { data } = response.notification.request.content;
-      console.log("Notification clicked with data:", data);
+      
 
       if (data.senderId) {
         navigation.navigate("MessageScreen", {
