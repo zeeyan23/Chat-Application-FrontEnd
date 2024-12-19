@@ -14,7 +14,12 @@ function UserChat({ item }) {
   const fetchMessages = async()=>{
       try {
           const response = await axios.get(`${mainURL}/get-messages/${userId}/${item._id}`).then((res)=>{
-              const messages = res.data.message;
+              // const messages = res.data.message;
+              // setMessages(messages);
+
+              const messages = res.data.message.filter(
+                (message) => !message.clearedBy.includes(userId)
+              );
               setMessages(messages);
           })
       } catch (error) {

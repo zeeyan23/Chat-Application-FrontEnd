@@ -21,8 +21,11 @@ function StarredMessagesScreen({navigation}){
         const fetchStarredMessages = async () => {
             
             const response = await axios.get(`${mainURL}/get-starred-messages/${userId}`);
-            setStarredMessages(response.data);
-
+            // setStarredMessages(response.data);
+            const messages = response.data.filter(
+                (message) => !message.clearedBy.includes(userId)
+              );
+              setStarredMessages(messages);
         }
         fetchStarredMessages();
     },[]);
@@ -43,8 +46,8 @@ function StarredMessagesScreen({navigation}){
                     <Pressable
                     onPress={() => {
                         navigation.navigate("MessageScreen", {
-                            recipentId: item.recepientId._id === item.starredBy._id ? item.senderId._id : item.recepientId._id,
-                            userName: item.senderId._id === item.starredBy._id ? item.recepientId.user_name : item.senderId.user_name,
+                            recipentId: item.recepientId._id === item.starredBy[0]._id ? item.senderId._id : item.recepientId._id,
+                            userName: item.senderId._id === item.starredBy[0]._id ? item.recepientId.user_name : item.senderId.user_name,
                         });
                     }}
                 >
@@ -53,15 +56,15 @@ function StarredMessagesScreen({navigation}){
                     <HStack justifyContent="space-between" alignItems="center" width="100%">
                     <VStack flexDirection="row" space={1}>
                         <Text _dark={{ color: "warmGray.50" }} color="coolGray.800" bold>
-                            {item.senderId._id === item.starredBy._id
+                            {item.senderId._id === item.starredBy[0]._id
                             ? `${item.senderId.user_name} `
                             : `${item.senderId.user_name} `}
                         </Text>
                         <Entypo name="arrow-bold-right" style={{ top: 5 }} size={15} color="black" />
                         <Text _dark={{ color: "warmGray.50" }} color="coolGray.800" bold>
-                            {item.senderId._id === item.starredBy._id
+                            {item.senderId._id === item.starredBy[0]._id
                             ? `${item.recepientId.user_name}`
-                            : `${item.starredBy.user_name}`}
+                            : `${item.starredBy[0].user_name}`}
                         </Text>
                     </VStack>
 

@@ -14,7 +14,7 @@ import { mainURL } from "../Utils/urls";
 import { jwtDecode } from "jwt-decode"
 import io from "socket.io-client";
 import {  FlatList, Heading, Avatar, VStack, Spacer,Text } from "native-base";
-
+import Entypo from '@expo/vector-icons/Entypo';
 function HomeScreen(){
 
     const socket = io(`${mainURL}`);
@@ -40,7 +40,7 @@ function HomeScreen(){
                 <Box w="90%" alignItems="flex-end" paddingRight={4}>
                     <Menu w="190" trigger={triggerProps => {
                     return <Pressable accessibilityLabel="More options menu" {...triggerProps}>
-                    <HamburgerIcon />
+                    <Entypo name="dots-three-vertical" size={20} color="black" />
                   </Pressable>;
                     }}>
                         <Menu.Item onPress={() => navigation.navigate('StarredMessageScreen')}>Starred Messages</Menu.Item>

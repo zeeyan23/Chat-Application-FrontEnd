@@ -24,9 +24,10 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserType } from "../Context/UserContext";
 import axios from "axios";
 import { mainURL } from "../Utils/urls";
-import { Box,Button,Text } from "native-base";
+import { Box,Button,Menu,Text } from "native-base";
 import * as ImagePicker from "expo-image-picker"
 import { ResizeMode, Video } from 'expo-av';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
@@ -34,11 +35,10 @@ const MessageSrceen = () => {
   const [selectedImage, setSelectedImage] = useState("")
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [showUnStar, setShowUnStar]=useState(false);
   const {userId, setUserId} = useContext(UserType);
   const [replyMessage, setReplyMessage]=useState(null);
   const [starredMessages, setStarredMessages] = useState([]);
-
-
   const route = useRoute();
   const { senderId, recipentId, userName } = route.params || {};
 
@@ -123,28 +123,63 @@ const MessageSrceen = () => {
         seletedMessages.length > 0 ? (
           <Box flexDirection="row" alignItems="center" style={{ marginRight: 10, gap: 20 }}>
             <Ionicons name="arrow-undo" size={24} color="black" onPress={()=> handleReplyMessage(seletedMessages)}/>
-            <Entypo name="star" size={24} color="black" onPress={()=> handleStarMessage(seletedMessages)}/>
+            {!showUnStar ? <Entypo name="star" size={24} color="black" onPress={()=> handleStarMessage(seletedMessages)}/> :
+            <MaterialCommunityIcons name="star-off" size={24} color="black" onPress={() => unstarMessage(seletedMessages)}/>}
             <Pressable onPress={() => deleteMessage(seletedMessages)}>
               <Entypo name="trash" size={24} color="black" />
             </Pressable>
-            <Ionicons name="arrow-redo-sharp" size={24} color="black" onPress={() => navigation.navigate('MessageForwardScreen', {
-  seletedMessages: seletedMessages, // Ensure this matches what you're trying to access
-} )} />
+            <Ionicons name="arrow-redo-sharp" size={24} color="black" onPress={() => navigation.navigate('MessageForwardScreen', { 
+              seletedMessages: seletedMessages,} )} />
           </Box>
-        ) : null,
+        ) : (
+          <Box w="90%" alignItems="flex-end" paddingRight={4}>
+            <Menu w="190" trigger={triggerProps => {
+                return <Pressable accessibilityLabel="More options menu" {...triggerProps} >
+                        <Entypo name="dots-three-vertical" size={20} color="black" />
+                      </Pressable>}}>
+              <Menu.Item onPress={handleClearChat}>Clear Chat</Menu.Item>
+            </Menu>
+          </Box>
+        ),
     });
   }, [navigation, seletedMessages, Platform.OS, userName]);
 
+  const handleClearChat = async ()=>{
+    const formData ={
+      userId: userId,
+      otherUserId: senderId ? senderId : recipentId
+    }
+    try {
+      const response = await axios.post(`${mainURL}/clear-chat/`, formData);
+
+      console.log(response.data)
+      // Filter out messages cleared by the logged-in user
+      const messages = response.data.filter(
+        (message) => !message.clearedBy.includes(userId)
+      );
+  
+      setGetMessage(messages);
+    } catch (error) {
+      console.log('Error:', error);
+      if (error.response) {
+          console.log('Server Error:', error.response.data); 
+      } else if (error.request) {
+          console.log('Network Error:', error.request); 
+      } else {
+          console.log('Other Error:', error.message);
+      }
+    }
+  }
   const handleReplyMessage = async (messageIds) => {
     if (messageIds.length === 1) {
       const selectedMessage = getMessage.find(
         (item) => item._id === messageIds[0]
       );
-      setReplyMessage(selectedMessage); // Set the selected message as reply
-      setSelectedMessages([]); // Clear the selection after reply
+      setReplyMessage(selectedMessage);
+      setSelectedMessages([]); 
     }
     else {
-      setReplyMessage(null); // Clear reply if no message is selected
+      setReplyMessage(null); 
     }
   };
 
@@ -201,10 +236,17 @@ const MessageSrceen = () => {
         const url = senderId
           ? `${mainURL}/get-messages/${senderId}/${recipentId}`
           : `${mainURL}/get-messages/${userId}/${recipentId}`;
-          const response = await axios.get(url).then((res)=>{
-               
-              setGetMessage(res.data.message);
-          })
+          const response = await axios.get(url).then((res) => {
+            console.log(res.data);
+          
+            // Filter messages to exclude those cleared by the current user
+            const messages = res.data.message.filter(
+              (message) => !message.clearedBy.includes(userId)
+            );
+            setGetMessage(messages);
+          });
+          
+
       } catch (error) {
           console.log('Error:', error); 
           if (error.response) {
@@ -328,15 +370,87 @@ const MessageSrceen = () => {
       }
   }
 
-  const handleSelectedMessage = (message)=>{
-    const isSelected = seletedMessages.includes(message._id);
-
-    if(isSelected){
-      setSelectedMessages((preMessage)=> preMessage.filter((id)=> id !== message._id))
-    }else{
-      setSelectedMessages((preMessage)=> [...preMessage, message._id])
+  const checkMessageInDB = async (id, userId) => {
+    // Replace with your actual API call
+    console.log("userId",userId)
+    try {
+      const response = await axios.get(`${mainURL}/get-starred-message/${id}/${userId}`);
+      return response.data.exists;
+    } catch (error) {
+      console.log('Error:', error); // Log error details
+      if (error.response) {
+          console.log('Server Error:', error.response.data); // Server-side error
+      } else if (error.request) {
+          console.log('Network Error:', error.request); // Network-related issue
+      } else {
+          console.log('Other Error:', error.message); // Any other error
+      }
     }
+
+  };
+
+  const unstarMessage = async (seletedMessages) => {
+    const idArray = seletedMessages;
+    const id = idArray[0]; 
+    console.log("id", id)
+    try {
+      const response = await axios.delete(`${mainURL}/delete-starred-message/${userId}/${id}/`);
+      if(response.status==200){
+        console.log("1",response)
+        setShowUnStar(false);
+        fetchMessages();
+        setSelectedMessages([])
+      }
+
+    } catch (error) {
+      console.log('Error:', error); // Log error details
+      if (error.response) {
+          console.log('Server Error:', error.response.data); // Server-side error
+      } else if (error.request) {
+          console.log('Network Error:', error.request); // Network-related issue
+      } else {
+          console.log('Other Error:', error.message); // Any other error
+      }
+    }
+  };
+
+  const handleSelectedMessage = async(message)=>{
+    console.log("message id",message.starredBy[0])
+    try {
+      const response = await checkMessageInDB(message._id, message.starredBy[0]);
+    
+      if (response) {
+        
+        setShowUnStar(true)
+        const isSelected = seletedMessages.includes(message._id);
+
+        if(isSelected){
+          setSelectedMessages((preMessage)=> preMessage.filter((id)=> id !== message._id))
+        }else{
+          setSelectedMessages((preMessage)=> [...preMessage, message._id])
+        }
+      } else {
+        const isSelected = seletedMessages.includes(message._id);
+
+        if(isSelected){
+          setSelectedMessages((preMessage)=> preMessage.filter((id)=> id !== message._id))
+        }else{
+          setSelectedMessages((preMessage)=> [...preMessage, message._id])
+        }
+      }
+    } catch (error) {
+      console.log('Error:', error); // Log error details
+            if (error.response) {
+                console.log('Server Error:', error.response.data); // Server-side error
+            } else if (error.request) {
+                console.log('Network Error:', error.request); // Network-related issue
+            } else {
+                console.log('Other Error:', error.message); // Any other error
+            }
+    }
+    
   }
+  
 
   const clearReplyMessage = () => setReplyMessage(null);
 
@@ -424,7 +538,7 @@ const MessageSrceen = () => {
                     {/* Format and display the timestamp */}
                     <Text style={[styles.infoText, { color: 'black' }]}>
                         {formatTime(item.timeStamp)} 
-                        {item?.starredBy === userId && (
+                        {item?.starredBy[0] === userId && (
                           <Text
                             style={{
                               position: 'absolute',
