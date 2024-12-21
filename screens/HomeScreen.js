@@ -12,7 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import axios from "axios";
 import { mainURL } from "../Utils/urls";
 import { jwtDecode } from "jwt-decode"
-import io from "socket.io-client";
+import  {io}  from "socket.io-client";
 import {  FlatList, Heading, Avatar, VStack, Spacer,Text } from "native-base";
 import Entypo from '@expo/vector-icons/Entypo';
 function HomeScreen(){
@@ -95,32 +95,10 @@ function HomeScreen(){
             const friendsResponse = await axios.get(`${mainURL}/friends/${userId}`);
             setUserFriends(friendsResponse.data);
 
-            // Connect the socket to listen for real-time updates
-            socket.emit("join", { userId }); // Tell the server to associate this socket with the user
+            
         };
 
         fetchUser();
-
-        // Real-time updates
-
-        socket.on("friendRequestReceived", (data) => {
-            setFriendRequestsReceived((prev) => [...prev, data]);
-        });
-
-        socket.on("friendRequestSent", (data) => {
-            setFriendRequests((prev) => [...prev, data]);
-        });
-
-        socket.on("friendRequestAccepted", (data) => {
-            setUserFriends((prev) => [...prev, data]);
-            setFriendRequestsReceived((prev) =>
-                prev.filter((req) => req.senderId !== data.senderId)
-            );
-        });
-
-        return () => {
-            socket.disconnect(); // Cleanup on component unmount
-        };
     }, []);
 
     

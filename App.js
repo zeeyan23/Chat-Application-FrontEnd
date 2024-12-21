@@ -13,11 +13,32 @@ import MessageScreen from './screens/MessageScreen';
 import NotificationHandler from './components/Notification';
 import ForwardMessagesScreen from './screens/ForwardMessagesScreen';
 import StarredMessagesScreen from './screens/StarredMessagesScreen';
+import { useEffect, useState } from 'react';
+import { io } from 'socket.io-client';
+import { mainURL } from './Utils/urls';
+
 
 export default function App() {
 
   const Stack= createStackNavigator();
+  useEffect(() => {
+    const socket = io(mainURL);
 
+    socket.on('connect', () => {
+      console.log('Socket connected:', socket.id);
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('Connection error:', err);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+
+  
   return (
     <UserContext>
       <NativeBaseProvider>

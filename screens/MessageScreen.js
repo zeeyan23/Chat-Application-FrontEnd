@@ -28,6 +28,8 @@ import { Box,Button,Menu,Text } from "native-base";
 import * as ImagePicker from "expo-image-picker"
 import { ResizeMode, Video } from 'expo-av';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+// import socket from "../Utils/socketService";
+import { io } from "socket.io-client";
 
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
@@ -53,22 +55,77 @@ const MessageSrceen = () => {
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const flatListRef = useRef(null);
   const scrollViewRef = useRef(null);
+  const socket = useRef();
+
+  const fetchMessages = async()=>{
+    try {
+      const url = senderId
+        ? `${mainURL}/get-messages/${senderId}/${recipentId}`
+        : `${mainURL}/get-messages/${userId}/${recipentId}`;
+        const response = await axios.get(url).then((res) => {
+          
+        
+          // Filter messages to exclude those cleared by the current user
+          const messages = res.data.message.filter(
+            (message) => !message.clearedBy.includes(userId)
+          );
+          setGetMessage(messages);
+        });
+        
+
+    } catch (error) {
+        console.log('Error:', error); 
+        if (error.response) {
+            console.log('Server Error:', error.response.data); 
+        } else if (error.request) {
+            console.log('Network Error:', error.request); 
+        } else {
+            console.log('Other Error:', error.message); 
+        }
+    }
+  }
+
+  useEffect(() => {
+    socket.current = io(mainURL);
+
+    socket.current.on("connect", () => {
+      console.log("Socket connected:", socket.current.id);
+      socket.current.emit("joinRoom", userId);
+    });
+
+    socket.current.on("newMessage", (message) => {
+      setGetMessage((prevMessages) => [...prevMessages, message]);
+    });
+
+    return () => {
+      socket.current.disconnect();
+    };
+  }, [userId]);
+  
+
+  useEffect(()=>{
+      fetchMessages();
+  },[])
+
+  
+  
+
 
   const handleVideoPress = (videoUrl) => {
     setSelectedVideo(videoUrl); // Open the clicked video
   };
 
-  useEffect(()=>{
-    scrollToBottom();
-  },[])
-
- 
-  
   const scrollToBottom = ()=>{
     if(scrollViewRef.current) {
       scrollViewRef.current.scrollToEnd({animated:true})
     }
   }
+  
+  useEffect(()=>{
+    scrollToBottom();
+  },[getMessage])
+
+  
 
   const handleContentSizeChange=()=>{
     scrollToBottom();
@@ -152,7 +209,7 @@ const MessageSrceen = () => {
     try {
       const response = await axios.post(`${mainURL}/clear-chat/`, formData);
 
-      console.log(response.data)
+      
       // Filter out messages cleared by the logged-in user
       const messages = response.data.filter(
         (message) => !message.clearedBy.includes(userId)
@@ -231,37 +288,8 @@ const MessageSrceen = () => {
 
   
 
-  const fetchMessages = async()=>{
-      try {
-        const url = senderId
-          ? `${mainURL}/get-messages/${senderId}/${recipentId}`
-          : `${mainURL}/get-messages/${userId}/${recipentId}`;
-          const response = await axios.get(url).then((res) => {
-            console.log(res.data);
-          
-            // Filter messages to exclude those cleared by the current user
-            const messages = res.data.message.filter(
-              (message) => !message.clearedBy.includes(userId)
-            );
-            setGetMessage(messages);
-          });
-          
+  
 
-      } catch (error) {
-          console.log('Error:', error); 
-          if (error.response) {
-              console.log('Server Error:', error.response.data); 
-          } else if (error.request) {
-              console.log('Network Error:', error.request); 
-          } else {
-              console.log('Other Error:', error.message); 
-          }
-      }
-  }
-
-  useEffect(()=>{
-      fetchMessages();
-  },[])
 
   // useEffect(()=>{
   //     const fetchRecipentData = async()=>{
@@ -290,6 +318,11 @@ const MessageSrceen = () => {
   };
   
   const sendMessage= async(messageType, fileUri, duration, fileName, replyMessageId = replyMessage?._id) =>{
+
+  
+    // if(message.trim()){
+
+    
       try {
           const formData = new FormData()
           formData.append("senderId",userId);
@@ -322,12 +355,13 @@ const MessageSrceen = () => {
                       'Content-Type': 'multipart/form-data',
                     },
               }
-          );
+          )
+  
           setMessage("");
           setSelectedImage("");
           setReplyMessage(null);
           fetchMessages();
-          
+      
       } catch (error) {
           if (error.response) {
               console.log('Server Error:', error.response.data); 
@@ -337,7 +371,7 @@ const MessageSrceen = () => {
               console.log('Other Error:', error.message);
           }
       }
-
+    // }
   }
 
 
@@ -392,11 +426,9 @@ const MessageSrceen = () => {
   const unstarMessage = async (seletedMessages) => {
     const idArray = seletedMessages;
     const id = idArray[0]; 
-    console.log("id", id)
     try {
       const response = await axios.delete(`${mainURL}/delete-starred-message/${userId}/${id}/`);
       if(response.status==200){
-        console.log("1",response)
         setShowUnStar(false);
         fetchMessages();
         setSelectedMessages([])
@@ -415,7 +447,6 @@ const MessageSrceen = () => {
   };
 
   const handleSelectedMessage = async(message)=>{
-    console.log("message id",message.starredBy[0])
     try {
       const response = await checkMessageInDB(message._id, message.starredBy[0]);
     
