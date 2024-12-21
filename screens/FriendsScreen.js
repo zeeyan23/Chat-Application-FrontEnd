@@ -86,7 +86,15 @@ function FriendsScreen(){
                         <Button size={"sm"} onPress={()=>handleAcceptFreindRequests(item._id)}>Accept</Button>
                     </Box>;
                     </HStack>
-                </Box>} keyExtractor={item => item._id} />
+                </Box>} keyExtractor={item => item._id} 
+                    ListEmptyComponent={
+                        <Box alignItems="center" justifyContent="center" mt="10">
+                            <Text fontSize="lg" color="gray.500">
+                                No friend requests yet
+                            </Text>
+                        </Box>
+                    }
+                />
         </Box>
     )
 }

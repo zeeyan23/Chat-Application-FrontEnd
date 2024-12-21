@@ -92,6 +92,13 @@ function StarredMessagesScreen({navigation}){
                 </Pressable>
                 )}
                 keyExtractor={(item) => item._id}
+                ListEmptyComponent={
+                    <Box alignItems="center" justifyContent="center" mt="10">
+                        <Text fontSize="lg" color="gray.500">
+                            Starred mssages appear here
+                        </Text>
+                    </Box>
+                }
             />
         </Box>
 

@@ -1,8 +1,8 @@
-import { StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
 import { Box, useDisclose, IconButton, Stagger, HStack, Icon, Center, NativeBaseProvider, Button, Pressable, Menu, HamburgerIcon } from 'native-base';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from "@react-navigation/native";
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import { useContext } from "react";
@@ -17,7 +17,7 @@ import {  FlatList, Heading, Avatar, VStack, Spacer,Text } from "native-base";
 import Entypo from '@expo/vector-icons/Entypo';
 function HomeScreen(){
 
-    const socket = io(`${mainURL}`);
+    const socket = useRef();
     const { isOpen, onToggle} = useDisclose();
     const {userId, setUserId} = useContext(UserType);
     const navigation = useNavigation();
@@ -76,6 +76,38 @@ function HomeScreen(){
     // },[])
 
     useEffect(() => {
+        socket.current = io(mainURL);
+        socket.current.on("connect", () => {
+            console.log("Socket connected:", socket.current.id);
+            socket.current.emit("registerUser", userId);
+          });
+        // Listening for incoming friend request updates
+        socket.current.on("friendRequestReceived", (data) => {
+            console.log("Friend request received:", data);
+            
+            // Update the state in real time
+            setFriendRequestsReceived((prev) => [
+                ...prev,
+                { _id: data.senderId, user_name: data.senderName },
+            ]);
+        });
+    
+        socket.current.on("friendRequestAccepted", (data) => {
+            console.log("Friend request accepted in real-time:", data);
+    
+            // Update userFriends to reflect the new friend
+            setUserFriends((prev) => [...prev, data.userId]);
+        });
+
+        
+        // Cleanup socket connection on unmount
+        return () => {
+            socket.current.disconnect();
+        };
+    }, [userId]);
+
+    
+    useEffect(() => {
         const fetchUser = async () => {
             const token = await AsyncStorage.getItem("authToken");
             const decodedToken = jwtDecode(token);
@@ -125,6 +157,16 @@ function HomeScreen(){
         }
         
     }
+
+    // const deleteAllMessages = async () => {
+    //     try {
+    //       const response = await axios.delete( `${mainURL}/api/messages`);
+    //       Alert.alert('Success', response.data.message);
+    //     } catch (error) {
+    //       Alert.alert('Error', 'Failed to delete messages.');
+    //       console.error(error);
+    //     }
+    //   };
 
     return(
         <Box style={styles.container}>
@@ -206,6 +248,7 @@ function HomeScreen(){
                 </Stagger>
             </Box>
             <HStack position={"absolute"} alignSelf={"flex-end"} bottom={10} right={5} >
+            {/* <Button title="Delete All Messages" onPress={deleteAllMessages} color="#ff0000" /> */}
                 <IconButton variant="solid" borderRadius="full" size="lg" onPress={onToggle} bg="cyan.400" icon={<Icon as={MaterialCommunityIcons} size="6" name="dots-horizontal" color="warmGray.50" _dark={{ color: "warmGray.50" }} />} />
             </HStack>
         </Box>
