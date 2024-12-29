@@ -17,7 +17,7 @@ function ForwardMessagesScreen({ route, navigation }){
         const fetchFriends = async () => {
         try {
             const response = await axios.get(`${mainURL}/get-all-friends/${userId}`);
-            setFriends(response.data); // Replace with appropriate API
+            setFriends(response.data.friends); // Replace with appropriate API
         } catch (error) {
             console.error('Error fetching friends:', error);
         }
@@ -61,6 +61,7 @@ function ForwardMessagesScreen({ route, navigation }){
         }
       };
 
+      console.log(JSON.stringify(friends, null, 2))
       
     return(
         <View style={{ flex: 1, padding: 10 }}>

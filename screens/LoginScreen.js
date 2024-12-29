@@ -18,25 +18,39 @@ function LoginScreen(){
 
     const navigation = useNavigation();
 
-    useEffect(()=>{
-        const isLoggenIn = async()=>{
+    useEffect(() => {
+        const isLoggedIn = async () => {
             try {
                 const token = await AsyncStorage.getItem("authToken");
+    
+                if (token) {
+                    // Fetch the user ID associated with the token
+                    const response = await axios.get(`${mainURL}/get-user-id-from-token`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+    
+                    const userId = response.data.userId;
 
-                if(token){
-                    // await AsyncStorage.clear();
-                    navigation.navigate("Home");
-
-                }else {
-
+                    console.log(userId)
+                    // Check if the user has friends
+                    const friendResponse = await axios.get(`${mainURL}/has-friends/${userId}`);
+                    
+                    if (friendResponse.data.exists) {
+                        // Navigate to ChatScreen if friends exist
+                        navigation.navigate("Chats");
+                    } else {
+                        // Navigate to HomeScreen if no friends
+                        navigation.navigate("Home");
+                    }
                 }
             } catch (error) {
-                console.log("error", error)
+                console.log("error", error);
             }
-        }
-
-        isLoggenIn();
-    },[]);
+        };
+    
+        isLoggedIn();
+    }, []);
+    
 
     // Set up notification handler
     Notifications.setNotificationHandler({
@@ -108,48 +122,6 @@ function LoginScreen(){
     };
 
 
-    // async function SignInHandler() {
-    //     let expoPushToken = null;
-    //     try {
-    //         expoPushToken = await registerForPushNotificationsAsync();
-    //     } catch (error) {
-    //         console.log('Error during push token registration:', error);
-    //     }
-
-    //     console.log('Expo Push Token (from login):', expoPushToken);
-
-    //     setData((prevData) => ({
-    //         ...prevData, 
-    //         expoPushToken : expoPushToken,
-    //     }));
-    //     try {
-    //         const response = await axios.post(
-    //             `${mainURL}/user_login/`,
-    //             { ...formData, expoPushToken },
-    //             {
-    //                 headers: {
-    //                     'Content-Type': 'application/json',
-    //                 }
-    //             }
-    //         ).then((response)=>{
-    //             console.log(response.status)
-    //             const token = response.data.token;
-    //             AsyncStorage.setItem("authToken", token);
-    //             navigation.navigate('Home');
-    //         });
-
-            
-    //     } catch (error) {
-    //         console.log('Error:', error); // Log error details
-    //         if (error.response) {
-    //             console.log('Server Error:', error.response.data); // Server-side error
-    //         } else if (error.request) {
-    //             console.log('Network Error:', error.request); // Network-related issue
-    //         } else {
-    //             console.log('Other Error:', error.message); // Any other error
-    //         }
-    //     }
-    // }
 
     async function SignInHandler() {
         let expoPushToken = null;
@@ -180,7 +152,7 @@ function LoginScreen(){
             console.log(response.status);
             const token = response.data.token;
             await AsyncStorage.setItem("authToken", token); // Ensure async storage is awaited
-            navigation.navigate('Home');
+            navigation.navigate('Chats');
         } catch (error) {
             console.log('Error:', error); // Log error details
             if (error.response) {

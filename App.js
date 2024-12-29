@@ -50,7 +50,7 @@ export default function App() {
             <Stack.Screen name="FriendRequests" component={FriendsScreen} options={{
               title: 'Friend Requests',
             }}/>
-            <Stack.Screen name="Chats" component={ChatScreen}/>
+            <Stack.Screen name="Chats" component={ChatScreen} options={{ headerShown: true }} />
             <Stack.Screen name="MessageScreen" component={MessageScreen}  options={{ headerShown: true }}/>
             <Stack.Screen name="MessageForwardScreen" component={ForwardMessagesScreen}  options={{ headerShown: true }}/>
             <Stack.Screen name="StarredMessageScreen" component={StarredMessagesScreen}  options={{ headerShown: true }}/>

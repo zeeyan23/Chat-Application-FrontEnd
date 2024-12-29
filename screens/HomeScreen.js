@@ -1,8 +1,8 @@
 import { Alert, StyleSheet, View } from "react-native";
 import { Box, useDisclose, IconButton, Stagger, HStack, Icon, Center, NativeBaseProvider, Button, Pressable, Menu, HamburgerIcon } from 'native-base';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from "@react-navigation/native";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import { useContext } from "react";
@@ -28,26 +28,16 @@ function HomeScreen(){
     const [friendRequestsReceived, setFriendRequestsReceived]=useState([]);
     const [userFriends, setUserFriends]=useState([]);
 
+    
     useLayoutEffect(()=>{
         navigation.setOptions({
             headerTitle:"",
             headerLeft:()=>(
                 <Box paddingLeft={4}>
-                    <Text fontWeight={"bold"} fontSize={16}>Chat App</Text>
+                    <Text fontWeight={"bold"} fontSize={20}>Explore Connections</Text>
                 </Box>
             ),
-            headerRight:()=>(
-                <Box w="90%" alignItems="flex-end" paddingRight={4}>
-                    <Menu w="190" trigger={triggerProps => {
-                    return <Pressable accessibilityLabel="More options menu" {...triggerProps}>
-                    <Entypo name="dots-three-vertical" size={20} color="black" />
-                  </Pressable>;
-                    }}>
-                        <Menu.Item onPress={() => navigation.navigate('StarredMessageScreen')}>Starred Messages</Menu.Item>
-                        <Menu.Item>Settings</Menu.Item>
-                    </Menu>
-                </Box>
-            )
+            
         })
     },[]);
 
