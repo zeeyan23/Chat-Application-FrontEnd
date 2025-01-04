@@ -110,7 +110,15 @@ function StarredMessagesScreen({navigation}){
                               <Text style={styles.infoText}>{formatTime(item.timeStamp)}</Text>
                             </Box>
                             </>
-                          ) : <Box background="#29F200"  padding={2}   borderRadius={8}   alignSelf="flex-start" marginTop={2}>
+                          ) : item.messageType === "pdf" || item.messageType === "docx" || item.messageType === "xlsx" || item.messageType === "zip" || item.messageType === "pptx" ? (
+                            <>
+                            <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"}>{item.fileName}</Text>
+                            <Box flexDirection={"row"} justifyContent={"space-between"}>
+                              <Text style={styles.infoText}>{formatDuration(item.duration)}</Text>
+                              <Text style={styles.infoText}>{formatTime(item.timeStamp)}</Text>
+                            </Box>
+                            </>
+                          )  : <Box background="#29F200"  padding={2}   borderRadius={8}   alignSelf="flex-start" marginTop={2}>
                           <Text color="coolGray.600" _dark={{ color: "warmGray.200" }}>
                             {item.message || item.fileName}
                           </Text>

@@ -191,18 +191,27 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
       : text;
   };
   
+
+  const handlePress = () => {
+    if (item.type === 'friend') {
+      navigation.navigate("MessageScreen", {
+        userName: item.user_name,
+        recipentId: item._id,
+      });
+    } else if (item.type === 'group') {
+      navigation.navigate("MessageScreen", {
+        groupName: item.groupName,
+        isGroupChat: true,
+        groupId: item._id
+      });
+    }
+  };
+
+  //console.log(JSON.stringify(item, null, 2))
   return (
     <Box flex={1} backgroundColor="white">
       <Pressable
-        onPress={() =>
-          
-          navigation.navigate("MessageScreen", {
-            userName: item.user_name,
-            recipentId: item._id,
-          })
-        } onLongPress={()=> handleSelectedChat(item)}
-        
-      >
+        onPress={()=>handlePress(item)} onLongPress={()=> handleSelectedChat(item)}>
         {({ isHovered, isFocused, isPressed }) => (
           <Box
             borderBottomWidth="1"
@@ -219,7 +228,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
             <HStack space={[2, 3]} justifyContent="space-between">
               <Avatar size="48px" source={{ uri: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" }} />
               <VStack alignSelf="center">
-                <Text fontSize="md" color="black" style={{ fontWeight: "bold" }}>{item?.user_name}</Text>
+                <Text fontSize="md" color="black" style={{ fontWeight: "bold" }}>{item.type === 'friend' ? item.user_name : item.groupName}</Text>
                 <Text 
                   style={{ marginTop: 3, color: "gray", fontWeight: "500" }} 
                   numberOfLines={1} 

@@ -21,7 +21,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserType } from "../Context/UserContext";
 import axios from "axios";
 import { mainURL } from "../Utils/urls";
-import { Box,Button,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable } from "native-base";
+import { Box,Button,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable, useToast, Avatar } from "native-base";
 import * as ImagePicker from "expo-image-picker"
 import { ResizeMode, Video } from 'expo-av';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -34,6 +34,11 @@ const MessageSrceen = () => {
   const [showUnStar, setShowUnStar]=useState(false);
   const [isReplyPressed, setIsReplyPressed] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [viewOnceSelected, setViewOnceSelected]=useState(false);
+
+  const [selectedFile, setSelectedFile] = useState(null); // Store the selected file
+  const [messageType, setMessageType] = useState(null);
+ 
 
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState("")
@@ -56,10 +61,15 @@ const MessageSrceen = () => {
   const [imageRef, setImageRef] = useState(null);
   const [highLight, setHighLight]=useState(null);
   const [document, setDocument] = useState(null);
-  
-  const { senderId, recipentId, userName } = route.params || {};
+  const toast = useToast();
+
+  const { senderId, recipentId, userName,isGroupChat, groupName, groupId } = route.params || {};
   const { highlightedMessageId } = route.params || {};
   
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
   const scrollToBottom = () => {
     if (scrollViewRef.current) {
         scrollViewRef.current.scrollToEnd({ animated: true });
@@ -96,8 +106,10 @@ const MessageSrceen = () => {
   const fetchMessages = async()=>{
     try {
       const url = senderId
-        ? `${mainURL}/get-messages/${senderId}/${recipentId}`
-        : `${mainURL}/get-messages/${userId}/${recipentId}`;
+        ? isGroupChat
+        ? `${mainURL}/get-group-messages/${groupId}` : `${mainURL}/get-messages/${senderId}/${recipentId}`
+        : isGroupChat
+      ? `${mainURL}/get-group-messages/${groupId}` : `${mainURL}/get-messages/${userId}/${recipentId}`;
         const response = await axios.get(url).then((res) => {
 
           const messages = res.data.message.filter(
@@ -118,32 +130,130 @@ const MessageSrceen = () => {
     }
   }
 
+  const updateImageViewed = (messageId) => {
+    setGetMessage((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg._id === messageId ? { ...msg, imageViewed: true } : msg
+      )
+    );
+  };
+  
+  const updateVideoViewed = (messageId) => {
+    setGetMessage((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg._id === messageId ? { ...msg, videoViewed: true } : msg
+      )
+    );
+  };
+
   useEffect(() => {
     socket.current = io(mainURL);
 
     socket.current.on("connect", () => {
       socket.current.emit("joinRoom", userId);
+      socket.current.emit("joinRoom", groupId);
+
+      // groupMemberships.forEach((group) => {
+      //   socket.current.emit("joinRoom", group.groupId);
+      // });
     });
 
     socket.current.on("newMessage", (message) => {
+      console.log(message)
       setGetMessage((prevMessages) => [...prevMessages, message]);
     });
+
+      socket.current.on("imageViewedUpdate", (messageId) => {
+        
+        updateImageViewed(messageId._id);
+      });
+
+      socket.current.on("videoViewedUpdate", (messageId) => {
+        
+        updateVideoViewed(messageId._id);
+      });
 
     return () => {
       socket.current.disconnect();
     };
   }, [userId]);
   
-  useEffect(()=>{
-      fetchMessages();
-  },[])
+ 
 
-  const handleVideoPress = (videoUrl) => {
-    setSelectedVideo(videoUrl);
+  
+  // useEffect(()=>{
+  //     fetchMessages();
+  // },[])
+
+  const handleVideoPress = async(videoUrl, item) => {
+    
+
+    if(item.videoViewOnce){
+      if(item.senderId._id===userId){
+        toast.show({
+          description: "Confidential",
+          duration: 2000,  // Set a duration for the toast to display
+        });
+        return;
+      }
+      setSelectedVideo(videoUrl);
+      const formData = {
+        videoViewed : true,
+        id: item._id
+      }
+      
+      try {
+        const response = await axios.patch(`${mainURL}/viewedVideoOnce/true`, formData);
+        
+      } catch (error) {
+        console.log('Error:', error);
+        if (error.response) {
+            console.log('Server Error:', error.response.data); 
+        } else if (error.request) {
+            console.log('Network Error:', error.request); 
+        } else {
+            console.log('Other Error:', error.message);
+        }
+      }
+    }else{
+      setSelectedVideo(videoUrl);
+    }
   };
 
-  const handleImagePress = (imageUrl) => {
-    setSelectedImage(imageUrl);
+  //console.log(JSON.stringify(getMessage, null, 2))
+  const handleImagePress = async(imageUrl, item) => {
+
+    if(item.imageViewOnce){
+      if(item.senderId._id===userId){
+        toast.show({
+          description: "Confidential",
+          duration: 2000,  // Set a duration for the toast to display
+        });
+        return;
+      }
+      setSelectedImage(imageUrl);
+      const formData = {
+        imageViewed : true,
+        id: item._id
+      }
+      
+      try {
+        const response = await axios.patch(`${mainURL}/viewedImageOnce/true`, formData);
+        
+      } catch (error) {
+        console.log('Error:', error);
+        if (error.response) {
+            console.log('Server Error:', error.response.data); 
+        } else if (error.request) {
+            console.log('Network Error:', error.request); 
+        } else {
+            console.log('Other Error:', error.message);
+        }
+      }
+    }else{
+      setSelectedImage(imageUrl);
+    }
+    
   };
 
   const handleCloseVideo = async () => {
@@ -188,7 +298,19 @@ const MessageSrceen = () => {
                 }}
                 style={{ marginHorizontal: 10, width: 30, height: 30, borderRadius: 15 }}
               />
-              <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{userName}</Text>
+              <Pressable width={"64"} onPress={()=>viewUsersProfile(groupId)}>
+                {({
+                isHovered,
+                isFocused,
+                isPressed
+              }) => {
+                return <Box justifyContent={"center"} h={"full"} bg={isPressed ? "coolGray.200" : isHovered ? "coolGray.200" : "white"}>
+                      <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
+                        {!isGroupChat ? userName : groupName}
+                      </Text>
+                    </Box>;
+              }}
+              </Pressable>
             </Box>
           )}
         </Box>
@@ -217,6 +339,9 @@ const MessageSrceen = () => {
     });
   }, [navigation, seletedMessages, Platform.OS, userName]);
 
+  function viewUsersProfile(groupId){
+    navigation.navigate('UsersProfileScreen', {groupId})
+  }
   const handleClearChat = async ()=>{
     const formData ={
       userId: userId,
@@ -254,7 +379,8 @@ const MessageSrceen = () => {
   };
 
   const handleStarMessage = async (messageIds) => {
-  console.log(messageIds)
+  
+
     if (messageIds.length > 0) {
       try {
         await axios.patch(
@@ -325,19 +451,31 @@ const MessageSrceen = () => {
   };
   
   const sendMessage= async(messageType, fileUri, duration, fileName, replyMessageId = replyMessage?._id) =>{
-
-    setIsSending(true); // Start loading
-    setErrorMessage(""); // Clear any previous errors
+    console.log(message)
+    setIsSending(true); 
+    setErrorMessage(""); 
       try {
           const formData = new FormData()
           formData.append("senderId",userId);
-          formData.append("recepientId",recipentId);
+          if(!isGroupChat){
+            formData.append("recepientId",recipentId);
+          }else{
+            formData.append("recepientId",groupId);
+          }
+          
           if (replyMessageId) {
             formData.append("replyMessage", replyMessageId);
           }
           
           if (messageType === "image" || messageType === "video") {
             formData.append("messageType", messageType);
+            
+            if(messageType === "image"){
+              formData.append("imageViewOnce", viewOnceSelected);
+            }else if(messageType === "video"){
+              formData.append("videoViewOnce", viewOnceSelected);
+            }
+            
             formData.append("file", {
                 uri: fileUri,
                 name: messageType === "image" ? "image.jpeg" : "video.mp4",
@@ -359,7 +497,12 @@ const MessageSrceen = () => {
           else {
               // Default to text if no file type is provided
               formData.append("messageType", "text");
-              formData.append("message", message);
+              formData.append("message", message.trim());
+          }
+
+          if (isGroupChat && groupId) {
+            formData.append("isGroupChat", isGroupChat);
+            formData.append("groupId", groupId);
           }
           const response = await axios.post(
               `${mainURL}/messages/`,
@@ -376,13 +519,24 @@ const MessageSrceen = () => {
           setReplyMessage(null);
           fetchMessages();
 
+          if(!isGroupChat){
+            socket.current.emit("send_message", {
+              senderId: userId,
+              receiverId: recipentId,
+              message: message,
+              isGroupChat: isGroupChat,
+              timestamp: new Date().toISOString(),
+            });
+          }else{
+            socket.current.emit("send_message", {
+              senderId: userId,
+              receiverId: groupId,
+              message: message,
+              isGroupChat: isGroupChat,
+              timestamp: new Date().toISOString(),
+            });
+          }
           
-          socket.current.emit("send_message", {
-            senderId: userId,
-            receiverId: recipentId,
-            message: message,
-            timestamp: new Date().toISOString(),
-          });
           
       
       } catch (error) {
@@ -422,14 +576,33 @@ const MessageSrceen = () => {
           aspect: [4, 3],
           quality: 1,
         });
-        console.log(result)
       if(!result.canceled){
           const asset = result.assets[0];
           const isVideo = asset.type === 'video';
 
-          sendMessage(isVideo ? "video" : "image", asset.uri, asset.duration, asset.fileName);
+          setMessageType(isVideo ? 'video' : 'image');
+          setSelectedFile({
+            uri: asset.uri,
+            duration: asset.duration || null, // Only for video
+            fileName: asset.fileName || null,
+          });
+          //sendMessage(isVideo ? "video" : "image", asset.uri, asset.duration, asset.fileName);
       }
   }
+
+  const handleSendFileMessage = () => {
+    if (selectedFile) {
+      sendMessage(
+        messageType,
+        selectedFile.uri,
+        selectedFile.duration,
+        selectedFile.fileName
+      );
+      setSelectedFile(null); // Clear the selected file after sending
+      setMessageType(null);
+    }
+  };
+  
 
   const checkMessageInDB = async (id, userId) => {
     try {
@@ -471,7 +644,6 @@ const MessageSrceen = () => {
   };
 
   const handleSelectedMessage = async(message)=>{
-    console.log(message)
     try {
 
       if (!message.starredBy || message.starredBy.length === 0) {
@@ -523,13 +695,11 @@ const MessageSrceen = () => {
       const result = await DocumentPicker.getDocumentAsync({
         type: '*/*', 
       });
-      console.log(result)
       if(!result.canceled){
         const asset = result.assets[0];
         const mimeType = asset.mimeType;
         const fileName = asset.name; 
         let docType = '';
-        console.log(result)
         if (mimeType === 'application/pdf') {
           docType = 'pdf';
         } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
@@ -662,11 +832,14 @@ const MessageSrceen = () => {
       : text;
   };
 
-  console.log(JSON.stringify(getMessage, null,2))
+
+  const handleViewOnceClick = () => {
+    setViewOnceSelected(prevState => !prevState);
+  };
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#F0F0F0" }}>
       <ScrollView ref={scrollViewRef} contentContainerStyle={{flexGrow:1}} >
-        {getMessage.map((item, index)=>{
+        { getMessage.map((item, index)=>{
           const currentDate = formatDate(item.timeStamp); // Use the utility function
           const previousDate =
             index > 0 ? formatDate(getMessage[index - 1].timeStamp) : null;
@@ -715,9 +888,6 @@ const MessageSrceen = () => {
                       highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
                       highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
                   ]} onLongPress={()=> handleSelectedMessage(item)}>
-                    {/* {item?.replyMessage && (
-                      
-                    )} */}
                     {item.replyMessage?.messageType==='text' ? 
                       <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
                         style={{ backgroundColor: "#E0FFE8", padding: 8, borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",}}>
@@ -767,12 +937,20 @@ const MessageSrceen = () => {
                             </Box>
                           </Box>
                           
-                      </Pressable>: null}
+                      </Pressable>: null
+                    }
+                    <Box>
+                      <Box flexDirection={"row"} paddingBottom={2}>
+                        <Avatar size="xs" source={{ uri: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" }} />
+                        <Text
+                          color={"blue.900"} fontWeight={"semibold"} paddingLeft={2}>
+                            {item?.senderId?._id ===userId ? "You" : item?.senderId?.user_name}
+                        </Text>
+                      </Box>
+                      <Text>{item?.message}</Text>         
+                      
+                    </Box>
                     
-                    <Text
-                        style={{ fontSize: 14, textAlign: item?.senderId?._id === userId ? 'left' : 'left', fontWeight: 'medium'}}>
-                        {item?.message}       
-                    </Text>
                     <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>
                         {formatTime(item.timeStamp)} 
                         {item?.starredBy[0] === userId && (
@@ -827,24 +1005,61 @@ const MessageSrceen = () => {
                     maxWidth:'60%',
                     borderRadius:7
                 },highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-            ]} onLongPress={()=> handleSelectedMessage(item)}  onPress={() => handleImagePress(source)} >
+            ]} onLongPress={()=> handleSelectedMessage(item)}  onPress={() => handleImagePress(source, item)} >
                 
-                  <Image source={source} style={{width:200, height:200, borderRadius:7}} onError={(error) => console.log("Image Load Error:", error)}/>
-                  <Box flexDirection={"row"}>
-                  <Text style={[styles.infoText,{position:"absolute", right:10, marginTop:5, bottom:7}]}>{formatTime(item.timeStamp)}</Text>
+                  {item.imageViewOnce ? (
+                    <Box flexDirection="row"alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2} >
+                      <MaterialCommunityIcons
+                        //name="numeric-1-circle"
+                        name={item.imageViewed ? 'circle' : 'numeric-1-circle-outline'}
+                        size={14}
+                        color={item.imageViewed ? 'grey' : '#219BC7'}
+                        style={{
+                          marginRight: 5,
+                        }}
+                      />
+                      <Text
+                      
+                        style={{
+                          fontSize: 14,
+                          color: item.imageViewed ? 'grey' : '#219BC7',
+                          fontWeight: "500",
+                        }}
+                      >
+                        {item.imageViewed ? "Opened" : "Photo"}
+                      </Text>
+                    </Box>
+                  ) : (
+                    <Image
+                      source={source}
+                      style={{ width: 200, height: 200, borderRadius: 7 }}
+                      onError={(error) => console.log("Image Load Error:", error)}
+                    />
+                  )}
+
+                  <Box
+                    flexDirection="row"
+                    justifyContent="flex-end"
+                    paddingRight={2}
+                    alignItems="center">
+                    <Text
+                      style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}
+                    >
+                      {formatTime(item.timeStamp)}
+                    </Text>
                     {item?.starredBy[0] === userId && (
                       <Entypo
                         name="star"
-                        size={14} 
-                        color="white" 
+                        size={14}
+                        color="white"
                         style={{
-                          left:10,
-                          bottom:10,
-                          position:"absolute"
+                          marginLeft: 10,
                         }}
                       />
                     )}
                   </Box>
+
+
             </Pressable>
             </View>
             )
@@ -889,9 +1104,34 @@ const MessageSrceen = () => {
                       maxWidth:'60%',
                       borderRadius:7
                   }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-              ]} onPress={() => handleVideoPress(source)}  onLongPress={()=> handleSelectedMessage(item)}>
+              ]} onPress={() => handleVideoPress(source,item)}  onLongPress={()=> handleSelectedMessage(item)}>
                     
-                      <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"}>{item.videoName}</Text>
+                        {item.videoViewOnce ? (
+                        <Box flexDirection="row"alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2} >
+                          <MaterialCommunityIcons
+                            //name="numeric-1-circle"
+                            name={item.videoViewed ? 'circle' : 'numeric-1-circle-outline'}
+                            size={14}
+                            color={item.videoViewed ? 'grey' : '#219BC7'}
+                            style={{
+                              marginRight: 5,
+                            }}
+                          />
+                          <Text
+                          
+                            style={{
+                              fontSize: 14,
+                              color: item.videoViewed ? 'grey' : '#219BC7',
+                              fontWeight: "500",
+                            }}
+                          >
+                            {item.videoViewed ? "Opened" : "Video"}
+                          </Text>
+                        </Box>
+                      ) : (
+                        <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"}>{item.videoName}</Text>
+                      )}
+                      
                       <Box flexDirection={"row"}>
                         <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{formatDuration(item.duration)}</Text>
                         <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{formatTime(item.timeStamp)}</Text>
@@ -1045,9 +1285,14 @@ const MessageSrceen = () => {
           marginBottom: showEmojiSelector ? 0 : 25,}}>
         <View style={{ flex: 1, justifyContent: "flex-end" }}>
           {replyMessage && <ReplyMessageView />}
+
           <View style={{ flexDirection: "row", alignItems: "center", padding: 10 }}>
             <TextInput
-              value={replyMessage || message}
+              value={
+                selectedFile
+                  ? selectedFile.fileName || (messageType === "image" ? "Image" : "Video")
+                  : replyMessage || message
+              }
               onChangeText={handleInputChange}
               style={{
                 flex: 1,
@@ -1055,22 +1300,67 @@ const MessageSrceen = () => {
                 borderWidth: 1,
                 borderColor: "#dddddd",
                 borderRadius: 20,
-                paddingHorizontal: 10,}}
-                placeholder={ "Type Your message..."}/>
+                paddingHorizontal: 10,
+              }}
+              placeholder="Type Your message..."
+              editable={!selectedFile} 
+            />
 
-              <View style={{ flexDirection: "row", alignItems: "center" }} >
-                {!isTyping && (
-                  <IconButton icon={<Icon as={Entypo} name="camera" />} borderRadius="full" _icon={{ size: "lg" }} onPress={handleImage} />
-                )}
-                <IconButton icon={<Icon as={Entypo} name="attachment" />} borderRadius="full" _icon={{ size: "lg" }} onPress={handleDocument}/>
-              </View>
+              { !selectedFile &&
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  {!isTyping && (
+                    <IconButton
+                      icon={<Icon as={Entypo} name="camera" />}
+                      borderRadius="full"
+                      _icon={{ size: "lg" }}
+                      onPress={handleImage}
+                    />
+                  )}
 
-              {isTyping ? (
-                  <IconButton icon={<Icon as={Ionicons} name="send-outline" />} borderRadius="full" _icon={{ size: "lg" }} onPress={()=>sendMessage("text")}/>
-              ) : (
-                  <IconButton icon={<Icon as={Entypo} name="mic" />} borderRadius="full" _icon={{ size: "lg" }}/>
-              )}
-          </View>  
+
+                  <IconButton
+                    icon={<Icon as={Entypo} name="attachment" />}
+                    borderRadius="full"
+                    _icon={{ size: "lg" }}
+                    onPress={handleDocument}
+                  />
+                  
+                </View>
+              }
+            
+
+            {selectedFile ? (
+              <>
+              <IconButton
+                icon={<Icon as={MaterialCommunityIcons} name={viewOnceSelected ? 'numeric-1-circle' : 'numeric-1-circle-outline'} />}
+                borderRadius="full"
+                _icon={{ size: "lg" }}
+                onPress={handleViewOnceClick}
+              />
+              <IconButton
+                icon={<Icon as={Ionicons} name="send-outline" />}
+                borderRadius="full"
+                _icon={{ size: "lg" }}
+                onPress={handleSendFileMessage}
+              />
+              </>
+              
+            ) : isTyping ? (
+              <IconButton
+                icon={<Icon as={Ionicons} name="send-outline" />}
+                borderRadius="full"
+                _icon={{ size: "lg" }}
+                onPress={() => sendMessage("text")}
+              />
+            ) : (
+              <IconButton
+                icon={<Icon as={Entypo} name="mic" />}
+                borderRadius="full"
+                _icon={{ size: "lg" }}
+              />
+            )}
+          </View>
+
         </View>  
       </View>
 

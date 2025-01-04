@@ -24,16 +24,8 @@ function ChatScreen(){
   const {userId, setUserId} = useContext(UserType);
   const navigation = useNavigation();
   const socket = useRef();
-  const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-
   const onToggle = () => setIsOpen((prev) => !prev);
-
-  useFocusEffect(
-    useCallback(() => {
-      setIsOpen(false); // Close the Stagger
-    }, [])
-  );
 
   const fetchUser = async () => {
     const token = await AsyncStorage.getItem("authToken");
@@ -41,37 +33,49 @@ function ChatScreen(){
     const userId = decodedToken.userId;
     setUserId(userId);
 
-    // Fetch initial data via API calls
     try {
       const response = await axios.get(
           `${mainURL}/get-all-friends/${userId}`
       );
-      // console.log(response.data)
       if (response.status === 200) {
           setFriendsData(response.data);
 
-          const friendsData = response.data.friends || [];  // Access 'friends' array directly
+          const friendsData = response.data.friends || [];  
           const pinnedChats = response.data.pinnedChats || [];
+          const groupsData = response.data.groups || [];
+          const groupMembershipsData = response.data.groupMembers || [];
           if (Array.isArray(friendsData)) {
-              // Wait for all last messages to be fetched
               const updatedFriends = await Promise.all(
                   friendsData.map(async (friend) => {
-                    //console.log(friend._id)
-                      const lastMessage = await fetchLastMessageForFriend(userId,friend._id);
+                    const lastMessage = await fetchLastMessageForFriend(userId, friend._id, 'friend');
+
                       const isPinned = pinnedChats.some(chat => chat._id === friend._id);
 
-                      return { ...friend, lastMessage, isPinned };
+                      return { ...friend, lastMessage, isPinned, type: 'friend' };
                   })
               );
-              updatedFriends.sort((a, b) => {
 
-                  if (a.isPinned && !b.isPinned) return -1; // a comes first
-                  if (!a.isPinned && b.isPinned) return 1;  // b comes first
+              const updatedGroups = await Promise.all(
+                groupsData.map(async (group) => {
+                  const lastMessage = await fetchLastMessageForFriend(null, group._id, 'group');
+
+                    const isPinned = pinnedChats.some(chat => chat._id === group._id);
+
+                    return { ...group, lastMessage, isPinned, type: 'group' };
+                })
+              );
+
+              const combinedData = [...updatedGroups, ...updatedFriends, ...groupMembershipsData];
+
+              combinedData.sort((a, b) => {
+
+                  if (a.isPinned && !b.isPinned) return -1;
+                  if (!a.isPinned && b.isPinned) return 1;  
                   const timestampA = moment(a.lastMessage?.timeStamp);
                   const timestampB = moment(b.lastMessage?.timeStamp);
-                  return timestampB.isBefore(timestampA) ? -1 : 1; // Ascending order
+                  return timestampB.isBefore(timestampA) ? -1 : 1;
               });
-              setFriendsWithLastMessage(updatedFriends);
+              setFriendsWithLastMessage(combinedData);
           } else {
               console.log('Error: Expected friends to be an array but received:', friendsData);
           }
@@ -92,11 +96,14 @@ function ChatScreen(){
     fetchUser();
   }, []);
 
-    const fetchLastMessageForFriend = async (userId,friendId) => {
-    
+    const fetchLastMessageForFriend = async (userId,targetId, type = 'friend') => {
         try {
-            const response = await axios.get(`${mainURL}/get-messages/${userId}/${friendId}`);
-            //console.log(JSON.stringify(response.data, null, 2))
+          const endpoint =
+          type === 'group'
+              ? `${mainURL}/get-group-messages/${targetId}` // Use group-specific endpoint
+              : `${mainURL}/get-messages/${userId}/${targetId}`; // Use friend-specific endpoint
+
+      const response = await axios.get(endpoint);
             const messages = response.data.message.filter(
                 (message) => !message.clearedBy.includes(userId)
             );
@@ -104,39 +111,22 @@ function ChatScreen(){
             return lastMessage;
         } catch (error) {
           if (error.response && error.response.status === 404) {
-            console.log(`No messages found for friend ID ${friendId}`);
-            return null; // No messages found, return null
+            return null; 
           }
           console.error(`Error fetching messages for friend ID ${friendId}:`, error);
           return null;
         }
     };
     
-    // useFocusEffect(
-    //     useCallback(() => {
-    //       // This will be triggered every time the screen comes into focus
-    //       fetchUser();
-      
-    //       // Cleanup function if needed
-    //       return () => {
-    //         console.log('ChatScreen unfocused');
-    //       };
-    //     }, [])
-    //   );
-    
       const handleNewMessage = (data) => {
-        
         setFriendsWithLastMessage((prevFriends) => {
-          // Check if the sender or receiver is already in the friends list
           const friendIndex = prevFriends.findIndex(
             (friend) => friend._id === data.senderId || friend._id === data.receiverId
           );
       
           if (friendIndex === -1) {
-            return prevFriends; // Return the unchanged list if friend is not found
+            return prevFriends;
           }
-      
-          // Update the friend's last message and timestamp
           const updatedFriends = [...prevFriends];
           const friendToUpdate = updatedFriends[friendIndex];
           updatedFriends[friendIndex] = {
@@ -147,8 +137,6 @@ function ChatScreen(){
               timeStamp: data.timestamp,
             },
           };
-      
-          // Move the updated friend to the top of the list
           const reorderedFriends = [
             updatedFriends[friendIndex],
             ...updatedFriends.filter((_, index) => index !== friendIndex),
@@ -160,18 +148,11 @@ function ChatScreen(){
       };
       
     useEffect(() => {
-        // fetchFreinds();
-      
-        // Connect socket and listen for updates
-        socket.current = io(mainURL); // Assuming `mainURL` is your server's base URL
-      
-        // Register the user
+        socket.current = io(mainURL);
         socket.current.emit("registerUser", userId);
-      
-        // Listen for pinnedChatsUpdated event
         socket.current.on("pinnedChatsUpdated", (updatedPinnedChats) => {
       
-          setFriendsData((prevData) => ({
+        setFriendsData((prevData) => ({
             ...prevData,
             friends: prevData.friends.map((friend) => ({
               ...friend,
@@ -183,13 +164,12 @@ function ChatScreen(){
         socket.current.on("update_chat", (data) => {
             handleNewMessage(data);
           });
-        
-        // Clean up on component unmount
         return () => {
           socket.current.disconnect();
         };
       }, [userId]);
       
+      //console.log(JSON.stringify(friendsWithLastMessage, null, 2))
     return(
         <>
         
@@ -207,18 +187,21 @@ function ChatScreen(){
               exit={{ translateY: 34, scale: 0.5, opacity: 0, transition: { duration: 100, 
               stagger: { offset: 30, reverse: true } } }}>
 
-              <IconButton mb="4" variant="solid" bg="indigo.500" colorScheme="indigo" 
+              <IconButton mb="4" variant="solid" bg="blue.500" colorScheme="indigo" 
                   borderRadius="full" icon={<Icon as={Ionicons} size="6" name="people-sharp" 
                   _dark={{ color: "warmGray.50" }} color="warmGray.50" />} onPress={()=>navigation.navigate("FriendRequests")}/>
                     
-              <IconButton mb="4" variant="solid" bg="yellow.400" colorScheme="yellow" 
+              <IconButton mb="4" variant="solid" bg="green.500" colorScheme="yellow" 
+                  borderRadius="full" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 
+                  size="6" name="add-circle-outline" color="warmGray.50" />} onPress={()=>navigation.navigate("AddFriendsToGroup")}/>
+
+              <IconButton mb="4" variant="solid" bg="amber.500" colorScheme="yellow" 
                   borderRadius="full" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 
                   size="6" name="person-add" color="warmGray.50" />} onPress={()=>navigation.navigate("Home")}/>
                     
             </Stagger>
           </Box>
           <HStack position={"absolute"} alignSelf={"flex-end"} bottom={10} right={5} >
-            {/* <Button title="Delete All Messages" onPress={deleteAllMessages} color="#ff0000" /> */}
             <IconButton variant="solid" borderRadius="full" size="lg" onPress={onToggle} bg="cyan.400" icon={<Icon as={MaterialCommunityIcons} size="6" name="dots-horizontal" color="warmGray.50" _dark={{ color: "warmGray.50" }} />} />
           </HStack>
         </>

@@ -16,6 +16,8 @@ import StarredMessagesScreen from './screens/StarredMessagesScreen';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { mainURL } from './Utils/urls';
+import AddFriendsToGroup from './screens/AddFriendsToGroup';
+import UsersProfileScreen from './screens/UsersProfileScreen';
 
 
 export default function App() {
@@ -54,6 +56,8 @@ export default function App() {
             <Stack.Screen name="MessageScreen" component={MessageScreen}  options={{ headerShown: true }}/>
             <Stack.Screen name="MessageForwardScreen" component={ForwardMessagesScreen}  options={{ headerShown: true }}/>
             <Stack.Screen name="StarredMessageScreen" component={StarredMessagesScreen}  options={{ headerShown: true }}/>
+            <Stack.Screen name="AddFriendsToGroup" component={AddFriendsToGroup}  options={{ headerShown: true }}/>
+            <Stack.Screen name="UsersProfileScreen" component={UsersProfileScreen}  options={{ headerShown: false }}/>
           </Stack.Navigator>
           <NotificationHandler />
         </NavigationContainer>
