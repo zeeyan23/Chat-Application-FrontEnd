@@ -1,5 +1,5 @@
 import { Box, Button, Checkbox, Divider, Fab, FormControl, Icon, Input, Popover, Pressable, ScrollView, Stack, Text, View } from "native-base";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { UserType } from "../Context/UserContext";
 import { mainURL } from "../Utils/urls";
 import axios from "axios";
@@ -18,6 +18,11 @@ function AddFriendsToGroup(){
 
     const [formData, setData] = useState({});
 
+    useLayoutEffect(()=>{
+        navigation.setOptions({
+            headerTitle: () => <Text fontSize={"md"} fontWeight={"bold"}> Add Friends to Group</Text>,
+        })
+    },[])
     const fetchUser = async () => {
         try {
             const response = await axios.get(

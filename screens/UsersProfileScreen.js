@@ -74,7 +74,7 @@ function UsersProfileScreen() {
                     </Text>
                     <Divider bg="emerald.500" thickness="2" mx="2" orientation="vertical" />
                     <Text color="trueGray.700" fontSize="md">
-                    {groupData.groupMembers ? groupData.groupMembers.length : 0} Members
+                    {formattedData.length} Members
                     </Text>
                     <Divider bg="emerald.500" thickness="2" mx="2" orientation="vertical" />
                     <Text color="trueGray.700" fontSize="md">
@@ -85,7 +85,7 @@ function UsersProfileScreen() {
         </>
       )}
         <Text color="trueGray.700" fontSize="sm">
-          {groupData?.groupMembers?.length || 0} members
+          {formattedData.length} members
         </Text>
         <FlatList
           data={formattedData}

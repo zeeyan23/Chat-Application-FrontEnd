@@ -18,6 +18,7 @@ import { io } from 'socket.io-client';
 import { mainURL } from './Utils/urls';
 import AddFriendsToGroup from './screens/AddFriendsToGroup';
 import UsersProfileScreen from './screens/UsersProfileScreen';
+import UserSettings from './screens/UserSettings';
 
 
 export default function App() {
@@ -58,6 +59,7 @@ export default function App() {
             <Stack.Screen name="StarredMessageScreen" component={StarredMessagesScreen}  options={{ headerShown: true }}/>
             <Stack.Screen name="AddFriendsToGroup" component={AddFriendsToGroup}  options={{ headerShown: true }}/>
             <Stack.Screen name="UsersProfileScreen" component={UsersProfileScreen}  options={{ headerShown: false }}/>
+            <Stack.Screen name="Settings" component={UserSettings}/>
           </Stack.Navigator>
           <NotificationHandler />
         </NavigationContainer>

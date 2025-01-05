@@ -125,7 +125,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
           </Pressable>;
             }}>
                 <Menu.Item onPress={() => navigation.navigate('StarredMessageScreen')}>Starred Messages</Menu.Item>
-                <Menu.Item>Settings</Menu.Item>
+                <Menu.Item onPress={() => navigation.navigate('Settings')}>Settings</Menu.Item>
             </Menu>
         </Box>,
     });
