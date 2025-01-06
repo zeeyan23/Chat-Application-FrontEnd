@@ -10,14 +10,13 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import io from "socket.io-client";
 import moment from "moment";
 import { useToast } from 'native-base';
+import Ionicons from '@expo/vector-icons/Ionicons';
 function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
   const navigation = useNavigation();
   const {userId, setUserId} = useContext(UserType);
-  const [friendsData, setFriendsData] = useState([]);
   const toast = useToast();
 
   const [showUnPin, setShowUnPin]=useState(false);
-  const [messages, setMessages]=useState([]);
 
   function formatTime(time) {
     const input = moment(time);
@@ -59,40 +58,6 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
     checkChatInDB(updatedChats[0], userId).then(response => {
       setShowUnPin(response);
     });
-    // try {
-    //   const chatId = item._id;
-    //   const isPinned = await checkChatInDB(chatId, userId);
-
-    //   setSelectedChats((prevSelectedChats) => {
-    //     const isSelected = prevSelectedChats.includes(chatId);
-    //     let updatedChats;
-  
-    //     if (isSelected) {
-    //       updatedChats = prevSelectedChats.filter((id) => id !== chatId);
-    //     } else {
-    //       updatedChats = [...prevSelectedChats, chatId];
-    //     }
-  
-    //     if (updatedChats.length > 0) {
-    //       checkChatInDB(updatedChats[0], userId).then((response) => {
-    //         setShowUnPin(response);
-    //       });
-    //     } else {
-    //       setShowUnPin(false);
-    //     }
-  
-    //     return updatedChats;
-    //   });
-    // } catch (error) {
-    //   console.log("Error in handleSelectedChat:", error);
-    //   if (error.response) {
-    //     console.log("Server Error:", error.response.data);
-    //   } else if (error.request) {
-    //     console.log("Network Error:", error.request);
-    //   } else {
-    //     console.log("Other Error:", error.message);
-    //   }
-    // }
   };
   
   useLayoutEffect(() => {
@@ -163,8 +128,6 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
         axios.delete(`${mainURL}/unPinChats/${chatId}/${userId}`)
       );
       const responses = await Promise.all(requests);
-      
-      
       toast.show({description:"Chat Unpinned"})
       setSelectedChats([]); 
       setShowUnPin(false);
@@ -193,21 +156,29 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
   
 
   const handlePress = () => {
+    console.log(item)
     if (item.type === 'friend') {
       navigation.navigate("MessageScreen", {
         userName: item.user_name,
         recipentId: item._id,
+        userImage: item.image
       });
     } else if (item.type === 'group') {
       navigation.navigate("MessageScreen", {
         groupName: item.groupName,
         isGroupChat: true,
-        groupId: item._id
+        groupId: item._id,
+        groupImage : item.image
       });
     }
   };
 
-  //console.log(JSON.stringify(item, null, 2))
+  const baseUrl = `${mainURL}/files/`;
+    const imageUrl = item?.image;
+    const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
+    const filename = normalizedPath.split('/').pop();
+
+    const source =  item.image ? { uri: baseUrl + filename } : null;
   return (
     <Box flex={1} backgroundColor="white">
       <Pressable
@@ -226,8 +197,8 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
             }}
           >
             <HStack space={[2, 3]} justifyContent="space-between">
-              <Avatar size="48px" source={{ uri: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" }} />
-              <VStack alignSelf="center">
+              {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
+              <VStack>
                 <Text fontSize="md" color="black" style={{ fontWeight: "bold" }}>{item.type === 'friend' ? item.user_name : item.groupName}</Text>
                 <Text 
                   style={{ marginTop: 3, color: "gray", fontWeight: "500" }} 

@@ -6,6 +6,7 @@ import { UserType } from "../Context/UserContext";
 import Entypo from '@expo/vector-icons/Entypo';
 import { Image, StyleSheet } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import Ionicons from '@expo/vector-icons/Ionicons';
 function UserSettings(){
 
     const [user, setUser]=useState([]);
@@ -14,8 +15,8 @@ function UserSettings(){
     const [imageChanged, setImageChanged] = useState(false);
 
     const { isOpen, onOpen, onClose } = useDisclose();
-const [editType, setEditType] = useState(""); // To track the type of edit (email or user name)
-const [inputValue, setInputValue] = useState(""); // To hold the input value
+    const [editType, setEditType] = useState(""); // To track the type of edit (email or user name)
+    const [inputValue, setInputValue] = useState(""); // To hold the input value
 
     useEffect(() => {
         fetchUserData();
@@ -135,9 +136,7 @@ const [inputValue, setInputValue] = useState(""); // To hold the input value
                                 {imageChanged || user.image ? (
                                         <Avatar size="2xl" source={source} />
                                     ) : (
-                                        <Text style={{ color: 'black', textAlign: 'center', lineHeight: 130, width:150 }}>
-                                                No Image
-                                        </Text>
+                                        <Ionicons name="person-circle-outline" size={100} color="gray" />
                                     )}
                                 <Box position="absolute" bottom="0" right="2" bg="white" p="1" rounded="full" justifyContent="center" 
                                     alignItems="center">

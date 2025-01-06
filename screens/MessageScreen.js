@@ -63,9 +63,16 @@ const MessageSrceen = () => {
   const [document, setDocument] = useState(null);
   const toast = useToast();
 
-  const { senderId, recipentId, userName,isGroupChat, groupName, groupId } = route.params || {};
+  const { senderId, recipentId, userName,isGroupChat, groupName, groupId,userImage, groupImage } = route.params || {};
   const { highlightedMessageId } = route.params || {};
   
+  const baseUrl = `${mainURL}/files/`;
+  const imageUrl = userImage ? userImage : groupImage;
+  const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
+  const filename = normalizedPath.split('/').pop();
+
+  const source = userImage || groupImage ? { uri: baseUrl + filename } : null;
+
   useEffect(() => {
     fetchMessages();
   }, []);
@@ -75,6 +82,8 @@ const MessageSrceen = () => {
         scrollViewRef.current.scrollToEnd({ animated: true });
     }
   };
+
+
 
   const handleReplyPress = (replyMessageId) => {
     setIsReplyPressed(true); 
@@ -152,14 +161,9 @@ const MessageSrceen = () => {
     socket.current.on("connect", () => {
       socket.current.emit("joinRoom", userId);
       socket.current.emit("joinRoom", groupId);
-
-      // groupMemberships.forEach((group) => {
-      //   socket.current.emit("joinRoom", group.groupId);
-      // });
     });
 
     socket.current.on("newMessage", (message) => {
-      console.log(message)
       setGetMessage((prevMessages) => [...prevMessages, message]);
     });
 
@@ -177,13 +181,6 @@ const MessageSrceen = () => {
       socket.current.disconnect();
     };
   }, [userId]);
-  
- 
-
-  
-  // useEffect(()=>{
-  //     fetchMessages();
-  // },[])
 
   const handleVideoPress = async(videoUrl, item) => {
     
@@ -288,17 +285,11 @@ const MessageSrceen = () => {
             </Text>
           ) : (
             <Box flexDirection="row" alignItems="center" marginLeft={1}>
-              <Image
-                width={30}
-                height={30}
-                borderRadius={15}
-                resizeMode="cover"
-                source={{
-                  uri: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
-                }}
-                style={{ marginHorizontal: 10, width: 30, height: 30, borderRadius: 15 }}
-              />
-              <Pressable width={"64"} onPress={()=>viewUsersProfile(groupId)}>
+              {source ? <Avatar size="35px"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={35} color="gray" />}
+              <Pressable width={"64"} onPress={() => {
+                  if (isGroupChat) {
+                    viewUsersProfile(groupId); 
+                  }}}>
                 {({
                 isHovered,
                 isFocused,
@@ -379,7 +370,6 @@ const MessageSrceen = () => {
   };
 
   const handleStarMessage = async (messageIds) => {
-  
 
     if (messageIds.length > 0) {
       try {
@@ -424,23 +414,6 @@ const MessageSrceen = () => {
     }
   }
 
-  // useEffect(()=>{
-  //     const fetchRecipentData = async()=>{
-  //         try {
-  //             const response = await axios.get(
-  //                 `${mainURL}/user/${recipentId}`).then((res)=>{
-  //                     const data = await response.json();
-  //                     setRecipentData(data);
-  //                 })
-                   
-  //         } catch (error) {
-  //             console.log("Error", error);
-              
-  //         }
-  //     }
-  //     fetchRecipentData();
-  // },[]);
-
   const handleEmojiPress = () => {
     setShowEmojiSelector(!showEmojiSelector);
   };
@@ -451,7 +424,7 @@ const MessageSrceen = () => {
   };
   
   const sendMessage= async(messageType, fileUri, duration, fileName, replyMessageId = replyMessage?._id) =>{
-    console.log(message)
+    
     setIsSending(true); 
     setErrorMessage(""); 
       try {
@@ -836,6 +809,7 @@ const MessageSrceen = () => {
   const handleViewOnceClick = () => {
     setViewOnceSelected(prevState => !prevState);
   };
+  
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#F0F0F0" }}>
       <ScrollView ref={scrollViewRef} contentContainerStyle={{flexGrow:1}} >
@@ -853,6 +827,12 @@ const MessageSrceen = () => {
             const normalizedPath = imageUrl?.replace(/\\/g, "/"); 
             const filename=normalizedPath?.split("/").pop();
             const source = {uri: baseUrl + filename}
+            
+            const profileImageUrl = item?.senderId?.image;
+            const normalizedProfileImagePath = profileImageUrl ? profileImageUrl.replace(/\\/g, '/') : '';
+            const profileImageFilename = normalizedProfileImagePath.split('/').pop();
+
+            const profileImageSource =  item.senderId.image ? { uri: baseUrl + profileImageFilename } : null;
               return(
                 <View key={index}>
                   {showDateSeparator && (
@@ -940,15 +920,17 @@ const MessageSrceen = () => {
                       </Pressable>: null
                     }
                     <Box>
-                      <Box flexDirection={"row"} paddingBottom={2}>
-                        <Avatar size="xs" source={{ uri: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" }} />
-                        <Text
+                    <Box flexDirection={"row"} paddingBottom={2}>
+                        {!item.replyMessage ? profileImageSource ? 
+                          <Avatar size="xs" source={profileImageSource}/> : 
+                          <Ionicons name="person-circle-outline" size={25} color="grey" /> : null}
+                      
+                        {!item.replyMessage && <Text
                           color={"blue.900"} fontWeight={"semibold"} paddingLeft={2}>
                             {item?.senderId?._id ===userId ? "You" : item?.senderId?.user_name}
-                        </Text>
+                        </Text>}
                       </Box>
-                      <Text>{item?.message}</Text>         
-                      
+                      <Text>{item?.message}</Text>
                     </Box>
                     
                     <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>

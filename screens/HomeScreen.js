@@ -41,30 +41,6 @@ function HomeScreen(){
         })
     },[]);
 
-    // useEffect(()=> {
-    //     const fetchUser = async () => {
-    //         const token = await AsyncStorage.getItem("authToken");
-    //         const decodedToken = jwtDecode(token);
-    //         const userId = decodedToken.userId;
-    //         setUserId(userId);
-
-    //         const usersResponse = await axios.get(`${mainURL}/all_users/${userId}`);
-    //         setData(usersResponse.data);
-
-    //         const sentRequestsResponse = await axios.get(`${mainURL}/friend-requests/sent/${userId}`);
-    //         setFriendRequests(sentRequestsResponse.data);
-
-    //         const sentRequestsReceivedResponse = await axios.get(`${mainURL}/friend-requests/received/${userId}`);
-    //         setFriendRequestsReceived(sentRequestsReceivedResponse.data);
-
-    //         const friendsResponse = await axios.get(`${mainURL}/friends/${userId}`);
-    //         setUserFriends(friendsResponse.data);
-
-    //     }
-
-    //     fetchUser();
-    // },[])
-
     useEffect(() => {
         socket.current = io(mainURL);
         socket.current.on("connect", () => {
@@ -123,9 +99,6 @@ function HomeScreen(){
         fetchUser();
     }, []);
 
-    
-
-
     const handleFriendRequest = async(recipent_id)=>{
         try {
         const data={currentUserId: userId, selectedUserId: recipent_id};
@@ -158,15 +131,27 @@ function HomeScreen(){
     //     }
     //   };
 
+    //console.log(JSON.stringify(data, null, 2))
+
+
     return(
         <Box style={styles.container}>
             <Box style={{ flex: 1, width: "100%" }}>
                 <FlatList
                 data={data}
-                renderItem={({ item }) => (
+                renderItem={({ item }) => {
+                    const baseUrl = `${mainURL}/files/`;
+                    const imageUrl = item.image;
+                    const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
+                    const filename = normalizedPath.split('/').pop();
+
+                    const source = item.image 
+                        ? { uri: baseUrl + filename } 
+                        : null;
+                    return(
                     <Box borderBottomWidth="1" borderColor="muted.300" pl={["2", "4"]} pr={["2", "5"]} py="2">
                         <HStack space={[2, 3]} justifyContent="space-between">
-                            <Avatar size="48px" source={{ uri: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" }} />
+                            {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
                             <VStack alignSelf={"center"}>
                                 <Text fontSize="lg" color="black" style={{fontWeight:"bold"}}>{item.user_name}</Text>
                             </VStack>
@@ -215,10 +200,7 @@ function HomeScreen(){
                             )}
                             </Box>
                         </HStack>
-                    </Box>
-                )}
-                keyExtractor={(item) => item._id}
-                />
+                    </Box>)}} keyExtractor={(item) => item._id} />
             </Box>
             <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5} >
                 <Stagger visible={isOpen} initial={{ opacity: 0, scale: 0, translateY: 34 }} 

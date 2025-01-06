@@ -4,6 +4,8 @@ import { mainURL } from "../Utils/urls";
 import axios from "axios";
 import { useContext } from "react";
 import { UserType } from "../Context/UserContext";
+import { Avatar } from "native-base";
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 function ForwardMessagesScreen({ route, navigation }){
 
@@ -32,9 +34,6 @@ function ForwardMessagesScreen({ route, navigation }){
             : [...prevSelected, friendId]
         );
       };
-    
-
-      // Send Forwarded Message
       
       const handleForwardMessage = async () => {
         try {
@@ -60,8 +59,6 @@ function ForwardMessagesScreen({ route, navigation }){
           console.error('Error forwarding messages:', error);
         }
       };
-
-      console.log(JSON.stringify(friends, null, 2))
       
     return(
         <View style={{ flex: 1, padding: 10 }}>
@@ -69,28 +66,30 @@ function ForwardMessagesScreen({ route, navigation }){
             <FlatList
                 data={friends}
                 keyExtractor={(item) => item._id}
-                renderItem={({ item }) => (
-                <Pressable
-                    onPress={() => toggleFriendSelection(item._id)}
-                    style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    marginVertical: 5,
-                    backgroundColor: selectedFriends.includes(item._id) ? '#d3f3fd' : '#fff',
-                    padding: 10,
-                    borderRadius: 10,
-                    }}
-                >
-                    <Image
-                    source={{
-                        uri: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
-                      }}
-                    style={{ width: 40, height: 40, borderRadius: 20, marginRight: 10 }}
-                    />
-                    <Text>{item.user_name}</Text>
-                </Pressable>
-                )}
-            />
+                renderItem={({ item }) => {
+                  const baseUrl = `${mainURL}/files/`;
+                  const imageUrl = item.image;
+                  const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
+                  const filename = normalizedPath.split('/').pop();
+
+                  const source = item.image 
+                      ? { uri: baseUrl + filename } 
+                      : null;
+                  return (
+                    <Pressable
+                        onPress={() => toggleFriendSelection(item._id)}
+                        style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        marginVertical: 5,
+                        backgroundColor: selectedFriends.includes(item._id) ? '#d3f3fd' : '#fff',
+                        padding: 10,
+                        borderRadius: 10,
+                        }}
+                    >
+                        {source ? <Avatar size="48px"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
+                        <Text>{item.user_name}</Text>
+                    </Pressable>)}}/>
 
             {/* Bottom Bar */}
             <View

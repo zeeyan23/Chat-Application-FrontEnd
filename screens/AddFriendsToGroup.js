@@ -1,4 +1,4 @@
-import { Box, Button, Checkbox, Divider, Fab, FormControl, Icon, Input, Popover, Pressable, ScrollView, Stack, Text, View } from "native-base";
+import { Avatar, Box, Button, Checkbox, Divider, Fab, FormControl, Icon, Input, Popover, Pressable, ScrollView, Stack, Text, View } from "native-base";
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { UserType } from "../Context/UserContext";
 import { mainURL } from "../Utils/urls";
@@ -67,7 +67,7 @@ function AddFriendsToGroup(){
         try {
             const response = await axios.patch(`${mainURL}/creategroup/${userId}`, groupData);
             const { group: { _id: groupId, groupName: group_name } } = response.data;
-            console.log(groupId)
+            
             if (groupId) {
                 // Redirect to the MessageScreen with groupId and flag
                 navigation.replace('MessageScreen', {
@@ -88,6 +88,7 @@ function AddFriendsToGroup(){
             }
         }
     }
+    // console.log(JSON.stringify(myfriends.friends, null, 2))
     return(
         <>
             <Box flex={1} background={"white"}>
@@ -98,7 +99,16 @@ function AddFriendsToGroup(){
                         keyExtractor={(item) => item._id}
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        renderItem={({ item }) => (
+                        renderItem={({ item }) => {
+                            const baseUrl = `${mainURL}/files/`;
+                            const imageUrl = item.image;
+                            const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
+                            const filename = normalizedPath.split('/').pop();
+
+                            const source = item.image 
+                                ? { uri: baseUrl + filename } 
+                                : null;
+                            return (
                             <Box
                                 borderRadius="full"
                                 mx={2}
@@ -106,16 +116,10 @@ function AddFriendsToGroup(){
                                 alignItems="center"
                                 justifyContent="center"
                             >
-                                <Image
-                                    source={{
-                                        uri: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
-                                    }}
-                                    style={{ width: 40, height: 40, borderRadius: 20 }}
-                                />
+                                {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
                                 <Text>{item.user_name}</Text>
                             </Box>
-                        )}
-                    />
+                            )}}/>
                     {seletedFriends.length > 0 && <Divider bg="gray.300" thickness="1" orientation="horizontal" />}
                 </Box>
                 <Box padding={2}>
@@ -125,19 +129,26 @@ function AddFriendsToGroup(){
                         keyExtractor={(item) => item._id}
                         contentContainerStyle={{ paddingBottom: 10 }} 
                         style={{height: seletedFriends.length > 0 ? "80%" : "95%"}}
-                        renderItem={({ item }) => (
+                        renderItem={({ item }) => {
+                           
+                            const baseUrl = `${mainURL}/files/`;
+                            const imageUrl = item?.image;
+                            const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
+                            const filename = normalizedPath.split('/').pop();
+
+                            const source = item?.image 
+                                ? { uri: baseUrl + filename } 
+                                : null;
+                            return(
+                                <Pressable onPress={()=>addToGroupMemeberList(item)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5, padding: 10, borderRadius: 10,}}>
+                                    {source ? <Image style={{ width: 40, height: 40, borderRadius: 20, marginRight: 10 }}  source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
+                                        {seletedFriends.includes(item._id) && <Checkbox colorScheme="green" position={"absolute"}  right={0} borderRadius={"full"} 
+                                            isChecked={seletedFriends.includes(item._id)} onChange={() => addToGroupMemeberList(item)}></Checkbox>}
+                                    <Text>{item.user_name}</Text>
+                                </Pressable>
+                            )
                         
-                            <Pressable onPress={()=>addToGroupMemeberList(item)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5, padding: 10, borderRadius: 10,}}>
-                                <Image
-                                    source={{
-                                        uri: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
-                                    }} style={{ width: 40, height: 40, borderRadius: 20, marginRight: 10 }}/>
-                                    {seletedFriends.includes(item._id) && <Checkbox colorScheme="green" position={"absolute"}  right={0} borderRadius={"full"} 
-                                        isChecked={seletedFriends.includes(item._id)} onChange={() => addToGroupMemeberList(item)}></Checkbox>}
-                                <Text>{item.user_name}</Text>
-                            </Pressable>
-                        
-                        )}
+                        }}
                     />
                 </Box>
             </Box>
