@@ -23,7 +23,6 @@ function RegisterScreen(){
         setData({ ...formData, password: enteredValue });
     }
 
-
     async function createAccount(){
         navigation.navigate('Login');
         try {

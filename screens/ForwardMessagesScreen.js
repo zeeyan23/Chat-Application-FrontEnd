@@ -10,16 +10,15 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 function ForwardMessagesScreen({ route, navigation }){
 
     const { seletedMessages } = route.params;
-    const [friends, setFriends] = useState([]); // List of friends
-    const [selectedFriends, setSelectedFriends] = useState([]); // Friends selected for forwarding
+    const [friends, setFriends] = useState([]); 
+    const [selectedFriends, setSelectedFriends] = useState([]); 
     const {userId, setUserId} = useContext(UserType);
 
-    // Fetch sender's friends
     useEffect(() => {
         const fetchFriends = async () => {
         try {
             const response = await axios.get(`${mainURL}/get-all-friends/${userId}`);
-            setFriends(response.data.friends); // Replace with appropriate API
+            setFriends(response.data.friends); 
         } catch (error) {
             console.error('Error fetching friends:', error);
         }
@@ -62,7 +61,6 @@ function ForwardMessagesScreen({ route, navigation }){
       
     return(
         <View style={{ flex: 1, padding: 10 }}>
-            {/* Friend List */}
             <FlatList
                 data={friends}
                 keyExtractor={(item) => item._id}
@@ -90,34 +88,28 @@ function ForwardMessagesScreen({ route, navigation }){
                         {source ? <Avatar size="48px"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
                         <Text>{item.user_name}</Text>
                     </Pressable>)}}/>
-
-            {/* Bottom Bar */}
-            <View
-                style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderTopWidth: 1,
-                padding: 10,
-                }}
-            >
-                {/* Selected Friends */}
-                <FlatList
-                horizontal
-                data={friends.filter((f) => selectedFriends.includes(f._id))}
-                keyExtractor={(item) => item._id}
-                renderItem={({ item }) => (
-                    <Text style={{ marginHorizontal: 5 }}>{item.user_name}</Text>
-                )}
-                />
-
-                {/* Send Button */}
-                <Button
-                title="Send"
-                onPress={handleForwardMessage}
-                disabled={selectedFriends.length === 0}
-                />
-            </View>
+                    <View
+                        style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        borderTopWidth: 1,
+                        padding: 10,
+                        }}>
+                        <FlatList
+                        horizontal
+                        data={friends.filter((f) => selectedFriends.includes(f._id))}
+                        keyExtractor={(item) => item._id}
+                        renderItem={({ item }) => (
+                            <Text style={{ marginHorizontal: 5 }}>{item.user_name}</Text>
+                        )}
+                        />
+                        <Button
+                        title="Send"
+                        onPress={handleForwardMessage}
+                        disabled={selectedFriends.length === 0}
+                        />
+                    </View>
         </View>
     );
 }

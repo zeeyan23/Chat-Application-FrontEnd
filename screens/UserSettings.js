@@ -11,12 +11,12 @@ function UserSettings(){
 
     const [user, setUser]=useState([]);
     const {userId, setUserId} = useContext(UserType);
+    const { isOpen, onOpen, onClose } = useDisclose();
+    const [editType, setEditType] = useState(""); 
+    const [inputValue, setInputValue] = useState("");
+
     const [selectedFile, setSelectedFile] = useState(null);
     const [imageChanged, setImageChanged] = useState(false);
-
-    const { isOpen, onOpen, onClose } = useDisclose();
-    const [editType, setEditType] = useState(""); // To track the type of edit (email or user name)
-    const [inputValue, setInputValue] = useState(""); // To hold the input value
 
     useEffect(() => {
         fetchUserData();
@@ -117,8 +117,6 @@ function UserSettings(){
     const imageUrl = user.image;
     const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
     const filename = normalizedPath.split('/').pop();
-    //const source = { uri: baseUrl + filename };
-
     const source = selectedFile?.uri 
     ? { uri: selectedFile.uri } 
     : user.image 
@@ -126,7 +124,6 @@ function UserSettings(){
         : null;
     return(
         <>
-            
             <Box flex={1} flexDirection="column" width={"full"} padding={5}  background="white" >
                 <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>
                     <Pressable onPress={handleImage}>
@@ -145,13 +142,11 @@ function UserSettings(){
                             </Box>
                         }}
                     </Pressable>
-                    
-                    
                     <Pressable onPress={() => {
-        setEditType("user_name"); // Set edit type to user name
-        setInputValue(user.user_name); // Pre-fill input with current user name
-        onOpen(); // Open Actionsheet
-      }}>
+                      setEditType("user_name"); 
+                      setInputValue(user.user_name); 
+                      onOpen();
+                    }}>
                         {({ isHovered, isFocused, isPressed }) => {
                             return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'white'} p="3" rounded="8" style={{
                                 transform: [{ scale: isPressed ? 0.96 : 1}]}}>
@@ -162,11 +157,11 @@ function UserSettings(){
                         }}
                     </Pressable>
                 </Box>
-                <Pressable onPress={() => {
-        setEditType("email"); // Set edit type to email
-        setInputValue(user.email); // Pre-fill input with current email
-        onOpen(); // Open Actionsheet
-      }}>
+                    <Pressable onPress={() => {
+                      setEditType("email"); 
+                      setInputValue(user.email); 
+                      onOpen();
+                    }}>
                     {({ isHovered, isFocused, isPressed }) => {
                         return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'white'} p="3" rounded="8" style={{
                             transform: [{ scale: isPressed ? 0.96 : 1}]}}>
@@ -185,47 +180,40 @@ function UserSettings(){
                 </Pressable>
             </Box>
             <Actionsheet isOpen={isOpen} onClose={onClose}>
-      <Actionsheet.Content>
-        <Box w="100%" px={4} py={2}>
-          <Text fontSize="16" color="gray.500">
-            Edit {editType === "user_name" ? "User Name" : "Email Address"}
-          </Text>
-        </Box>
-        {/* Input Field */}
-        <Box w="100%" px={4} py={2}>
-          <Input
-            placeholder={`Enter new ${editType === "user_name" ? "user name" : "email address"}`}
-            value={inputValue}
-            onChangeText={(text) => setInputValue(text)}
-          />
-        </Box>
-        {/* Save Button */}
-        <Actionsheet.Item
-          onPress={async () => {
-            const result = await saveUserChanges(user._id, editType, inputValue);
-        
-            if (result.success) {
-              // Update the local state to reflect changes
-              if (editType === "user_name") {
-                user.user_name = inputValue;
-              } else if (editType === "email") {
-                user.email = inputValue;
-              }
-              console.log("User updated locally:", user);
-            } else {
-              console.error("Failed to update user:", result.error);
-              // Optionally, show an error message to the user
-            }
-        
-            onClose(); // Close the Actionsheet
-          }}
-        >
-          Save
-        </Actionsheet.Item>
-        {/* Cancel Button */}
-        <Actionsheet.Item onPress={onClose}>Cancel</Actionsheet.Item>
-      </Actionsheet.Content>
-    </Actionsheet>
+              <Actionsheet.Content>
+                <Box w="100%" px={4} py={2}>
+                  <Text fontSize="16" color="gray.500">
+                    Edit {editType === "user_name" ? "User Name" : "Email Address"}
+                  </Text>
+                </Box>
+                <Box w="100%" px={4} py={2}>
+                  <Input
+                    placeholder={`Enter new ${editType === "user_name" ? "user name" : "email address"}`}
+                    value={inputValue}
+                    onChangeText={(text) => setInputValue(text)}
+                  />
+                </Box>
+                <Actionsheet.Item
+                  onPress={async () => {
+                    const result = await saveUserChanges(user._id, editType, inputValue);                
+                    if (result.success) {
+                      if (editType === "user_name") {
+                        user.user_name = inputValue;
+                      } else if (editType === "email") {
+                        user.email = inputValue;
+                      }
+                      console.log("User updated locally:", user);
+                    } else {
+                      console.error("Failed to update user:", result.error);
+                    }
+                    onClose();
+                  }}
+                >
+                  Save
+                </Actionsheet.Item>
+                <Actionsheet.Item onPress={onClose}>Cancel</Actionsheet.Item>
+              </Actionsheet.Content>
+            </Actionsheet>
         </>
     )
 }

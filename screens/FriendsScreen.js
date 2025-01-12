@@ -10,12 +10,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 function FriendsScreen(){
 
     const [friendRequestsData, setFriendRequestsData] = useState([]);
+
     const {userId, setUserId} = useContext(UserType);
+    const navigation = useNavigation();
+
     useEffect(()=>{
         fetchFreindRequests();
     },[]);
-    const navigation = useNavigation();
-
+    
     const fetchFreindRequests= async()=>{
         try {
             const response = await axios.get(

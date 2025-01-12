@@ -1,19 +1,34 @@
-import {
-  StyleSheet,
-  View,
-  ScrollView,
-  KeyboardAvoidingView,
-  TextInput,
-  Image,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  Modal,
-  Platform,
-  Alert,
-  BackHandler,
-  Linking,
-} from "react-native";
-import React, { useState, useContext, useLayoutEffect, useEffect,useRef } from "react";
+/**
+ * MessageScreen.js
+ *
+ * This file contains a custom audio player component. 
+ * The audio slider functionality has been implemented based on code from:
+ * 
+ * Copyright (c) 2021 Vincent Lohse
+ * 
+ * Based on code from https://github.com/olapiv/expo-audio-player/
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+import { StyleSheet, View, ScrollView, KeyboardAvoidingView, TextInput, Image, Modal, Platform,Linking,} from "react-native";
+import React, { useState, useContext, useLayoutEffect, useEffect,useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
 import EmojiSelector from "react-native-emoji-selector";
@@ -21,13 +36,20 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserType } from "../Context/UserContext";
 import axios from "axios";
 import { mainURL } from "../Utils/urls";
-import { Box,Button,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable, useToast, Avatar } from "native-base";
+import { Box,Button,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable, useToast, Avatar, Spacer, Divider, Flex } from "native-base";
 import * as ImagePicker from "expo-image-picker"
-import { ResizeMode, Video } from 'expo-av';
+import { ResizeMode, Video, Audio } from 'expo-av';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { io } from "socket.io-client";
 import moment from 'moment';
 import * as DocumentPicker from 'expo-document-picker';
+import Svg, { Path, Rect } from 'react-native-svg';
+import Animated, { useSharedValue, useAnimatedProps, withTiming } from 'react-native-reanimated';
+import Slider from '@react-native-community/slider';
+import * as FileSystem from 'expo-file-system';
+import throttle from "lodash.throttle";
+import AudioSlider from "../components/AudioSlider";
+
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -39,6 +61,9 @@ const MessageSrceen = () => {
   const [selectedFile, setSelectedFile] = useState(null); // Store the selected file
   const [messageType, setMessageType] = useState(null);
  
+  const [recording, setRecording] = useState(null);
+  const [recordingUri, setRecordingUri] = useState(null);
+  const [sound, setSound] = useState();
 
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState("")
@@ -47,7 +72,6 @@ const MessageSrceen = () => {
   const [starredMessages, setStarredMessages] = useState([]);
   const [getMessage, setGetMessage]=useState([]);
   const [seletedMessages,setSelectedMessages]=useState([]);
-  // const [recipentData, setRecipentData]= useState([]);
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -77,13 +101,17 @@ const MessageSrceen = () => {
     fetchMessages();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      sound?.unloadAsync();
+    };
+  }, [sound]);
+  
   const scrollToBottom = () => {
     if (scrollViewRef.current) {
         scrollViewRef.current.scrollToEnd({ animated: true });
     }
   };
-
-
 
   const handleReplyPress = (replyMessageId) => {
     setIsReplyPressed(true); 
@@ -110,7 +138,6 @@ const MessageSrceen = () => {
         scrollToBottom();
     }
   }, [getMessage, isReplyPressed]);
-
 
   const fetchMessages = async()=>{
     try {
@@ -370,6 +397,7 @@ const MessageSrceen = () => {
   };
 
   const handleStarMessage = async (messageIds) => {
+    console.log(messageIds)
 
     if (messageIds.length > 0) {
       try {
@@ -424,7 +452,7 @@ const MessageSrceen = () => {
   };
   
   const sendMessage= async(messageType, fileUri, duration, fileName, replyMessageId = replyMessage?._id) =>{
-    
+
     setIsSending(true); 
     setErrorMessage(""); 
       try {
@@ -439,6 +467,7 @@ const MessageSrceen = () => {
           if (replyMessageId) {
             formData.append("replyMessage", replyMessageId);
           }
+          
           
           if (messageType === "image" || messageType === "video") {
             formData.append("messageType", messageType);
@@ -466,6 +495,15 @@ const MessageSrceen = () => {
               type: `application/${messageType === "docx" ? "docx" : messageType}`,
             });
             formData.append("fileName", fileName);
+          } else if (messageType === "audio") {
+            formData.append("messageType", messageType);
+            formData.append("duration", duration);
+            formData.append("file", {
+              uri: fileUri,
+              name: "audio.3gp", 
+              type: "audio/3gp",  
+              
+            });
           }
           else {
               // Default to text if no file type is provided
@@ -477,6 +515,7 @@ const MessageSrceen = () => {
             formData.append("isGroupChat", isGroupChat);
             formData.append("groupId", groupId);
           }
+
           const response = await axios.post(
               `${mainURL}/messages/`,
               formData,
@@ -486,7 +525,6 @@ const MessageSrceen = () => {
                     },
               }
           )
-  
           setMessage("");
           setSelectedImage("");
           setReplyMessage(null);
@@ -510,8 +548,6 @@ const MessageSrceen = () => {
             });
           }
           
-          
-      
       } catch (error) {
           if (error.response) {
               console.log('Server Error:', error.response.data); 
@@ -527,7 +563,6 @@ const MessageSrceen = () => {
         setIsSending(false);
       }
   }
-
 
   function formatTime(time){
       const options= {hour: "numeric", minute:"numeric"}
@@ -559,7 +594,6 @@ const MessageSrceen = () => {
             duration: asset.duration || null, // Only for video
             fileName: asset.fileName || null,
           });
-          //sendMessage(isVideo ? "video" : "image", asset.uri, asset.duration, asset.fileName);
       }
   }
 
@@ -652,13 +686,13 @@ const MessageSrceen = () => {
       }
     } catch (error) {
       console.log('Error:', error); // Log error details
-            if (error.response) {
-                console.log('Server Error:', error.response.data); // Server-side error
-            } else if (error.request) {
-                console.log('Network Error:', error.request); // Network-related issue
-            } else {
-                console.log('Other Error:', error.message); // Any other error
-            }
+      if (error.response) {
+          console.log('Server Error:', error.response.data); // Server-side error
+      } else if (error.request) {
+          console.log('Network Error:', error.request); // Network-related issue
+      } else {
+          console.log('Other Error:', error.message); // Any other error
+      }
     }
     
   }
@@ -810,10 +844,120 @@ const MessageSrceen = () => {
     setViewOnceSelected(prevState => !prevState);
   };
   
+  let isRecordingInProgress = false; // Add a flag to prevent simultaneous calls
+
+  const voiceRecordHandle = async () => {
+    console.log("Voice recording started");
+
+    if (isRecordingInProgress) {
+      console.log("Recording is already in progress.");
+      return;
+    }
+
+    try {
+      isRecordingInProgress = true;
+
+      if (recording) {
+        console.log("Stopping the previous recording...");
+        await recording.stopAndUnloadAsync();
+        setRecording(null);
+      }
+
+      const { granted } = await Audio.requestPermissionsAsync();
+      if (!granted) {
+        alert("You need to enable microphone permissions to use this feature.");
+        isRecordingInProgress = false;
+        return;
+      }
+
+      // Prepare for recording
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const newRecording = new Audio.Recording();
+      await newRecording.prepareToRecordAsync(
+        Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
+      );
+      await newRecording.startAsync();
+      setRecording(newRecording);
+
+      console.log("Recording started successfully.");
+    } catch (err) {
+      console.error("Failed to start recording", err);
+    } finally {
+      isRecordingInProgress = false;
+    }
+  };
+
+  const getFileSize = async (fileUri) => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (fileInfo.exists) {
+        console.log("File Size in Bytes:", fileInfo.size);
+        return fileInfo.size; // Size in bytes
+      } else {
+        console.log("File does not exist.");
+      }
+    } catch (err) {
+      console.error("Failed to get file size:", err);
+    }
+  };
+  
+  const getAudioDuration = async (uri) => {
+    try {
+      const { sound, status } = await Audio.Sound.createAsync({ uri });
+      if (status.isLoaded) {
+        await sound.unloadAsync(); // Unload after retrieving duration
+        return status.durationMillis;
+      } else {
+        console.log("Failed to load audio file for duration.");
+      }
+    } catch (error) {
+      console.error("Error retrieving audio duration:", error);
+    }
+  };
+
+  const voiceStopRecordHandle = async () => {
+    if (!recording) {
+      console.log("No recording is in progress.");
+      return;
+    }
+
+    try {
+      await recording.stopAndUnloadAsync(); 
+      const uri = recording.getURI(); 
+      setRecordingUri(uri);
+      setRecording(null);
+
+      if (!uri) {
+        console.log("Recording URI not available. The recording might not have been stopped properly.");
+        return;
+      }
+
+      const recordingStatus = await recording.getStatusAsync();
+      console.log("recordingStatus",recordingStatus)
+      const duration = await getAudioDuration(uri);
+      if (duration) {
+        console.log("Audio Duration (ms):", duration);
+      }
+
+      getFileSize(recording._uri);
+      const fileExtension = uri.split('.').pop();
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      const fileName = `audio_${Date.now()}.m4a`;
+      sendMessage("audio", uri, duration, fileName);
+    } catch (err) {
+      console.error("Failed to stop recording", err);
+    }
+  };
+
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#F0F0F0" }}>
       <ScrollView ref={scrollViewRef} contentContainerStyle={{flexGrow:1}} >
         { getMessage.map((item, index)=>{
+          
           const currentDate = formatDate(item.timeStamp); // Use the utility function
           const previousDate =
             index > 0 ? formatDate(getMessage[index - 1].timeStamp) : null;
@@ -821,7 +965,6 @@ const MessageSrceen = () => {
           
           if(item.messageType === 'text'){
             const isSelected = seletedMessages.includes(item._id)
-            const isRepliedMessage = highlightedMessageId === item._id;
             const baseUrl = `${mainURL}/files/`;
             const imageUrl= item.replyMessage?.imageUrl;
             const normalizedPath = imageUrl?.replace(/\\/g, "/"); 
@@ -901,7 +1044,23 @@ const MessageSrceen = () => {
                             </Box>
                           </Box>
                           
-                      </Pressable>: item.replyMessage?.messageType==='pdf' || item.replyMessage?.messageType==='docx' ||
+                      </Pressable>: item.replyMessage?.messageType==='audio' ? 
+                      <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
+                        style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",padding:2}}>
+                          <Box >
+                            <Flex direction="row" h="38"alignItems="center"  >
+                              <Entypo name="mic" size={10} color="black" style={{paddingHorizontal:5}}/>
+                              
+                              <Text 
+                                style={{ fontSize: 12, fontWeight: "500", color: "#333" }} >
+                                 voice message
+                              </Text>
+                              <Divider bg="black" thickness="2" mx="1" h={5} orientation="vertical" />
+                              <Text style={{ fontSize: 12, fontWeight: "500", color: "#333" }}>{formatDuration(item.replyMessage.duration)}</Text>
+                            </Flex>
+                          </Box>
+                          
+                      </Pressable> : item.replyMessage?.messageType==='pdf' || item.replyMessage?.messageType==='docx' ||
                       item.replyMessage?.messageType==='pptx' || item.replyMessage?.messageType==='zip' || item.replyMessage?.messageType==='xlsx' ?
                       <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
                         style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",padding:2}}>
@@ -992,7 +1151,6 @@ const MessageSrceen = () => {
                   {item.imageViewOnce ? (
                     <Box flexDirection="row"alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2} >
                       <MaterialCommunityIcons
-                        //name="numeric-1-circle"
                         name={item.imageViewed ? 'circle' : 'numeric-1-circle-outline'}
                         size={14}
                         color={item.imageViewed ? 'grey' : '#219BC7'}
@@ -1040,8 +1198,6 @@ const MessageSrceen = () => {
                       />
                     )}
                   </Box>
-
-
             </Pressable>
             </View>
             )
@@ -1070,23 +1226,23 @@ const MessageSrceen = () => {
                       {currentDate}
                     </Text>
                   )}
-              <Pressable key={index} style={[
-                  item?.senderId?._id ===userId ? {
-                      alignSelf:'flex-end',
-                      backgroundColor:'#29F200',
-                      padding:8,
-                      maxWidth:'60%',
-                      margin:10,
-                      borderRadius:7
-                  } : {
-                      alignSelf:'flex-start',
-                      backgroundColor:'white',
-                      padding:8,
-                      margin:10,
-                      maxWidth:'60%',
-                      borderRadius:7
-                  }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-              ]} onPress={() => handleVideoPress(source,item)}  onLongPress={()=> handleSelectedMessage(item)}>
+                  <Pressable key={index} style={[
+                      item?.senderId?._id ===userId ? {
+                          alignSelf:'flex-end',
+                          backgroundColor:'#29F200',
+                          padding:8,
+                          maxWidth:'60%',
+                          margin:10,
+                          borderRadius:7
+                      } : {
+                          alignSelf:'flex-start',
+                          backgroundColor:'white',
+                          padding:8,
+                          margin:10,
+                          maxWidth:'60%',
+                          borderRadius:7
+                      }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                  ]} onPress={() => handleVideoPress(source,item)}  onLongPress={()=> handleSelectedMessage(item)}>
                     
                         {item.videoViewOnce ? (
                         <Box flexDirection="row"alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2} >
@@ -1210,6 +1366,77 @@ const MessageSrceen = () => {
                     </Pressable>
                 </View>
               );}
+            if(item.messageType==="audio"){
+              const baseUrl = `${mainURL}/files/`;
+              const audioUrl= item.audioUrl;
+              const normalizedPath = audioUrl.replace(/\\/g, "/"); 
+              const filename=normalizedPath.split("/").pop();
+              const source = {uri: baseUrl + filename}
+
+              return(
+                <View key={index}>
+                    {showDateSeparator && (
+                      <Text style={{alignSelf: 'center',backgroundColor: '#333',color: 'white',padding: 5, borderRadius: 10, marginVertical: 10,}}>
+                        {currentDate}
+                      </Text>
+                    )}
+                    <Pressable
+                      
+                      key={index}
+                      style={[
+                          item?.senderId?._id ===userId ? {
+                              alignSelf:'flex-end',
+                              backgroundColor:'#29F200',
+                              padding:8,
+                              maxWidth:'60%',
+                              margin:10,
+                              borderRadius:7
+                          } : {
+                              alignSelf:'flex-start',
+                              backgroundColor:'white',
+                              padding:8,
+                              margin:10,
+                              maxWidth:'60%',
+                              borderRadius:7
+                          }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                      ]} onLongPress={() => handleSelectedMessage(item)}>
+                      <View >
+                          <AudioSlider audio={source}/>
+                      </View>
+                      <Box flexDirection="row" justifyContent="space-between" alignItems="center">
+                        <Text 
+                          style={[
+                            styles.infoText,
+                            { color: item?.senderId?._id === userId ? "white" : "black" }
+                          ]}
+                        >
+                          {formatDuration(item.duration)}
+                        </Text>
+
+                        <Box flexDirection="row" alignItems="center">
+                          <Text 
+                            style={[
+                              styles.infoText,
+                              { color: item?.senderId?._id === userId ? "white" : "black" }
+                            ]}
+                          >
+                            {formatTime(item.created_date)}
+                          </Text>
+                          {item?.starredBy[0] === userId && (
+                            <Entypo 
+                              name="star" 
+                              size={14}  
+                              color="#828282"  
+                              style={{ left: 5, top: 2 }}
+                            />
+                          )}
+                        </Box>
+                      </Box>
+
+                    </Pressable>
+                </View>
+              )
+            }
         })}
         {isSending && (
             <HStack space={2} justifyContent="flex-end" paddingRight={5}>
@@ -1273,7 +1500,7 @@ const MessageSrceen = () => {
               value={
                 selectedFile
                   ? selectedFile.fileName || (messageType === "image" ? "Image" : "Video")
-                  : replyMessage || message
+                  : replyMessage || message 
               }
               onChangeText={handleInputChange}
               style={{
@@ -1298,8 +1525,6 @@ const MessageSrceen = () => {
                       onPress={handleImage}
                     />
                   )}
-
-
                   <IconButton
                     icon={<Icon as={Entypo} name="attachment" />}
                     borderRadius="full"
@@ -1309,8 +1534,6 @@ const MessageSrceen = () => {
                   
                 </View>
               }
-            
-
             {selectedFile ? (
               <>
               <IconButton
@@ -1336,9 +1559,19 @@ const MessageSrceen = () => {
               />
             ) : (
               <IconButton
-                icon={<Icon as={Entypo} name="mic" />}
+                icon={<Icon as={Entypo} name="mic" color={"white"}/>}
                 borderRadius="full"
-                _icon={{ size: "lg" }}
+                background={"green.800"}
+                _icon={{ size: "lg", color: "green" }}
+                _pressed={{
+                  transform: [{ scale: 1.5 }],
+                }}
+                onPressIn={() => {
+                  setTimeout(() => voiceRecordHandle(), 200); 
+                }}
+                onPressOut={() => {
+                  setTimeout(() => voiceStopRecordHandle(), 500); 
+                }}
               />
             )}
           </View>
@@ -1361,21 +1594,24 @@ const MessageSrceen = () => {
 export default MessageSrceen;
 
 const styles = StyleSheet.create({
-
-  boxContainer: {
-    flexDirection: 'column', 
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
   },
-  fileName: {
-    flex: 1, // Take remaining space
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: 'white',
+  input: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#dddddd",
+    borderRadius: 20,
+    paddingHorizontal: 10,
   },
-  infoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  buttonRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
+ 
   infoText: {
     fontSize: 10,
     textAlign:'right',
@@ -1401,14 +1637,14 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius:100
   },
-  closeText: {
-    color: "#fff",
-    fontSize: 16,
-  },
 
   fullScreenImage: {
     width: '100%', // Full width of the screen
     height: '100%', // Full height of the screen
     resizeMode: 'contain', // Maintain aspect ratio of the image
+  },
+  slider: {
+    width: '90%',
+    height: 40,
   },
 });

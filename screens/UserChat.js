@@ -98,13 +98,12 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
   
   const pinChats = async (selectedChats) => {
     const formData = {
-      userId: userId, // Replace with the logged-in user's ID
+      userId: userId,
       pinnedChats: Array.isArray(selectedChats) ? selectedChats : [selectedChats],
     };
     try {
       const response = await axios.patch(`${mainURL}/updatePinnedChats`, formData);
       setSelectedChats([]);
-      //onPinUpdate();
       toast.show({description:"Chat Pinned"})
       if (onPinUpdate) {
         onPinUpdate();
@@ -154,9 +153,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
       : text;
   };
   
-
   const handlePress = () => {
-    console.log(item)
     if (item.type === 'friend') {
       navigation.navigate("MessageScreen", {
         userName: item.user_name,

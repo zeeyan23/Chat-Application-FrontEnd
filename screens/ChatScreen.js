@@ -17,7 +17,6 @@ import { Entypo, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icon
 function ChatScreen(){
 
   const [friendsData, setFriendsData]=useState([]);
-  const [messages, setMessages]=useState([]);
   const [selectedChats, setSelectedChats] = useState([]);
   const [friendsWithLastMessage, setFriendsWithLastMessage] = useState([]);
 
@@ -25,6 +24,7 @@ function ChatScreen(){
   const navigation = useNavigation();
   const socket = useRef();
   const [isOpen, setIsOpen] = useState(false);
+  
   const onToggle = () => setIsOpen((prev) => !prev);
 
   const fetchUser = async () => {

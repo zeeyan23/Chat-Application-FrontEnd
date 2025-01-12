@@ -5,12 +5,19 @@ import { mainURL } from "../Utils/urls";
 import axios from "axios";
 import Entypo from '@expo/vector-icons/Entypo';
 import { Image, Modal, StyleSheet, View } from "react-native";
-import { ResizeMode, Video } from 'expo-av';
+import { Audio, ResizeMode, Video } from 'expo-av';
+import Slider from "@react-native-community/slider";
+import { Ionicons } from "@expo/vector-icons";
 
 function StarredMessagesScreen({navigation}){
 
     const {userId, setUserId} = useContext(UserType);
+    const [sound, setSound] = useState();
+    const [audioStates, setAudioStates] = useState({});
+    
     const [starredMessages, setStarredMessages]=useState([]);
+
+    const [currentlyPlayingId, setCurrentlyPlayingId] = useState(null);
 
     useLayoutEffect(()=>{
         navigation.setOptions({
@@ -45,6 +52,72 @@ function StarredMessagesScreen({navigation}){
             ? `${minutes} min ${seconds} sec`
             : `${seconds} sec`;
       };
+
+    const updateAudioState = (id, updates) => {
+        setAudioStates((prevState) => ({
+          ...prevState,
+          [id]: {
+            ...(prevState[id] || { isPlaying: false, currentPosition: 0, duration: 0 }),
+            ...updates,
+          },
+        }));
+      };
+    
+      const playSound = async (source, item) => {
+        const itemId = item._id;
+    
+        console.log(itemId)
+        try {
+          // Stop currently playing audio
+          if (currentlyPlayingId && currentlyPlayingId !== itemId) {
+            await sound?.unloadAsync();
+            updateAudioState(currentlyPlayingId, { isPlaying: false });
+          }
+      
+          // Play selected audio
+          if (currentlyPlayingId !== itemId) {
+            const { sound: newSound, status } = await Audio.Sound.createAsync(source);
+            setSound(newSound);
+            setCurrentlyPlayingId(itemId);
+            console.log("Audio Duration (ms):", status.durationMillis);
+    
+            updateAudioState(itemId, {
+              isPlaying: true,
+              duration: status.durationMillis,
+            });
+      
+            newSound.setOnPlaybackStatusUpdate((status) => {
+              if (status.isLoaded) {
+                updateAudioState(itemId, {
+                  currentPosition: status.positionMillis,
+                });
+      
+                if (status.didJustFinish) {
+                  updateAudioState(itemId, { isPlaying: false, currentPosition: 0 });
+                  setCurrentlyPlayingId(null);
+                  newSound.unloadAsync();
+                }
+              }
+            });
+      
+            await newSound.playAsync();
+          }
+        } catch (error) {
+          console.error("Error playing audio:", error);
+        }
+      };
+      
+      const pauseSound = async (item) => {
+        const itemId = item._id;
+      
+        if (currentlyPlayingId === itemId && sound) {
+          await sound.pauseAsync();
+          updateAudioState(itemId, { isPlaying: false });
+          setCurrentlyPlayingId(null);
+        }
+      };
+    
+      console.log(JSON.stringify(starredMessages, null, 2))
     return(
         <Box flex={1} background={"white"}>
             <FlatList
@@ -62,6 +135,13 @@ function StarredMessagesScreen({navigation}){
                             const baseUrl = `${mainURL}/files/`;
                             const videoUrl = item.videoUrl;
                             const normalizedPath = videoUrl.replace(/\\/g, "/");
+                            const filename = normalizedPath.split("/").pop();
+                            source = { uri: baseUrl + filename };
+                        }
+                        else if (item.messageType === "audio" && item.audioUrl) {
+                            const baseUrl = `${mainURL}/files/`;
+                            const audioUrl = item.audioUrl;
+                            const normalizedPath = audioUrl.replace(/\\/g, "/");
                             const filename = normalizedPath.split("/").pop();
                             source = { uri: baseUrl + filename };
                         }
@@ -118,7 +198,70 @@ function StarredMessagesScreen({navigation}){
                               <Text style={styles.infoText}>{formatTime(item.timeStamp)}</Text>
                             </Box>
                             </>
-                          )  : <Box background="#29F200"  padding={2}   borderRadius={8}   alignSelf="flex-start" marginTop={2}>
+                          ) : item.messageType==='audio' && source ? (
+                            <>
+                            <View flexDirection="row" alignItems="center" width="60%"  style={{backgroundColor:'#29F200', padding:5, borderRadius:8}}>
+                                {audioStates[item._id]?.isPlaying ? (
+                                    <Ionicons
+                                        name="pause"
+                                        size={32}
+                                        color="#696969"
+                                        onPress={() => pauseSound(item)}
+                                    />
+                                    ) : (
+                                    <Ionicons
+                                        name="play"
+                                        size={32}
+                                        color="#696969"
+                                        onPress={() => playSound(source, item)}
+                                    />
+                                )}
+                                    <Slider
+                                        style={styles.slider}
+                                        minimumValue={0}
+                                        maximumValue={1}
+                                        value={(audioStates[item._id]?.currentPosition || 0) / (audioStates[item._id]?.duration || 1)}
+                                        onSlidingComplete={(value) => {
+                                        const seekPosition = value * (audioStates[item._id]?.duration || 0);
+                                        sound?.setPositionAsync(seekPosition);
+                                        updateAudioState(item._id, { currentPosition: seekPosition });
+                                        }}
+                                    />
+                                </View>
+                                <Box flexDirection="row" justifyContent="space-between" alignItems="center">
+                                    {/* Left-aligned content */}
+                                    <Text 
+                                    style={[
+                                        styles.infoText,
+                                        { color: item?.senderId?._id === userId ? "white" : "black" }
+                                    ]}
+                                    >
+                                    {formatDuration(item.duration)}
+                                    </Text>
+
+                                    {/* Right-aligned content */}
+                                    <Box flexDirection="row" alignItems="center">
+                                    <Text 
+                                        style={[
+                                        styles.infoText,
+                                        { color: item?.senderId?._id === userId ? "white" : "black" }
+                                        ]}
+                                    >
+                                        {formatTime(item.created_date)}
+                                    </Text>
+                                    {item?.starredBy[0] === userId && (
+                                        <Entypo 
+                                        name="star" 
+                                        size={14}  
+                                        color="#828282"  
+                                        style={{ left: 5, top: 2 }}
+                                        />
+                                    )}
+                                    </Box>
+                                </Box>
+                            </>
+                          )
+                           : <Box background="#29F200"  padding={2}   borderRadius={8}   alignSelf="flex-start" marginTop={2}>
                           <Text color="coolGray.600" _dark={{ color: "warmGray.200" }}>
                             {item.message || item.fileName}
                           </Text>
@@ -148,6 +291,11 @@ const styles= StyleSheet.create({
         fontWeight: 'bold',
         color: 'white',
         marginLeft: 10, // Add spacing between duration and timestamp
+      },
+      slider: {
+        width: '90%',
+        height: 40,
+        
       },
 })
 export default StarredMessagesScreen;

@@ -10,12 +10,10 @@ function AddFriendsToGroup(){
 
     const {userId, setUserId} = useContext(UserType);
     const navigation = useNavigation();
+    const initialFocusRef = useRef(null);
 
     const [myfriends, setMyFriends]=useState([]);
     const [seletedFriends,setSelectedFriends]=useState([]);
-    const [position, setPosition] = useState("left");
-    const initialFocusRef = useRef(null);
-
     const [formData, setData] = useState({});
 
     useLayoutEffect(()=>{
@@ -62,18 +60,18 @@ function AddFriendsToGroup(){
     const createGroupHandle = async() =>{
         const groupData = {
             groupName: formData.groupName,
-            groupMembers: Array.from(seletedFriends) // Using Set to match the example format with braces {}
+            groupMembers: Array.from(seletedFriends) 
         };
         try {
             const response = await axios.patch(`${mainURL}/creategroup/${userId}`, groupData);
             const { group: { _id: groupId, groupName: group_name } } = response.data;
             
             if (groupId) {
-                // Redirect to the MessageScreen with groupId and flag
+                
                 navigation.replace('MessageScreen', {
-                    recipentId: groupId, // For group chats, use groupId as recipientId
+                    recipentId: groupId, 
                     groupName: group_name,
-                    isGroupChat: true,   // Pass a flag to indicate it's a group chat
+                    isGroupChat: true,   
                     groupId: groupId
                 });
             }

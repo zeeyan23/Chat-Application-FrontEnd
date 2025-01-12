@@ -24,22 +24,16 @@ function LoginScreen(){
                 const token = await AsyncStorage.getItem("authToken");
     
                 if (token) {
-                    // Fetch the user ID associated with the token
                     const response = await axios.get(`${mainURL}/get-user-id-from-token`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
     
                     const userId = response.data.userId;
-
-                    console.log(userId)
-                    // Check if the user has friends
                     const friendResponse = await axios.get(`${mainURL}/has-friends/${userId}`);
                     
                     if (friendResponse.data.exists) {
-                        // Navigate to ChatScreen if friends exist
                         navigation.navigate("Chats");
                     } else {
-                        // Navigate to HomeScreen if no friends
                         navigation.navigate("Home");
                     }
                 }
@@ -51,17 +45,14 @@ function LoginScreen(){
         isLoggedIn();
     }, []);
     
-
-    // Set up notification handler
     Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-    }),
+        handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+        }),
     });
 
-    // Helper function to handle push token generation
     async function registerForPushNotificationsAsync() {
     if (Device.isDevice) {
         if (Platform.OS === 'android') {
@@ -76,19 +67,19 @@ function LoginScreen(){
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
         if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
         }
         if (finalStatus !== 'granted') {
-        console.log('Permission not granted to get push token for push notification!');
-        return null;
+            console.log('Permission not granted to get push token for push notification!');
+            return null;
         }
 
         const projectId =
-        Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+            Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
         if (!projectId) {
-        console.log('Project ID not found');
-        return null;
+            console.log('Project ID not found');
+            return null;
         }
 
         try {
@@ -121,8 +112,6 @@ function LoginScreen(){
         navigation.navigate('Register'); 
     };
 
-
-
     async function SignInHandler() {
         let expoPushToken = null;
     
@@ -132,7 +121,6 @@ function LoginScreen(){
             console.log('Error during push token registration:', error);
         }
 
-    
         setData((prevData) => ({
             ...prevData, 
             expoPushToken: expoPushToken,
@@ -141,7 +129,7 @@ function LoginScreen(){
         try {
             const response = await axios.post(
                 `${mainURL}/user_login/`,
-                { ...formData, expoPushToken: expoPushToken || 'null' }, // Handle null tokens gracefully
+                { ...formData, expoPushToken: expoPushToken || 'null' }, 
                 {
                     headers: {
                         'Content-Type': 'application/json',
@@ -149,18 +137,17 @@ function LoginScreen(){
                 }
             );
     
-            console.log(response.status);
             const token = response.data.token;
-            await AsyncStorage.setItem("authToken", token); // Ensure async storage is awaited
+            await AsyncStorage.setItem("authToken", token); 
             navigation.navigate('Chats');
         } catch (error) {
-            console.log('Error:', error); // Log error details
+            console.log('Error:', error); 
             if (error.response) {
-                console.log('Server Error:', error.response.data); // Server-side error
+                console.log('Server Error:', error.response.data); 
             } else if (error.request) {
-                console.log('Network Error:', error.request); // Network-related issue
+                console.log('Network Error:', error.request); 
             } else {
-                console.log('Other Error:', error.message); // Any other error
+                console.log('Other Error:', error.message); 
             }
         }
     }

@@ -10,10 +10,12 @@ import * as ImagePicker from "expo-image-picker";
 import Entypo from '@expo/vector-icons/Entypo';
 
 function UsersProfileScreen() {
-  const [groupData, setGroupData] = useState(null); // Initialize as null instead of an array
+  const [groupData, setGroupData] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+
   const route = useRoute();
   const navigation = useNavigation();
-  const [selectedFile, setSelectedFile] = useState(null);
+  
   const [imageChanged, setImageChanged] = useState(false);
   const { groupId } = route.params || {};
 
@@ -92,8 +94,8 @@ function UsersProfileScreen() {
   // Avoid accessing properties of undefined
   const formattedData = groupData
     ? [
-        { ...groupData.groupAdmin, role: 'Admin' }, // Admin with role
-        ...(groupData.groupMembers || []), // Participants without role
+        { ...groupData.groupAdmin, role: 'Admin' }, 
+        ...(groupData.groupMembers || []), 
       ]
     : [];
 
@@ -101,8 +103,6 @@ function UsersProfileScreen() {
     const imageUrl = groupData?.image;
     const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
     const filename = normalizedPath.split('/').pop();
-    //const source = { uri: baseUrl + filename };
-
     const source = selectedFile?.uri 
     ? { uri: selectedFile.uri } 
     : groupData?.image 
@@ -110,7 +110,6 @@ function UsersProfileScreen() {
         : null;
   return (
     <Box flex={1} padding={5}  background="white" safeArea width={"full"}>
-      {/* Back Button */}
       <Box flexDirection="row" width={"full"}>
         <Ionicons
           name="arrow-back-outline"
@@ -120,7 +119,6 @@ function UsersProfileScreen() {
         />
       </Box>
 
-      {/* Group Info */}
       {groupData && (
         <>
             <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>

@@ -21,8 +21,8 @@ function HomeScreen(){
     const { isOpen, onToggle} = useDisclose();
     const {userId, setUserId} = useContext(UserType);
     const navigation = useNavigation();
-    const [requestSent, setRequestSent]=useState([]);
 
+    const [requestSent, setRequestSent]=useState([]);
     const [data, setData]= useState([]);
     const [friendRequests, setFriendRequests]=useState([]);
     const [friendRequestsReceived, setFriendRequestsReceived]=useState([]);
@@ -37,21 +37,17 @@ function HomeScreen(){
                     <Text fontWeight={"bold"} fontSize={20}>Explore Connections</Text>
                 </Box>
             ),
-            
         })
     },[]);
 
     useEffect(() => {
         socket.current = io(mainURL);
         socket.current.on("connect", () => {
-            console.log("Socket connected:", socket.current.id);
+            
             socket.current.emit("registerUser", userId);
           });
-        // Listening for incoming friend request updates
         socket.current.on("friendRequestReceived", (data) => {
-            console.log("Friend request received:", data);
             
-            // Update the state in real time
             setFriendRequestsReceived((prev) => [
                 ...prev,
                 { _id: data.senderId, user_name: data.senderName },
@@ -59,14 +55,9 @@ function HomeScreen(){
         });
     
         socket.current.on("friendRequestAccepted", (data) => {
-            console.log("Friend request accepted in real-time:", data);
-    
-            // Update userFriends to reflect the new friend
             setUserFriends((prev) => [...prev, data.userId]);
         });
 
-        
-        // Cleanup socket connection on unmount
         return () => {
             socket.current.disconnect();
         };
@@ -79,8 +70,6 @@ function HomeScreen(){
             const decodedToken = jwtDecode(token);
             const userId = decodedToken.userId;
             setUserId(userId);
-
-            // Fetch initial data via API calls
             const usersResponse = await axios.get(`${mainURL}/all_users/${userId}`);
             setData(usersResponse.data);
 
@@ -92,8 +81,6 @@ function HomeScreen(){
 
             const friendsResponse = await axios.get(`${mainURL}/friends/${userId}`);
             setUserFriends(friendsResponse.data);
-
-            
         };
 
         fetchUser();
@@ -103,7 +90,6 @@ function HomeScreen(){
         try {
         const data={currentUserId: userId, selectedUserId: recipent_id};
        
-        
             const response = await axios.post(
                 `${mainURL}/friend-request/`, data).then((res)=>{
                     setRequestSent((prev) => [...prev, recipent_id]);
