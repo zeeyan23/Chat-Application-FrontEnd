@@ -36,18 +36,14 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserType } from "../Context/UserContext";
 import axios from "axios";
 import { mainURL } from "../Utils/urls";
-import { Box,Button,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable, useToast, Avatar, Spacer, Divider, Flex } from "native-base";
+import { Box,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable, useToast, Avatar, Divider, Flex, FlatList } from "native-base";
 import * as ImagePicker from "expo-image-picker"
-import { ResizeMode, Video, Audio } from 'expo-av';
+import { Video, Audio } from 'expo-av';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { io } from "socket.io-client";
 import moment from 'moment';
 import * as DocumentPicker from 'expo-document-picker';
-import Svg, { Path, Rect } from 'react-native-svg';
-import Animated, { useSharedValue, useAnimatedProps, withTiming } from 'react-native-reanimated';
-import Slider from '@react-native-community/slider';
 import * as FileSystem from 'expo-file-system';
-import throttle from "lodash.throttle";
 import AudioSlider from "../components/AudioSlider";
 
 const MessageSrceen = () => {
@@ -75,9 +71,9 @@ const MessageSrceen = () => {
 
   const navigation = useNavigation();
   const route = useRoute();
-  const scrollViewRef = useRef(null);
   const socket = useRef();
   const {userId, setUserId} = useContext(UserType);
+  const flatListRef = useRef(null);
 
   const [replyMessage, setReplyMessage]=useState(null);
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -107,37 +103,11 @@ const MessageSrceen = () => {
     };
   }, [sound]);
   
-  const scrollToBottom = () => {
-    if (scrollViewRef.current) {
-        scrollViewRef.current.scrollToEnd({ animated: true });
-    }
-  };
-
-  const handleReplyPress = (replyMessageId) => {
-    setIsReplyPressed(true); 
-    const messageIndex = getMessage.findIndex(
-      (msg) => msg._id === replyMessageId
-    );
-  
-    if (messageIndex !== -1) {
-      scrollViewRef.current?.scrollTo({ y: messageIndex * 80, animated: true }); 
-      setHighLight(replyMessageId);
-      setTimeout(() => {
-      }, 500);
-    }
-  };
-
   useEffect(() => {
     if (highlightedMessageId) {
         handleReplyPress(highlightedMessageId);
     }
   }, [highlightedMessageId]);
-
-  useEffect(() => {
-    if (!highlightedMessageId && !isReplyPressed) {
-        scrollToBottom();
-    }
-  }, [getMessage, isReplyPressed]);
 
   const fetchMessages = async()=>{
     try {
@@ -151,7 +121,7 @@ const MessageSrceen = () => {
           const messages = res.data.message.filter(
             (message) => !message.clearedBy.includes(userId)
           );
-          setGetMessage(messages);
+          setGetMessage(messages.reverse());
         });
         
     } catch (error) {
@@ -165,6 +135,8 @@ const MessageSrceen = () => {
         }
     }
   }
+
+  //console.log(JSON.stringify(getMessage, null, 2))
 
   const updateImageViewed = (messageId) => {
     setGetMessage((prevMessages) =>
@@ -247,7 +219,7 @@ const MessageSrceen = () => {
   //console.log(JSON.stringify(getMessage, null, 2))
   const handleImagePress = async(imageUrl, item) => {
 
-    if(item.imageViewOnce){
+    if(item && item.imageViewOnce){
       if(item.senderId._id===userId){
         toast.show({
           description: "Confidential",
@@ -275,6 +247,7 @@ const MessageSrceen = () => {
         }
       }
     }else{
+      console.log("Normal image",imageUrl)
       setSelectedImage(imageUrl);
     }
     
@@ -531,6 +504,7 @@ const MessageSrceen = () => {
           fetchMessages();
 
           if(!isGroupChat){
+            console.log("end to end chat")
             socket.current.emit("send_message", {
               senderId: userId,
               receiverId: recipentId,
@@ -539,6 +513,7 @@ const MessageSrceen = () => {
               timestamp: new Date().toISOString(),
             });
           }else{
+            console.log("group chat")
             socket.current.emit("send_message", {
               senderId: userId,
               receiverId: groupId,
@@ -953,347 +928,289 @@ const MessageSrceen = () => {
     }
   };
 
+  const handleReplyPress = (messageId) => {
+    const index = getMessage.findIndex((message) => message._id === messageId);
+
+    if (index !== -1) {
+      flatListRef.current?.scrollToIndex({ animated: true, index });
+      setHighLight(messageId);
+      setTimeout(() => {
+        setHighLight(null); // Remove highlight after a delay
+      }, 2000);
+    } else {
+      console.warn('Message not found in the list.');
+    }
+  };
+
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#F0F0F0" }}>
-      <ScrollView ref={scrollViewRef} contentContainerStyle={{flexGrow:1}} >
-        { getMessage.map((item, index)=>{
-          
-          const currentDate = formatDate(item.timeStamp); // Use the utility function
-          const previousDate =
-            index > 0 ? formatDate(getMessage[index - 1].timeStamp) : null;
-          const showDateSeparator = currentDate !== previousDate;
-          
-          if(item.messageType === 'text'){
-            const isSelected = seletedMessages.includes(item._id)
-            const baseUrl = `${mainURL}/files/`;
-            const imageUrl= item.replyMessage?.imageUrl;
-            const normalizedPath = imageUrl?.replace(/\\/g, "/"); 
-            const filename=normalizedPath?.split("/").pop();
-            const source = {uri: baseUrl + filename}
-            
-            const profileImageUrl = item?.senderId?.image;
-            const normalizedProfileImagePath = profileImageUrl ? profileImageUrl.replace(/\\/g, '/') : '';
-            const profileImageFilename = normalizedProfileImagePath.split('/').pop();
-
-            const profileImageSource =  item.senderId.image ? { uri: baseUrl + profileImageFilename } : null;
-              return(
-                <View key={index}>
-                  {showDateSeparator && (
-                    <Text
-                      style={{
-                        alignSelf: 'center',
-                        backgroundColor: '#333',
-                        color: 'white',
-                        padding: 5,
-                        borderRadius: 10,
-                        marginVertical: 10,
-                      }}
-                    >
-                      {currentDate}
-                    </Text>
-                  )}
-                  <Pressable style={[
-                      item?.senderId?._id ===userId ? {
-                          alignSelf:'flex-end',
-                          backgroundColor:'#29F200',
-                          padding:8,
-                          maxWidth:'60%',
-                          margin:10,
-                          borderRadius:7
-                      } : {
-                          alignSelf:'flex-start',
-                          backgroundColor:'white',
-                          padding:8,
-                          margin:10,
-                          maxWidth:'60%',
-                          borderRadius:7
-                      }, isSelected && {width: "100%", backgroundColor:"#D2FFCD"},
-                      highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                      highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                  ]} onLongPress={()=> handleSelectedMessage(item)}>
-                    {item.replyMessage?.messageType==='text' ? 
-                      <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
-                        style={{ backgroundColor: "#E0FFE8", padding: 8, borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",}}>
-                        <Text 
-                          style={{ fontSize: 12, fontWeight: "500", color: "#333", marginTop: 2, }} numberOfLines={1} ellipsizeMode="tail">
-                          {truncateText(item?.replyMessage?.message, 5)}
-                        </Text>
-                      </Pressable> : 
-                      item.replyMessage?.messageType==='image' ? 
-                      <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
-                        style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800"}}>
-                          <Box flexDirection="row" alignItems="center">
-                            <Box>
-                              <Image
-                                source={source}
-                                style={{
-                                  width: 50,
-                                  height: 50,
-                                }}
-                                onError={(error) => console.log("Image Load Error:", error)}
-                              />
-                            </Box>
-                          </Box>
-                          
-                      </Pressable>: item.replyMessage?.messageType==='video' ? 
-                      <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
-                        style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",padding:2}}>
-                          <Box flexDirection="row" alignItems="center">
-                            <Box>
-                              <Text>{item.replyMessage.videoName}</Text>
-                            </Box>
-                          </Box>
-                          
-                      </Pressable>: item.replyMessage?.messageType==='audio' ? 
-                      <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
-                        style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",padding:2}}>
-                          <Box >
-                            <Flex direction="row" h="38"alignItems="center"  >
-                              <Entypo name="mic" size={10} color="black" style={{paddingHorizontal:5}}/>
-                              
-                              <Text 
-                                style={{ fontSize: 12, fontWeight: "500", color: "#333" }} >
-                                 voice message
-                              </Text>
-                              <Divider bg="black" thickness="2" mx="1" h={5} orientation="vertical" />
-                              <Text style={{ fontSize: 12, fontWeight: "500", color: "#333" }}>{formatDuration(item.replyMessage.duration)}</Text>
-                            </Flex>
-                          </Box>
-                          
-                      </Pressable> : item.replyMessage?.messageType==='pdf' || item.replyMessage?.messageType==='docx' ||
-                      item.replyMessage?.messageType==='pptx' || item.replyMessage?.messageType==='zip' || item.replyMessage?.messageType==='xlsx' ?
-                      <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
-                        style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",padding:2}}>
-                          <Box flexDirection="row" alignItems="center">
-                            <Box>
-                              <MaterialCommunityIcons
-                                name={getIconName(item.replyMessage?.messageType)}
-                                size={35}
-                                color="#007A33"
-                                style={{ marginRight: 10 }}
-                              />
-                              <Text>{item.replyMessage.fileName}</Text>
-                            </Box>
-                          </Box>
-                          
-                      </Pressable>: null
-                    }
-                    <Box>
-                    <Box flexDirection={"row"} paddingBottom={2}>
-                        {!item.replyMessage ? profileImageSource ? 
-                          <Avatar size="xs" source={profileImageSource}/> : 
-                          <Ionicons name="person-circle-outline" size={25} color="grey" /> : null}
-                      
-                        {!item.replyMessage && <Text
-                          color={"blue.900"} fontWeight={"semibold"} paddingLeft={2}>
-                            {item?.senderId?._id ===userId ? "You" : item?.senderId?.user_name}
-                        </Text>}
-                      </Box>
-                      <Text>{item?.message}</Text>
-                    </Box>
-                    
-                    <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>
-                        {formatTime(item.timeStamp)} 
-                        {item?.starredBy[0] === userId && (
-                          <Text
-                            style={{ position: 'absolute', right: 0, top: -4,  fontSize: 14, color: '#FFD700',}}>
-                            <Entypo name="star" size={10} color="#828282"/>
-                          </Text>
-                        )}
-                    </Text>
-                  </Pressable>
-                </View>
-              )
-          }
-
-          if(item.messageType === "image"){
-            const isSelected = seletedMessages.includes(item._id)
-            const baseUrl = `${mainURL}/files/`;
-            const imageUrl= item.imageUrl;
-            const normalizedPath = imageUrl.replace(/\\/g, "/"); 
-            const filename=normalizedPath.split("/").pop();
-            const source = {uri: baseUrl + filename}
-
-            return(
-              <View key={index} >
-              {showDateSeparator && (
-                    <Text
-                      style={{
-                        alignSelf: 'center',
-                        backgroundColor: '#333',
-                        color: 'white',
-                        padding: 5,
-                        borderRadius: 10,
-                        marginVertical: 10,
-                      }}
-                    >
-                      {currentDate}
-                    </Text>
-                )}
-              <Pressable key={index} style={[
-                item?.senderId?._id ===userId ? {
-                    alignSelf:'flex-end',
-                    backgroundColor:'#29F200',
-                    //padding:8,
-                    maxWidth:'60%',
-                    margin:10,
-                    borderRadius:7
-                } : {
-                    alignSelf:'flex-start',
-                    backgroundColor:'white',
-                    //padding:8,
-                    margin:10,
-                    maxWidth:'60%',
-                    borderRadius:7
-                },highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-            ]} onLongPress={()=> handleSelectedMessage(item)}  onPress={() => handleImagePress(source, item)} >
-                
-                  {item.imageViewOnce ? (
-                    <Box flexDirection="row"alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2} >
-                      <MaterialCommunityIcons
-                        name={item.imageViewed ? 'circle' : 'numeric-1-circle-outline'}
-                        size={14}
-                        color={item.imageViewed ? 'grey' : '#219BC7'}
-                        style={{
-                          marginRight: 5,
-                        }}
-                      />
-                      <Text
-                      
-                        style={{
-                          fontSize: 14,
-                          color: item.imageViewed ? 'grey' : '#219BC7',
-                          fontWeight: "500",
-                        }}
-                      >
-                        {item.imageViewed ? "Opened" : "Photo"}
-                      </Text>
-                    </Box>
-                  ) : (
-                    <Image
-                      source={source}
-                      style={{ width: 200, height: 200, borderRadius: 7 }}
-                      onError={(error) => console.log("Image Load Error:", error)}
-                    />
-                  )}
-
-                  <Box
-                    flexDirection="row"
-                    justifyContent="flex-end"
-                    paddingRight={2}
-                    alignItems="center">
-                    <Text
-                      style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}
-                    >
-                      {formatTime(item.timeStamp)}
-                    </Text>
-                    {item?.starredBy[0] === userId && (
-                      <Entypo
-                        name="star"
-                        size={14}
-                        color="white"
-                        style={{
-                          marginLeft: 10,
-                        }}
-                      />
-                    )}
-                  </Box>
-            </Pressable>
-            </View>
-            )
-          }
-
-          if (item.messageType === 'video') {
-            const isSelected = seletedMessages.includes(item._id)
-            const baseUrl = `${mainURL}/files/`;
-            const videoUrl= item.videoUrl;
-            const normalizedPath = videoUrl.replace(/\\/g, "/"); 
-            const filename=normalizedPath.split("/").pop();
-            const source = {uri: baseUrl + filename}
-            return (
-              <View key={index} >
-              {showDateSeparator && (
-                    <Text
-                      style={{
-                        alignSelf: 'center',
-                        backgroundColor: '#333',
-                        color: 'white',
-                        padding: 5,
-                        borderRadius: 10,
-                        marginVertical: 10,
-                      }}
-                    >
-                      {currentDate}
-                    </Text>
-                  )}
-                  <Pressable key={index} style={[
-                      item?.senderId?._id ===userId ? {
-                          alignSelf:'flex-end',
-                          backgroundColor:'#29F200',
-                          padding:8,
-                          maxWidth:'60%',
-                          margin:10,
-                          borderRadius:7
-                      } : {
-                          alignSelf:'flex-start',
-                          backgroundColor:'white',
-                          padding:8,
-                          margin:10,
-                          maxWidth:'60%',
-                          borderRadius:7
-                      }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                  ]} onPress={() => handleVideoPress(source,item)}  onLongPress={()=> handleSelectedMessage(item)}>
-                    
-                        {item.videoViewOnce ? (
-                        <Box flexDirection="row"alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2} >
-                          <MaterialCommunityIcons
-                            //name="numeric-1-circle"
-                            name={item.videoViewed ? 'circle' : 'numeric-1-circle-outline'}
-                            size={14}
-                            color={item.videoViewed ? 'grey' : '#219BC7'}
-                            style={{
-                              marginRight: 5,
-                            }}
-                          />
-                          <Text
-                          
-                            style={{
-                              fontSize: 14,
-                              color: item.videoViewed ? 'grey' : '#219BC7',
-                              fontWeight: "500",
-                            }}
-                          >
-                            {item.videoViewed ? "Opened" : "Video"}
-                          </Text>
-                        </Box>
-                      ) : (
-                        <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"}>{item.videoName}</Text>
-                      )}
-                      
-                      <Box flexDirection={"row"}>
-                        <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{formatDuration(item.duration)}</Text>
-                        <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{formatTime(item.timeStamp)}</Text>
-                        {item?.starredBy[0] === userId && (
-                          <Entypo
-                            name="star"
-                            size={14} 
-                            color="#828282" 
-                            style={{
-                              left:5,
-                              top:2
-                            }}
-                          />
-                        )}
-                      </Box>
-              </Pressable>
-              </View>
-            );}
-
-            if (item.messageType === "pdf" || item.messageType === "docx" || item.messageType === "xlsx" || item.messageType === "zip" || item.messageType === "pptx") {
+       <FlatList
+          data={getMessage}
+          ref={flatListRef}
+          inverted
+          keyExtractor={(item) => item._id.toString()}
+          initialNumToRender={10} 
+          maxToRenderPerBatch={15}
+          renderItem={({ item, index }) => {
+            const currentDate = formatDate(item.timeStamp);
+            const previousDate = index < getMessage.length - 1 ? formatDate(getMessage[index + 1].timeStamp) : null;
+            const showDateSeparator = currentDate !== previousDate;
+            if(item.messageType === 'text'){
               const isSelected = seletedMessages.includes(item._id)
               const baseUrl = `${mainURL}/files/`;
-              const documentUrl= item.documentUrl;
-              const normalizedPath = documentUrl.replace(/\\/g, "/"); 
+              const imageUrl= item.replyMessage?.imageUrl;
+              const normalizedPath = imageUrl?.replace(/\\/g, "/"); 
+              const filename=normalizedPath?.split("/").pop();
+              const source = {uri: baseUrl + filename}
+              
+              const profileImageUrl = item?.senderId?.image;
+              const normalizedProfileImagePath = profileImageUrl ? profileImageUrl.replace(/\\/g, '/') : '';
+              const profileImageFilename = normalizedProfileImagePath.split('/').pop();
+  
+              const profileImageSource =  item.senderId.image ? { uri: baseUrl + profileImageFilename } : null;
+                return(
+                  <View key={item._id}>
+                    {showDateSeparator ? (
+                      <Text
+                        style={{
+                          alignSelf: 'center',
+                          backgroundColor: '#333',
+                          color: 'white',
+                          padding: 5,
+                          borderRadius: 10,
+                          marginVertical: 10,
+                        }}
+                      >
+                        {currentDate}
+                      </Text>
+                    ) : null}
+                    <Pressable style={[
+                        item?.senderId?._id ===userId ? {
+                            alignSelf:'flex-end',
+                            backgroundColor:'#29F200',
+                            padding:8,
+                            maxWidth:'60%',
+                            margin:10,
+                            borderRadius:7
+                        } : {
+                            alignSelf:'flex-start',
+                            backgroundColor:'white',
+                            padding:8,
+                            margin:10,
+                            maxWidth:'60%',
+                            borderRadius:7
+                        }, isSelected && {width: "100%", backgroundColor:"#D2FFCD"},
+                        highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                        highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                    ]} onLongPress={()=> handleSelectedMessage(item)}>
+                      {item.replyMessage?.messageType==='text' ? 
+                        <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
+                          style={{ backgroundColor: "#E0FFE8", padding: 8, borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",}}>
+                          <Text color={"violet.800"} fontWeight={"semibold"}>
+                              {item?.replyMessage?.senderId?._id ===userId ? "You" : item?.replyMessage?.senderId?.user_name}
+                          </Text>
+                          <Text 
+                            style={{ fontSize: 12, fontWeight: "500", color: "#333", marginTop: 2, }} numberOfLines={1} ellipsizeMode="tail">
+                            {truncateText(item?.replyMessage?.message, 5)}
+                          </Text>
+                        </Pressable> : 
+                        item.replyMessage?.messageType==='image' ? 
+                        <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
+                          style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800"}}>
+                            <Box flexDirection="row" alignItems="center">
+                              <Box>
+                                <Image
+                                  source={source}
+                                  style={{
+                                    width: 50,
+                                    height: 50,
+                                  }}
+                                  onError={(error) => console.log("Image Load Error:", error)}
+                                />
+                              </Box>
+                            </Box>
+                            
+                        </Pressable>: item.replyMessage?.messageType==='video' ? 
+                        <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
+                          style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",padding:2}}>
+                            <Box flexDirection="row" alignItems="center">
+                              <Box>
+                                <Text>{item.replyMessage.videoName}</Text>
+                              </Box>
+                            </Box>
+                            
+                        </Pressable>: item.replyMessage?.messageType==='audio' ? 
+                        <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
+                          style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",padding:2}}>
+                            <Box >
+                              <Flex direction="row" h="38"alignItems="center"  >
+                                <Entypo name="mic" size={10} color="black" style={{paddingHorizontal:5}}/>
+                                
+                                <Text 
+                                  style={{ fontSize: 12, fontWeight: "500", color: "#333" }} >
+                                   voice message
+                                </Text>
+                                <Divider bg="black" thickness="2" mx="1" h={5} orientation="vertical" />
+                                <Text style={{ fontSize: 12, fontWeight: "500", color: "#333" }}>{formatDuration(item.replyMessage.duration)}</Text>
+                              </Flex>
+                            </Box>
+                            
+                        </Pressable> : item.replyMessage?.messageType==='pdf' || item.replyMessage?.messageType==='docx' ||
+                        item.replyMessage?.messageType==='pptx' || item.replyMessage?.messageType==='zip' || item.replyMessage?.messageType==='xlsx' ?
+                        <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
+                          style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",padding:2}}>
+                            <Box flexDirection="row" alignItems="center">
+                              <Box>
+                                <MaterialCommunityIcons
+                                  name={getIconName(item.replyMessage?.messageType)}
+                                  size={35}
+                                  color="#007A33"
+                                  style={{ marginRight: 10 }}
+                                />
+                                <Text>{item.replyMessage.fileName}</Text>
+                              </Box>
+                            </Box>
+                            
+                        </Pressable>: null
+                      }
+                      <Box>
+                        <Box flexDirection={"row"} paddingBottom={2}>
+                          {!item.replyMessage ? profileImageSource ? 
+                            <Avatar size="xs" source={profileImageSource}/> : 
+                            <Ionicons name="person-circle-outline" size={25} color="grey" /> : null}
+                        
+                          {!item.replyMessage && <Text
+                            color={"blue.900"} fontWeight={"semibold"} paddingLeft={2}>
+                              {item?.senderId?._id ===userId ? "You" : item?.senderId?.user_name}
+                          </Text>}
+                        </Box>
+                        <Text>{item?.message}</Text>
+                      </Box>
+                      
+                      <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>
+                          {formatTime(item.timeStamp)} 
+                          {item?.starredBy[0] === userId && (
+                            <Text
+                              style={{ position: 'absolute', right: 0, top: -4,  fontSize: 14, color: '#FFD700',}}>
+                              <Entypo name="star" size={10} color="#828282"/>
+                            </Text>
+                          )}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )
+            }
+  
+            if(item.messageType === "image"){
+              const isSelected = seletedMessages.includes(item._id)
+              const baseUrl = `${mainURL}/files/`;
+              const imageUrl= item.imageUrl;
+              const normalizedPath = imageUrl.replace(/\\/g, "/"); 
+              const filename=normalizedPath.split("/").pop();
+              const source = {uri: baseUrl + filename}
+  
+              return(
+                <View key={index} >
+                {showDateSeparator && (
+                      <Text
+                        style={{
+                          alignSelf: 'center',
+                          backgroundColor: '#333',
+                          color: 'white',
+                          padding: 5,
+                          borderRadius: 10,
+                          marginVertical: 10,
+                        }}
+                      >
+                        {currentDate}
+                      </Text>
+                  )}
+                <Pressable key={index} style={[
+                  item?.senderId?._id ===userId ? {
+                      alignSelf:'flex-end',
+                      backgroundColor:'#29F200',
+                      maxWidth:'60%',
+                      margin:10,
+                      borderRadius:7
+                  } : {
+                      alignSelf:'flex-start',
+                      backgroundColor:'white',
+                      margin:10,
+                      maxWidth:'60%',
+                      borderRadius:7
+                  },highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                ]} onLongPress={()=> handleSelectedMessage(item)}  onPress={() => {
+                  if (item.imageViewOnce) {
+                    handleImagePress(source, item);
+                  } else {
+                    handleImagePress(source,null);
+                  }
+                }} >
+                  
+                    {item.imageViewOnce ? (
+                      <Box flexDirection="row"alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2} >
+                        <MaterialCommunityIcons
+                          name={item.imageViewed ? 'circle' : 'numeric-1-circle-outline'}
+                          size={14}
+                          color={item.imageViewed ? 'grey' : '#219BC7'}
+                          style={{
+                            marginRight: 5,
+                          }}
+                        />
+                        <Text
+                        
+                          style={{
+                            fontSize: 14,
+                            color: item.imageViewed ? 'grey' : '#219BC7',
+                            fontWeight: "500",
+                          }}
+                        >
+                          {item.imageViewed ? "Opened" : "Photo"}
+                        </Text>
+                      </Box>
+                    ) : (
+                      <Image
+                        source={source}
+                        style={{ width: 200, height: 200, borderRadius: 7 }}
+                        onError={(error) => console.log("Image Load Error:", error)}
+                      />
+                    )}
+  
+                    <Box
+                      flexDirection="row"
+                      justifyContent="flex-end"
+                      paddingRight={2}
+                      alignItems="center" style={{
+                        position: 'absolute',
+                        bottom: 10, 
+                        right: 10, 
+                      }} >
+                      <Text
+                        style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}
+                      >
+                        {formatTime(item.timeStamp)}
+                      </Text>
+                      {item?.starredBy[0] === userId && (
+                        <Entypo
+                          name="star"
+                          size={14}
+                          color="white"
+                          style={{
+                            marginLeft: 10,
+                          }}
+                        />
+                      )}
+                    </Box>
+              </Pressable>
+              </View>
+              )
+            }
+  
+            if (item.messageType === 'video') {
+              const isSelected = seletedMessages.includes(item._id)
+              const baseUrl = `${mainURL}/files/`;
+              const videoUrl= item.videoUrl;
+              const normalizedPath = videoUrl.replace(/\\/g, "/"); 
               const filename=normalizedPath.split("/").pop();
               const source = {uri: baseUrl + filename}
               return (
@@ -1312,183 +1229,270 @@ const MessageSrceen = () => {
                         {currentDate}
                       </Text>
                     )}
-
-                    <Pressable
+                    <Pressable key={index} style={[
+                        item?.senderId?._id ===userId ? {
+                            alignSelf:'flex-end',
+                            backgroundColor:'#29F200',
+                            padding:8,
+                            maxWidth:'60%',
+                            margin:10,
+                            borderRadius:7
+                        } : {
+                            alignSelf:'flex-start',
+                            backgroundColor:'white',
+                            padding:8,
+                            margin:10,
+                            maxWidth:'60%',
+                            borderRadius:7
+                        }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                    ]} onPress={() => handleVideoPress(source,item)}  onLongPress={()=> handleSelectedMessage(item)}>
                       
-                      key={index}
-                      style={[
-                          item?.senderId?._id ===userId ? {
-                              alignSelf:'flex-end',
-                              backgroundColor:'#29F200',
-                              padding:8,
-                              maxWidth:'60%',
-                              margin:10,
-                              borderRadius:7
-                          } : {
-                              alignSelf:'flex-start',
-                              backgroundColor:'white',
-                              padding:8,
-                              margin:10,
-                              maxWidth:'60%',
-                              borderRadius:7
-                          }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                      ]}
-                      onLongPress={() => handleSelectedMessage(item)} onPress={() => openFile(item.documentUrl)}
-                    >
-                      <Box padding={2} borderRadius={7} flexDirection={"row"} flexWrap="wrap" alignItems="flex-start" background={"#D4D4D4"}>
-                        <MaterialCommunityIcons
-                            name={getIconName(item.messageType)}
-                            size={35}
-                            color="#007A33"
-                            style={{ marginRight: 10 }}
-                          />
-                        <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"} numberOfLines={2}
-                          style={{
-                            flexShrink: 1,
-                            flexWrap: 'wrap',
-                            maxWidth: '100%', 
-                          }} >{item.fileName}</Text>
-                      </Box>
-                      
-                      <Box flexDirection={"row"}>
-                        <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{item.messageType.toUpperCase()}</Text>
-                        <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{formatTime(item.timeStamp)}</Text>
-                            {item?.starredBy[0] === userId && (
-                              <Entypo
-                                name="star"
-                                size={14} 
-                                color="#828282" 
-                                style={{
-                                  left:5,
-                                  top:2
-                                }}/>)}
-                      </Box>
-                    </Pressable>
+                          {item.videoViewOnce ? (
+                          <Box flexDirection="row"alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2} >
+                            <MaterialCommunityIcons
+                              //name="numeric-1-circle"
+                              name={item.videoViewed ? 'circle' : 'numeric-1-circle-outline'}
+                              size={14}
+                              color={item.videoViewed ? 'grey' : '#219BC7'}
+                              style={{
+                                marginRight: 5,
+                              }}
+                            />
+                            <Text
+                            
+                              style={{
+                                fontSize: 14,
+                                color: item.videoViewed ? 'grey' : '#219BC7',
+                                fontWeight: "500",
+                              }}
+                            >
+                              {item.videoViewed ? "Opened" : "Video"}
+                            </Text>
+                          </Box>
+                        ) : (
+                          <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"}>{item.videoName}</Text>
+                        )}
+                        
+                        <Box flexDirection={"row"}>
+                          <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{formatDuration(item.duration)}</Text>
+                          <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{formatTime(item.timeStamp)}</Text>
+                          {item?.starredBy[0] === userId && (
+                            <Entypo
+                              name="star"
+                              size={14} 
+                              color="#828282" 
+                              style={{
+                                left:5,
+                                top:2
+                              }}
+                            />
+                          )}
+                        </Box>
+                </Pressable>
                 </View>
               );}
-            if(item.messageType==="audio"){
-              const baseUrl = `${mainURL}/files/`;
-              const audioUrl= item.audioUrl;
-              const normalizedPath = audioUrl.replace(/\\/g, "/"); 
-              const filename=normalizedPath.split("/").pop();
-              const source = {uri: baseUrl + filename}
-
-              return(
-                <View key={index}>
-                    {showDateSeparator && (
-                      <Text style={{alignSelf: 'center',backgroundColor: '#333',color: 'white',padding: 5, borderRadius: 10, marginVertical: 10,}}>
-                        {currentDate}
-                      </Text>
-                    )}
-                    <Pressable
-                      
-                      key={index}
-                      style={[
-                          item?.senderId?._id ===userId ? {
-                              alignSelf:'flex-end',
-                              backgroundColor:'#29F200',
-                              padding:8,
-                              maxWidth:'60%',
-                              margin:10,
-                              borderRadius:7
-                          } : {
-                              alignSelf:'flex-start',
-                              backgroundColor:'white',
-                              padding:8,
-                              margin:10,
-                              maxWidth:'60%',
-                              borderRadius:7
-                          }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                      ]} onLongPress={() => handleSelectedMessage(item)}>
-                      <View >
-                          <AudioSlider audio={source}/>
-                      </View>
-                      <Box flexDirection="row" justifyContent="space-between" alignItems="center">
-                        <Text 
-                          style={[
-                            styles.infoText,
-                            { color: item?.senderId?._id === userId ? "white" : "black" }
-                          ]}
+  
+              if (item.messageType === "pdf" || item.messageType === "docx" || item.messageType === "xlsx" || item.messageType === "zip" || item.messageType === "pptx") {
+                const isSelected = seletedMessages.includes(item._id)
+                const baseUrl = `${mainURL}/files/`;
+                const documentUrl= item.documentUrl;
+                const normalizedPath = documentUrl.replace(/\\/g, "/"); 
+                const filename=normalizedPath.split("/").pop();
+                const source = {uri: baseUrl + filename}
+                return (
+                  <View key={index} >
+                  {showDateSeparator && (
+                        <Text
+                          style={{
+                            alignSelf: 'center',
+                            backgroundColor: '#333',
+                            color: 'white',
+                            padding: 5,
+                            borderRadius: 10,
+                            marginVertical: 10,
+                          }}
                         >
-                          {formatDuration(item.duration)}
+                          {currentDate}
                         </Text>
-
-                        <Box flexDirection="row" alignItems="center">
+                      )}
+  
+                      <Pressable
+                        
+                        key={index}
+                        style={[
+                            item?.senderId?._id ===userId ? {
+                                alignSelf:'flex-end',
+                                backgroundColor:'#29F200',
+                                padding:8,
+                                maxWidth:'60%',
+                                margin:10,
+                                borderRadius:7
+                            } : {
+                                alignSelf:'flex-start',
+                                backgroundColor:'white',
+                                padding:8,
+                                margin:10,
+                                maxWidth:'60%',
+                                borderRadius:7
+                            }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                        ]}
+                        onLongPress={() => handleSelectedMessage(item)} onPress={() => openFile(item.documentUrl)}
+                      >
+                        <Box padding={2} borderRadius={7} flexDirection={"row"} flexWrap="wrap" alignItems="flex-start" background={"#D4D4D4"}>
+                          <MaterialCommunityIcons
+                              name={getIconName(item.messageType)}
+                              size={35}
+                              color="#007A33"
+                              style={{ marginRight: 10 }}
+                            />
+                          <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"} numberOfLines={2}
+                            style={{
+                              flexShrink: 1,
+                              flexWrap: 'wrap',
+                              maxWidth: '100%', 
+                            }} >{item.fileName}</Text>
+                        </Box>
+                        
+                        <Box flexDirection={"row"}>
+                          <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{item.messageType.toUpperCase()}</Text>
+                          <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{formatTime(item.timeStamp)}</Text>
+                              {item?.starredBy[0] === userId && (
+                                <Entypo
+                                  name="star"
+                                  size={14} 
+                                  color="#828282" 
+                                  style={{
+                                    left:5,
+                                    top:2
+                                  }}/>)}
+                        </Box>
+                      </Pressable>
+                  </View>
+                );}
+              if(item.messageType==="audio"){
+                const baseUrl = `${mainURL}/files/`;
+                const audioUrl= item.audioUrl;
+                const normalizedPath = audioUrl.replace(/\\/g, "/"); 
+                const filename=normalizedPath.split("/").pop();
+                const source = {uri: baseUrl + filename}
+  
+                return(
+                  <View key={index}>
+                      {showDateSeparator && (
+                        <Text style={{alignSelf: 'center',backgroundColor: '#333',color: 'white',padding: 5, borderRadius: 10, marginVertical: 10,}}>
+                          {currentDate}
+                        </Text>
+                      )}
+                      <Pressable
+                        
+                        key={index}
+                        style={[
+                            item?.senderId?._id ===userId ? {
+                                alignSelf:'flex-end',
+                                backgroundColor:'#29F200',
+                                padding:8,
+                                maxWidth:'60%',
+                                margin:10,
+                                borderRadius:7
+                            } : {
+                                alignSelf:'flex-start',
+                                backgroundColor:'white',
+                                padding:8,
+                                margin:10,
+                                maxWidth:'60%',
+                                borderRadius:7
+                            }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                        ]} onLongPress={() => handleSelectedMessage(item)}>
+                        <View >
+                            <AudioSlider audio={source}/>
+                        </View>
+                        <Box flexDirection="row" justifyContent="space-between" alignItems="center">
                           <Text 
                             style={[
                               styles.infoText,
                               { color: item?.senderId?._id === userId ? "white" : "black" }
                             ]}
                           >
-                            {formatTime(item.created_date)}
+                            {formatDuration(item.duration)}
                           </Text>
-                          {item?.starredBy[0] === userId && (
-                            <Entypo 
-                              name="star" 
-                              size={14}  
-                              color="#828282"  
-                              style={{ left: 5, top: 2 }}
-                            />
-                          )}
+  
+                          <Box flexDirection="row" alignItems="center">
+                            <Text 
+                              style={[
+                                styles.infoText,
+                                { color: item?.senderId?._id === userId ? "white" : "black" }
+                              ]}
+                            >
+                              {formatTime(item.created_date)}
+                            </Text>
+                            {item?.starredBy[0] === userId && (
+                              <Entypo 
+                                name="star" 
+                                size={14}  
+                                color="#828282"  
+                                style={{ left: 5, top: 2 }}
+                              />
+                            )}
+                          </Box>
                         </Box>
-                      </Box>
-
-                    </Pressable>
+  
+                      </Pressable>
+                  </View>
+                )
+              }
+            
+    
+            
+          }} />
+          {isSending && (
+                <HStack space={2} justifyContent="flex-end" paddingRight={5}>
+                  <Spinner accessibilityLabel="Loading posts" />
+                  <Heading color="primary.500" fontSize="md">
+                    Loading
+                  </Heading>
+                </HStack>
+            )}
+    
+            {/* Error Message */}
+            {errorMessage && (
+              <View style={{ alignItems: "center", marginTop: 10 }}>
+                <Text style={{ fontSize: 16, color: "red" }}>{errorMessage}</Text>
+              </View>
+            )}
+            {selectedVideo && (
+              <Modal
+                visible={!!selectedVideo}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={handleCloseVideo}
+              >
+                <View style={styles.modalContainer}>
+                  <Video
+                    ref={(ref) => setVideoRef(ref)} 
+                    source={selectedVideo}
+                    style={styles.video}
+                    resizeMode="contain"
+                    useNativeControls 
+                    shouldPlay 
+                  />
+                  <Entypo name="cross" size={24} color="#666" onPress={handleCloseVideo} style={styles.closeButton}/>
                 </View>
-              )
-            }
-        })}
-        {isSending && (
-            <HStack space={2} justifyContent="flex-end" paddingRight={5}>
-              <Spinner accessibilityLabel="Loading posts" />
-              <Heading color="primary.500" fontSize="md">
-                Loading
-              </Heading>
-            </HStack>
-        )}
+              </Modal>
+            )}
 
-        {/* Error Message */}
-        {errorMessage && (
-          <View style={{ alignItems: "center", marginTop: 10 }}>
-            <Text style={{ fontSize: 16, color: "red" }}>{errorMessage}</Text>
-          </View>
-        )}
-        {selectedVideo && (
-          <Modal
-            visible={!!selectedVideo}
-            transparent={true}
-            animationType="slide"
-            onRequestClose={handleCloseVideo}
-          >
-            <View style={styles.modalContainer}>
-              <Video
-                ref={(ref) => setVideoRef(ref)} 
-                source={selectedVideo}
-                style={styles.video}
-                resizeMode="contain"
-                useNativeControls 
-                shouldPlay 
-              />
-              <Entypo name="cross" size={24} color="#666" onPress={handleCloseVideo} style={styles.closeButton}/>
-            </View>
-          </Modal>
-        )}
-
-        {selectedImage && (
-          <Modal
-            visible={!!selectedImage}
-            transparent={true}
-            animationType="slide"
-            onRequestClose={handleCloseImage}
-          >
-            <View style={styles.modalContainer}>
-              
-              <Image ref={(ref) => setImageRef(ref)}  source={selectedImage} style={styles.fullScreenImage} onError={(error) => console.log("Image Load Error:", error)}/>
-            </View>
-          </Modal>
-        )}
-      </ScrollView>
-
+          {selectedImage && (
+              <Modal
+                visible={!!selectedImage}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={handleCloseImage}
+              >
+                <View style={styles.modalContainer}>
+                  
+                  <Image ref={(ref) => setImageRef(ref)}  source={selectedImage} style={styles.fullScreenImage} onError={(error) => console.log("Image Load Error:", error)}/>
+                </View>
+              </Modal>
+          )}
       <View
         style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: "#dddddd",
           marginBottom: showEmojiSelector ? 0 : 25,}}>
