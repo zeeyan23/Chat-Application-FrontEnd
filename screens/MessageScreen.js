@@ -83,8 +83,7 @@ const MessageSrceen = () => {
   const [document, setDocument] = useState(null);
   const toast = useToast();
 
-  const { senderId, recipentId, userName,isGroupChat, groupName, groupId,userImage, groupImage } = route.params || {};
-  const { highlightedMessageId } = route.params || {};
+  const { senderId, recipentId, userName,isGroupChat, groupName, groupId,userImage, groupImage, highlightedMessageId } = route.params || {};
   
   const baseUrl = `${mainURL}/files/`;
   const imageUrl = userImage ? userImage : groupImage;
@@ -93,9 +92,7 @@ const MessageSrceen = () => {
 
   const source = userImage || groupImage ? { uri: baseUrl + filename } : null;
 
-  useEffect(() => {
-    fetchMessages();
-  }, []);
+  
 
   useEffect(() => {
     return () => {
@@ -108,6 +105,16 @@ const MessageSrceen = () => {
         handleReplyPress(highlightedMessageId);
     }
   }, [highlightedMessageId]);
+
+  useEffect(() => {
+    if (highlightedMessageId && getMessage.length > 0) {
+      const index = getMessage.findIndex((msg) => msg._id === highlightedMessageId);
+      if (index !== -1 && flatListRef.current) {
+        flatListRef.current.scrollToIndex({ index, animated: true });
+        
+      }
+    }
+  }, [highlightedMessageId, getMessage]);
 
   const fetchMessages = async()=>{
     try {
@@ -136,6 +143,10 @@ const MessageSrceen = () => {
     }
   }
 
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
   //console.log(JSON.stringify(getMessage, null, 2))
 
   const updateImageViewed = (messageId) => {
@@ -163,7 +174,8 @@ const MessageSrceen = () => {
     });
 
     socket.current.on("newMessage", (message) => {
-      setGetMessage((prevMessages) => [...prevMessages, message]);
+      console.log(message)
+      setGetMessage((prevMessages) => [message, ...prevMessages]);
     });
 
       socket.current.on("imageViewedUpdate", (messageId) => {
@@ -951,6 +963,11 @@ const MessageSrceen = () => {
           keyExtractor={(item) => item._id.toString()}
           initialNumToRender={10} 
           maxToRenderPerBatch={15}
+          getItemLayout={(item, index) => ({
+            length: 120, // Replace 60 with the fixed height of each item
+            offset: 120 * index,
+            index,
+          })}
           renderItem={({ item, index }) => {
             const currentDate = formatDate(item.timeStamp);
             const previousDate = index < getMessage.length - 1 ? formatDate(getMessage[index + 1].timeStamp) : null;
@@ -1148,6 +1165,7 @@ const MessageSrceen = () => {
                 }} >
                   
                     {item.imageViewOnce ? (
+                      <>
                       <Box flexDirection="row"alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2} >
                         <MaterialCommunityIcons
                           name={item.imageViewed ? 'circle' : 'numeric-1-circle-outline'}
@@ -1168,15 +1186,36 @@ const MessageSrceen = () => {
                           {item.imageViewed ? "Opened" : "Photo"}
                         </Text>
                       </Box>
+                      <Box
+                      flexDirection="row"
+                      justifyContent="flex-end"
+                      paddingRight={2}
+                       >
+                      <Text
+                        style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}
+                      >
+                        {formatTime(item.timeStamp)}
+                      </Text>
+                      {item?.starredBy[0] === userId && (
+                        <Entypo
+                          name="star"
+                          size={14}
+                          color="white"
+                          
+                        />
+                      )}
+                    </Box>
+                      </>
+                      
+                      
                     ) : (
+                      <>
                       <Image
                         source={source}
                         style={{ width: 200, height: 200, borderRadius: 7 }}
                         onError={(error) => console.log("Image Load Error:", error)}
                       />
-                    )}
-  
-                    <Box
+                      <Box
                       flexDirection="row"
                       justifyContent="flex-end"
                       paddingRight={2}
@@ -1201,6 +1240,11 @@ const MessageSrceen = () => {
                         />
                       )}
                     </Box>
+                      </>
+                      
+                    )}
+  
+                    
               </Pressable>
               </View>
               )
