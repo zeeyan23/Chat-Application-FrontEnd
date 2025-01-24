@@ -86,14 +86,13 @@ function AddFriendsToGroup(){
             }
         }
     }
-    // console.log(JSON.stringify(myfriends.friends, null, 2))
     return(
         <>
             <Box flex={1} background={"white"}>
                 <Box padding={2}>
                     {seletedFriends.length > 0 && <Text fontSize="md" fontWeight={"semibold"} mb={3}>Selected Friends</Text>}
                     <FlatList
-                        data={myfriends.friends?.filter((friend) => seletedFriends.includes(friend._id))}
+                        data={myfriends.friends?.flatMap((friend) => friend.friendsList).filter((friend) => seletedFriends.includes(friend._id))}
                         keyExtractor={(item) => item._id}
                         horizontal
                         showsHorizontalScrollIndicator={false}
@@ -123,7 +122,7 @@ function AddFriendsToGroup(){
                 <Box padding={2}>
                     <Text fontSize="md" fontWeight={"semibold"}>All Friends List</Text>
                     <FlatList 
-                        data={myfriends.friends}
+                        data={myfriends.friends?.flatMap(friend => friend.friendsList)}
                         keyExtractor={(item) => item._id}
                         contentContainerStyle={{ paddingBottom: 10 }} 
                         style={{height: seletedFriends.length > 0 ? "80%" : "95%"}}

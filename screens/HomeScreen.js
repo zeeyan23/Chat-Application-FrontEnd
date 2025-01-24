@@ -80,7 +80,8 @@ function HomeScreen(){
             setFriendRequestsReceived(sentRequestsReceivedResponse.data);
 
             const friendsResponse = await axios.get(`${mainURL}/friends/${userId}`);
-            setUserFriends(friendsResponse.data);
+            const flattenedFriends = friendsResponse.data.flat();
+            setUserFriends(flattenedFriends);
         };
 
         fetchUser();
@@ -117,7 +118,7 @@ function HomeScreen(){
     //     }
     //   };
 
-    //console.log(JSON.stringify(data, null, 2))
+    console.log(JSON.stringify(userFriends, null, 2))
 
 
     return(
@@ -186,7 +187,13 @@ function HomeScreen(){
                             )}
                             </Box>
                         </HStack>
-                    </Box>)}} keyExtractor={(item) => item._id} />
+                    </Box>)}} keyExtractor={(item) => item._id} ListEmptyComponent={
+                    <Box alignItems="center" justifyContent="center" mt="10">
+                        <Text fontSize="lg" color="gray.500">
+                            You will find registered users here
+                        </Text>
+                    </Box>
+                }/>
             </Box>
             <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5} >
                 <Stagger visible={isOpen} initial={{ opacity: 0, scale: 0, translateY: 34 }} 

@@ -45,6 +45,7 @@ import moment from 'moment';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import AudioSlider from "../components/AudioSlider";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
@@ -92,7 +93,9 @@ const MessageSrceen = () => {
 
   const source = userImage || groupImage ? { uri: baseUrl + filename } : null;
 
-  
+  const [isDeleteMessagesOpen, setIsDeleteMessagesOpen] = useState(false); // State for the first dialog
+  const [isDeleteChatOpen, setIsDeleteChatOpen] = useState(false); // State for the second dialog
+
 
   useEffect(() => {
     return () => {
@@ -325,7 +328,7 @@ const MessageSrceen = () => {
             
             {!showUnStar ?  <IconButton icon={<Icon as={Entypo} name="star" />} color="black" onPress={()=> handleStarMessage(seletedMessages)} /> :
             <IconButton icon={<Icon as={MaterialCommunityIcons} name="star-off" />} color="black" onPress={() => unstarMessage(seletedMessages)} />}
-            <IconButton icon={<Icon as={Entypo} name="trash" />} color="black" onPress={() => deleteMessage(seletedMessages)} />
+            <IconButton icon={<Icon as={Entypo} name="trash" />} color="black"  onPress={() => setIsDeleteMessagesOpen(true)}  />
             <IconButton icon={<Icon as={Ionicons} name="arrow-redo-sharp" />} color="black" onPress={() => navigation.navigate('MessageForwardScreen', { 
               seletedMessages: seletedMessages,} )} />
           </Box>
@@ -335,7 +338,7 @@ const MessageSrceen = () => {
                 return <Pressable accessibilityLabel="More options menu" {...triggerProps} >
                         <Entypo name="dots-three-vertical" size={20} color="black" />
                       </Pressable>}}>
-              <Menu.Item onPress={handleClearChat}>Clear Chat</Menu.Item>
+              <Menu.Item onPress={() => setIsDeleteChatOpen(true)}>Clear Chat</Menu.Item>
             </Menu>
           </Box>
         ),
@@ -345,6 +348,14 @@ const MessageSrceen = () => {
   function viewUsersProfile(groupId){
     navigation.navigate('UsersProfileScreen', {groupId})
   }
+
+  const handleClearChatConfirm = async () => {
+    // Call deleteMessage with the selected messages
+    await handleClearChat();
+    setIsDeleteChatOpen(false); // Close the dialog after deletion
+  };
+
+  
   const handleClearChat = async ()=>{
     const formData ={
       userId: userId,
@@ -408,6 +419,13 @@ const MessageSrceen = () => {
     }
   };
   
+  const handleDeleteConfirm = async () => {
+    // Call deleteMessage with the selected messages
+    await deleteMessage(seletedMessages);
+    setIsDeleteMessagesOpen(false); // Close the dialog after deletion
+  };
+
+  
   const deleteMessage = async(messageIds)=>{
     const formData = messageIds;
     try {
@@ -440,6 +458,7 @@ const MessageSrceen = () => {
 
     setIsSending(true); 
     setErrorMessage(""); 
+    console.log("message sent",message);
       try {
           const formData = new FormData()
           formData.append("senderId",userId);
@@ -1225,7 +1244,7 @@ const MessageSrceen = () => {
                         right: 10, 
                       }} >
                       <Text
-                        style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}
+                        style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "white" }]}
                       >
                         {formatTime(item.timeStamp)}
                       </Text>
@@ -1635,6 +1654,26 @@ const MessageSrceen = () => {
           style={{ height: 250 }}
         />
       )}
+      <ConfirmationDialog
+        isOpen={isDeleteMessagesOpen} 
+        onClose={() => setIsDeleteMessagesOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        header="Delete Messages"
+        body="Are you sure you want to delete the selected messages? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+
+      {/* Second ConfirmationDialog */}
+      <ConfirmationDialog
+        isOpen={isDeleteChatOpen} 
+        onClose={() => setIsDeleteChatOpen(false)}
+        onConfirm={handleClearChatConfirm}
+        header="Delete Customer"
+        body="Are you sure you want to delete this chat? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </KeyboardAvoidingView>
   );
 };

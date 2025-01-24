@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import { Avatar, Box, FlatList, HStack, Menu, Spacer, Text, VStack } from "native-base";
+import { Avatar, Box, FlatList, HStack, IconButton, Menu, Spacer, Text, VStack } from "native-base";
 import { Pressable } from "react-native";
 import { mainURL } from "../Utils/urls";
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -11,7 +11,7 @@ import io from "socket.io-client";
 import moment from "moment";
 import { useToast } from 'native-base';
 import Ionicons from '@expo/vector-icons/Ionicons';
-function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
+function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpdate }) {
   const navigation = useNavigation();
   const {userId, setUserId} = useContext(UserType);
   const toast = useToast();
@@ -71,7 +71,6 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
       headerRight: () =>
         selectedChats.length > 0 ? (
           <Box flexDirection="row" alignItems="center" style={{ marginRight: 10, gap: 20 }}>
-            {/* Show pin-off if showUnPin is true, else show pin */}
             {!showUnPin ? (
               <Pressable onPress={() => pinChats(selectedChats)}>
                 <MaterialCommunityIcons name="pin" size={24} color="black" />
@@ -81,6 +80,9 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
                 <MaterialCommunityIcons name="pin-off" size={24} color="black" />
               </Pressable>
             )}
+              <Pressable onPress={() => deleteUserChats(selectedChats)}>
+                <MaterialCommunityIcons name="trash-can" size={24} color="black" />
+              </Pressable>
           </Box>
         ) :  
         <Box w="90%" alignItems="flex-end" paddingRight={4}>
@@ -121,6 +123,26 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
     }
   };
 
+  const deleteUserChats = async (selectedChats) => {
+    const formData = {
+      userId: userId,
+      chatsTobeDeleted: Array.isArray(selectedChats) ? selectedChats : [selectedChats],
+    };
+    try {
+      const response = await axios.patch(`${mainURL}/deleteChat`, formData);
+      setSelectedChats([]);
+      onChatUpdate();
+    } catch (error) {
+      console.log('Error:', error);
+          if (error.response) {
+              console.log('Server Error:', error.response.data); 
+          } else if (error.request) {
+              console.log('Network Error:', error.request); 
+          } else {
+              console.log('Other Error:', error.message);
+          }
+    }
+  }
   const unPinChats = async (selectedChats) => {
     try {
       const requests = selectedChats.map(chatId =>
@@ -153,14 +175,14 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
       : text;
   };
   
-  const handlePress = () => {
-    if (item.type === 'friend') {
+  const handlePress = (friend) => {
+    if (friend.type === 'friend') {
       navigation.navigate("MessageScreen", {
-        userName: item.user_name,
-        recipentId: item._id,
-        userImage: item.image
+        userName: friend.user_name,
+        recipentId: friend._id,
+        userImage: friend.image
       });
-    } else if (item.type === 'group') {
+    } else if (friend.type === 'group') {
       navigation.navigate("MessageScreen", {
         groupName: item.groupName,
         isGroupChat: true,
@@ -171,11 +193,11 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
   };
 
   const baseUrl = `${mainURL}/files/`;
-    const imageUrl = item?.image;
-    const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
-    const filename = normalizedPath.split('/').pop();
+  const imageUrl = item?.image;
+  const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
+  const filename = normalizedPath.split('/').pop();
+  const source =  item.image ? { uri: baseUrl + filename } : null;
 
-    const source =  item.image ? { uri: baseUrl + filename } : null;
   return (
     <Box flex={1} backgroundColor="white">
       <Pressable
@@ -219,7 +241,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate }) {
         )}
       </Pressable>
     </Box>
-  );
+  )
 }
 
 export default UserChat;

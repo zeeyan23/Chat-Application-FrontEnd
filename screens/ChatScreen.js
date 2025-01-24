@@ -45,16 +45,20 @@ function ChatScreen(){
           const groupsData = response.data.groups || [];
           const groupMembershipsData = response.data.groupMembers || [];
           if (Array.isArray(friendsData)) {
+
               const updatedFriends = await Promise.all(
-                  friendsData.map(async (friend) => {
-                    const lastMessage = await fetchLastMessageForFriend(userId, friend._id, 'friend');
-
-                      const isPinned = pinnedChats.some(chat => chat._id === friend._id);
-
-                      return { ...friend, lastMessage, isPinned, type: 'friend' };
-                  })
+                friendsData.map(async (friend) => {
+                  const updatedFriendList = await Promise.all(
+                    friend.friendsList.map(async (item) => {
+                      const lastMessage = await fetchLastMessageForFriend(userId, item._id, 'friend');
+                      const isPinned = pinnedChats.some(chat => chat._id === item._id);
+                      return { ...item, lastMessage, isPinned, type: 'friend' };
+                    })
+                  );
+                  return { ...friend, friendsList: updatedFriendList };
+                })
               );
-
+              
               const updatedGroups = await Promise.all(
                 groupsData.map(async (group) => {
                   const lastMessage = await fetchLastMessageForFriend(null, group._id, 'group');
@@ -65,7 +69,10 @@ function ChatScreen(){
                 })
               );
 
-              const combinedData = [...updatedGroups, ...updatedFriends, ...groupMembershipsData];
+              
+              const combinedData = [...updatedGroups, ...updatedFriends.flatMap(f =>
+                f.friendsList.filter(friend => !f.deletedChats.includes(friend._id))
+              ), ...groupMembershipsData];
 
               combinedData.sort((a, b) => {
 
@@ -97,6 +104,7 @@ function ChatScreen(){
   }, []);
 
     const fetchLastMessageForFriend = async (userId,targetId, type = 'friend') => {
+      //console.log(userId,targetId)
         try {
           const endpoint =
           type === 'group'
@@ -169,15 +177,27 @@ function ChatScreen(){
         };
       }, [userId]);
       
-      //console.log(JSON.stringify(friendsWithLastMessage, null, 2))
     return(
         <>
         
           <ScrollView background={"white"}> 
               <Pressable>
-                  {friendsWithLastMessage?.map((item, index)=>(
-                      <UserChat key={index} item={item} selectedChats={selectedChats} setSelectedChats={setSelectedChats} onPinUpdate={fetchUser}/>
-                  ))}
+                {friendsWithLastMessage?.length > 0 ? (
+                  friendsWithLastMessage?.map((item, index)=>(
+                      <UserChat key={index} item={item} selectedChats={selectedChats} setSelectedChats={setSelectedChats} onPinUpdate={fetchUser} onChatUpdate={fetchUser}/>
+                  ))):(
+                    // Display a message when the array is empty
+                    <Box alignItems="center" mt={5}>
+                      No chats available.
+                      <Text color="gray.500" fontSize="md">
+                         <Pressable onPress={() => navigation.navigate("Home")}>
+                          <Text color="blue.500" fontSize="md" fontWeight="bold">
+                            Start by adding friends!
+                          </Text>
+                        </Pressable>
+                      </Text>
+                    </Box>
+                  )}
               </Pressable>
           </ScrollView>
           <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5} >

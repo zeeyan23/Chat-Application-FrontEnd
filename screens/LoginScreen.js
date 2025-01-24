@@ -20,17 +20,15 @@ function LoginScreen(){
 
     useEffect(() => {
         const isLoggedIn = async () => {
+
             try {
                 const token = await AsyncStorage.getItem("authToken");
-    
                 if (token) {
                     const response = await axios.get(`${mainURL}/get-user-id-from-token`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
-    
                     const userId = response.data.userId;
                     const friendResponse = await axios.get(`${mainURL}/has-friends/${userId}`);
-                    
                     if (friendResponse.data.exists) {
                         navigation.navigate("Chats");
                     } else {
@@ -139,7 +137,7 @@ function LoginScreen(){
     
             const token = response.data.token;
             await AsyncStorage.setItem("authToken", token); 
-            navigation.navigate('Chats');
+            navigation.navigate('Home');
         } catch (error) {
             console.log('Error:', error); 
             if (error.response) {
