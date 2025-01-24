@@ -71,7 +71,7 @@ function ChatScreen(){
 
               
               const combinedData = [...updatedGroups, ...updatedFriends.flatMap(f =>
-                f.friendsList.filter(friend => !f.deletedChats.includes(friend._id))
+                f.friendsList.filter(friend => !f.deletedChats?.includes(friend._id))
               ), ...groupMembershipsData];
 
               combinedData.sort((a, b) => {
