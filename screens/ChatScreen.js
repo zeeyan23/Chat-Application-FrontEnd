@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { useContext } from "react";
 import { useState } from "react";
-import {  View } from "react-native";
+import {  BackHandler, View } from "react-native";
 import { UserType } from "../Context/UserContext";
 import { mainURL } from "../Utils/urls";
-import { Avatar, Box, FlatList, HStack, Pressable, ScrollView, Spacer, VStack, Text, Stagger, useDisclose, IconButton, Icon, Menu } from "native-base";
+import { Avatar, Box, FlatList, HStack, Pressable, ScrollView, Spacer, VStack, Text, Stagger, useDisclose, IconButton, Icon, Menu, Spinner } from "native-base";
 import axios from "axios";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import UserChat from "./UserChat";
@@ -26,6 +26,17 @@ function ChatScreen(){
   const [isOpen, setIsOpen] = useState(false);
   
   const onToggle = () => setIsOpen((prev) => !prev);
+
+  const [loading, setLoading] = useState(true); // Loading state
+
+  useEffect(() => {
+    setLoading(true);
+    setTimeout(() => {
+      const fetchedData = [];
+      setFriendsData(fetchedData);
+      setLoading(false); 
+    }, 2000);
+  }, []);
 
   const fetchUser = async () => {
     const token = await AsyncStorage.getItem("authToken");
@@ -78,8 +89,11 @@ function ChatScreen(){
 
                   if (a.isPinned && !b.isPinned) return -1;
                   if (!a.isPinned && b.isPinned) return 1;  
-                  const timestampA = moment(a.lastMessage?.timeStamp);
-                  const timestampB = moment(b.lastMessage?.timeStamp);
+                  const timestampA = a.lastMessage?.timeStamp ? moment(a.lastMessage.timeStamp) : moment(0);
+                  const timestampB = b.lastMessage?.timeStamp ? moment(b.lastMessage.timeStamp) : moment(0);
+
+                  // const timestampA = moment(a.lastMessage?.timeStamp);
+                  // const timestampB = moment(b.lastMessage?.timeStamp);
                   return timestampB.isBefore(timestampA) ? -1 : 1;
               });
               setFriendsWithLastMessage(combinedData);
@@ -102,14 +116,14 @@ function ChatScreen(){
   useEffect(() => {
     fetchUser();
   }, []);
-
+  
     const fetchLastMessageForFriend = async (userId,targetId, type = 'friend') => {
       //console.log(userId,targetId)
         try {
           const endpoint =
           type === 'group'
-              ? `${mainURL}/get-group-messages/${targetId}` // Use group-specific endpoint
-              : `${mainURL}/get-messages/${userId}/${targetId}`; // Use friend-specific endpoint
+              ? `${mainURL}/get-group-messages/${targetId}` 
+              : `${mainURL}/get-messages/${userId}/${targetId}`; 
 
       const response = await axios.get(endpoint);
             const messages = response.data.message.filter(
@@ -180,9 +194,14 @@ function ChatScreen(){
     return(
         <>
         
-          <ScrollView background={"white"}> 
+          {loading ? (
+            <Box flex={1} justifyContent="center" alignItems="center">
+              <Spinner size="lg" />
+            </Box>
+          ): <ScrollView background={"white"}> 
               <Pressable>
-                {friendsWithLastMessage?.length > 0 ? (
+                {
+                  friendsWithLastMessage?.length > 0 ? (
                   friendsWithLastMessage?.map((item, index)=>(
                       <UserChat key={index} item={item} selectedChats={selectedChats} setSelectedChats={setSelectedChats} onPinUpdate={fetchUser} onChatUpdate={fetchUser}/>
                   ))):(
@@ -199,7 +218,7 @@ function ChatScreen(){
                     </Box>
                   )}
               </Pressable>
-          </ScrollView>
+          </ScrollView>}
           <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5} >
             <Stagger visible={isOpen} initial={{ opacity: 0, scale: 0, translateY: 34 }} 
               animate={{ translateY: 0, scale: 1, opacity: 1, 

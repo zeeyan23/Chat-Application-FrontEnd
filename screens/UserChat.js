@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import { Avatar, Box, FlatList, HStack, IconButton, Menu, Spacer, Text, VStack } from "native-base";
+import { Avatar, Box, Center, FlatList, HStack, IconButton, Menu, Spacer, Text, VStack } from "native-base";
 import { Pressable } from "react-native";
 import { mainURL } from "../Utils/urls";
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -11,12 +11,14 @@ import io from "socket.io-client";
 import moment from "moment";
 import { useToast } from 'native-base';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import ConfirmationDialog from "../components/ConfirmationDialog";
 function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpdate }) {
   const navigation = useNavigation();
   const {userId, setUserId} = useContext(UserType);
   const toast = useToast();
 
   const [showUnPin, setShowUnPin]=useState(false);
+  const [isDeleteChat, setIsDeleteChat] = useState(false);
 
   function formatTime(time) {
     const input = moment(time);
@@ -72,16 +74,34 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
         selectedChats.length > 0 ? (
           <Box flexDirection="row" alignItems="center" style={{ marginRight: 10, gap: 20 }}>
             {!showUnPin ? (
-              <Pressable onPress={() => pinChats(selectedChats)}>
+              <Pressable onPress={() => pinChats(selectedChats)} style={({ pressed }) => [
+                {
+                  backgroundColor: pressed ? '#e0e0e0' : 'transparent',
+                  borderRadius: 8,
+                  padding: 5,
+                },
+              ]}>
                 <MaterialCommunityIcons name="pin" size={24} color="black" />
               </Pressable>
             ) : (
               <Pressable onPress={() => unPinChats(selectedChats)}>
-                <MaterialCommunityIcons name="pin-off" size={24} color="black" />
+                <MaterialCommunityIcons name="pin-off" size={24} color="black" style={({ pressed }) => [
+                {
+                  backgroundColor: pressed ? '#e0e0e0' : 'transparent',
+                  borderRadius: 8,
+                  padding: 5,
+                },
+              ]}/>
               </Pressable>
             )}
-              <Pressable onPress={() => deleteUserChats(selectedChats)}>
-                <MaterialCommunityIcons name="trash-can" size={24} color="black" />
+              <Pressable onPress={() => setIsDeleteChat(true)} >
+                <MaterialCommunityIcons name="trash-can" size={24} color="black" style={({ pressed }) => [
+                {
+                  backgroundColor: pressed ? '#e0e0e0' : 'transparent',
+                  borderRadius: 8,
+                  padding: 5,
+                },
+              ]}/>
               </Pressable>
           </Box>
         ) :  
@@ -103,6 +123,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
       userId: userId,
       pinnedChats: Array.isArray(selectedChats) ? selectedChats : [selectedChats],
     };
+    console.log(formData)
     try {
       const response = await axios.patch(`${mainURL}/updatePinnedChats`, formData);
       setSelectedChats([]);
@@ -123,7 +144,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
     }
   };
 
-  const deleteUserChats = async (selectedChats) => {
+  const deleteUserChats = async () => {
     const formData = {
       userId: userId,
       chatsTobeDeleted: Array.isArray(selectedChats) ? selectedChats : [selectedChats],
@@ -198,6 +219,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
   const filename = normalizedPath.split('/').pop();
   const source =  item.image ? { uri: baseUrl + filename } : null;
 
+
   return (
     <Box flex={1} backgroundColor="white">
       <Pressable
@@ -219,19 +241,39 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
               {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
               <VStack>
                 <Text fontSize="md" color="black" style={{ fontWeight: "bold" }}>{item.type === 'friend' ? item.user_name : item.groupName}</Text>
-                <Text 
+                {item.lastMessage ? <Text 
                   style={{ marginTop: 3, color: "gray", fontWeight: "500" }} 
                   numberOfLines={1} 
                   ellipsizeMode="tail"
                 >
-                  {truncateText(item.lastMessage?.message || item.lastMessage?.fileName, 5)}
-                </Text>
+                  {item.lastMessage?.messageType==='text' ? truncateText(item.lastMessage?.message,5) : 
+                    item.lastMessage?.messageType==='image' ? 
+                      <>
+                        <HStack space={2}>
+                          <Entypo name="image" size={15} color="grey" style={{alignSelf:"center"}} />
+                          <Text>Image</Text>
+                        </HStack>
+                        
+                      </>
+                       : item.lastMessage?.messageType==='video' ? <>
+                       <HStack space={2}>
+                        <Entypo name="video-camera" size={15} color="grey" style={{alignSelf:"center"}}/>
+                        <Text>Video</Text>
+                       </HStack>
+                     </> :
+                    item.lastMessage?.messageType === "pdf" || item.lastMessage?.messageType === "docx" || item.lastMessage?.messageType === "xlsx" 
+                    || item.lastMessage?.messageType === "zip" || item.lastMessage?.messageType === "pptx" ? 
+                    <>
+                      <Entypo name="text-document-inverted" size={15} color="grey" style={{alignSelf:"center"}}/>
+                      <Text>{item.lastMessage?.messageType}</Text>
+                    </> : ""}
+                </Text> : ""}
 
               </VStack>
               <Spacer />
               <Box justifyContent={"center"} alignItems={"center"}>
               <Text>
-                {formatTime(item.lastMessage?.timeStamp) || ""}
+                {item.lastMessage ? formatTime(item.lastMessage?.timeStamp) : ""}
               </Text>
               {item.isPinned && <MaterialCommunityIcons name="pin" size={20} color="grey" />}
               </Box>
@@ -240,6 +282,15 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
           </Box>
         )}
       </Pressable>
+      <ConfirmationDialog
+        isOpen={isDeleteChat} 
+        onClose={() => setIsDeleteChat(false)}
+        onConfirm={ deleteUserChats}
+        header="Delete Chat"
+        body="Are you sure you want to delete this chat?"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </Box>
   )
 }

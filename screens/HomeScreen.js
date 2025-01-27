@@ -118,8 +118,39 @@ function HomeScreen(){
     //     }
     //   };
 
-    console.log(JSON.stringify(userFriends, null, 2))
+    const openChatFriend = async(item) =>{
+        const formData = {
+            userId: userId,
+            chatsTobeRemovedFromDeletedChat: item._id,
+          };
+        try {
+            const response = await axios.delete(
+                `${mainURL}/remove_chat_from_deleted_chat/`, {data: formData})
 
+            if (response.status === 200) {
+                navigation.navigate("MessageScreen", {
+                  userName: item.user_name,
+                  recipentId: item._id,
+                  userImage: item.image,
+                });
+              }
+        } catch (error) {
+            console.log('Error:', error); 
+            if (error.response) {
+                console.log('Server Error:', error.response.data); 
+            } else if (error.request) {
+                console.log('Network Error:', error.request); 
+            } else {
+                console.log('Other Error:', error.message); 
+            }
+            navigation.navigate("MessageScreen", {
+                userName: item.user_name,
+                recipentId: item._id,
+                userImage: item.image,
+            });
+        }
+        
+    }
 
     return(
         <Box style={styles.container}>
@@ -146,14 +177,15 @@ function HomeScreen(){
                             <Box alignSelf={"center"}>
                             {userFriends.includes(item._id) ? (
                                 <Pressable
-                                style={{
-                                    backgroundColor: "#82CD47",
-                                    padding: 10,
-                                    width: 105,
-                                    borderRadius: 6,
-                                }}
-                                >
-                                <Text style={{ textAlign: "center", color: "white" }}>Friends</Text>
+                                    onPress={() => openChatFriend(item)}
+                                    style={{
+                                        backgroundColor: "#82CD47",
+                                        padding: 10,
+                                        width: 105,
+                                        borderRadius: 6,
+                                    }}
+                                    >
+                                    <Text style={{ textAlign: "center", color: "white" }}>Friends</Text>
                                 </Pressable>
                             ) : requestSent.includes(item._id) || friendRequestsReceived.some((friend) => friend._id === item._id) || friendRequests.some((friend) => friend._id === item._id) ? (
                                 <Pressable
