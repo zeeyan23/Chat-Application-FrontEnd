@@ -123,7 +123,6 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
       userId: userId,
       pinnedChats: Array.isArray(selectedChats) ? selectedChats : [selectedChats],
     };
-    console.log(formData)
     try {
       const response = await axios.patch(`${mainURL}/updatePinnedChats`, formData);
       setSelectedChats([]);
@@ -219,7 +218,12 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
   const filename = normalizedPath.split('/').pop();
   const source =  item.image ? { uri: baseUrl + filename } : null;
 
+  //console.log(JSON.stringify(item, null, 2))
 
+  function handleCancelDeleteChat(){
+    setIsDeleteChat(false);
+    setSelectedChats([]);
+  }
   return (
     <Box flex={1} backgroundColor="white">
       <Pressable
@@ -284,7 +288,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
       </Pressable>
       <ConfirmationDialog
         isOpen={isDeleteChat} 
-        onClose={() => setIsDeleteChat(false)}
+        onClose={handleCancelDeleteChat}
         onConfirm={ deleteUserChats}
         header="Delete Chat"
         body="Are you sure you want to delete this chat?"

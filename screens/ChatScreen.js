@@ -24,21 +24,12 @@ function ChatScreen(){
   const navigation = useNavigation();
   const socket = useRef();
   const [isOpen, setIsOpen] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(true);
+
   const onToggle = () => setIsOpen((prev) => !prev);
 
-  const [loading, setLoading] = useState(true); // Loading state
-
-  useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      const fetchedData = [];
-      setFriendsData(fetchedData);
-      setLoading(false); 
-    }, 2000);
-  }, []);
-
   const fetchUser = async () => {
+    setIsLoading(true);
     const token = await AsyncStorage.getItem("authToken");
     const decodedToken = jwtDecode(token);
     const userId = decodedToken.userId;
@@ -49,6 +40,7 @@ function ChatScreen(){
           `${mainURL}/get-all-friends/${userId}`
       );
       if (response.status === 200) {
+          setIsLoading(false);
           setFriendsData(response.data);
 
           const friendsData = response.data.friends || [];  
@@ -62,7 +54,18 @@ function ChatScreen(){
                   const updatedFriendList = await Promise.all(
                     friend.friendsList.map(async (item) => {
                       const lastMessage = await fetchLastMessageForFriend(userId, item._id, 'friend');
-                      const isPinned = pinnedChats.some(chat => chat._id === item._id);
+                      //const isPinned = pinnedChats.some(chat => chat._id === item._id);
+                      const isPinned = pinnedChats.some(pinnedId => {
+                        // Handle primitive ID comparison
+                        if (!pinnedId || !item._id) {
+                            console.log('Skipping comparison due to undefined _id:', pinnedId, item);
+                            return false;
+                        }
+                        // Compare directly with group._id
+                        console.log('Comparing:', pinnedId.toString(), 'with', item._id.toString());
+                        return pinnedId.toString() === item._id.toString();
+                    });
+                    
                       return { ...item, lastMessage, isPinned, type: 'friend' };
                     })
                   );
@@ -74,8 +77,19 @@ function ChatScreen(){
                 groupsData.map(async (group) => {
                   const lastMessage = await fetchLastMessageForFriend(null, group._id, 'group');
 
-                    const isPinned = pinnedChats.some(chat => chat._id === group._id);
+                    //const isPinned = pinnedChats.some(chat => chat._id === group._id);
 
+                    const isPinned = pinnedChats.some(pinnedId => {
+                        // Handle primitive ID comparison
+                        if (!pinnedId || !group._id) {
+                            console.log('Skipping comparison due to undefined _id:', pinnedId, group);
+                            return false;
+                        }
+                        // Compare directly with group._id
+                        console.log('Comparing:', pinnedId.toString(), 'with', group._id.toString());
+                        return pinnedId.toString() === group._id.toString();
+                    });
+                  
                     return { ...group, lastMessage, isPinned, type: 'group' };
                 })
               );
@@ -193,32 +207,32 @@ function ChatScreen(){
       
     return(
         <>
-        
-          {loading ? (
-            <Box flex={1} justifyContent="center" alignItems="center">
-              <Spinner size="lg" />
-            </Box>
-          ): <ScrollView background={"white"}> 
-              <Pressable>
-                {
-                  friendsWithLastMessage?.length > 0 ? (
-                  friendsWithLastMessage?.map((item, index)=>(
-                      <UserChat key={index} item={item} selectedChats={selectedChats} setSelectedChats={setSelectedChats} onPinUpdate={fetchUser} onChatUpdate={fetchUser}/>
-                  ))):(
-                    // Display a message when the array is empty
-                    <Box alignItems="center" mt={5}>
-                      No chats available.
-                      <Text color="gray.500" fontSize="md">
-                         <Pressable onPress={() => navigation.navigate("Home")}>
-                          <Text color="blue.500" fontSize="md" fontWeight="bold">
-                            Start by adding friends!
+          {isLoading ? (
+              <Box alignItems="center" mt={5}>
+                <Spinner size="lg" color="blue.500" />
+                <Text color="gray.500" fontSize="md" mt={2}>
+                  Loading chats...
+                </Text>
+              </Box>) : friendsWithLastMessage?.length > 0 ? (
+                <ScrollView background={"white"}> 
+                  <Pressable>
+                    {friendsWithLastMessage?.map((item, index)=>(
+                          <UserChat key={index} item={item} selectedChats={selectedChats} setSelectedChats={setSelectedChats} onPinUpdate={fetchUser} onChatUpdate={fetchUser}/>
+                      ))}
+                  </Pressable>
+                </ScrollView>
+              ) : (
+                <Box alignItems="center" mt={5}>
+                          No chats available.
+                          <Text color="gray.500" fontSize="md">
+                            <Pressable onPress={() => navigation.navigate("Home")}>
+                              <Text color="blue.500" fontSize="md" fontWeight="bold">
+                                Start by adding friends!
+                              </Text>
+                            </Pressable>
                           </Text>
-                        </Pressable>
-                      </Text>
-                    </Box>
-                  )}
-              </Pressable>
-          </ScrollView>}
+                        </Box>
+              )}
           <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5} >
             <Stagger visible={isOpen} initial={{ opacity: 0, scale: 0, translateY: 34 }} 
               animate={{ translateY: 0, scale: 1, opacity: 1, 
