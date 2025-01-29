@@ -7,8 +7,9 @@ import Entypo from '@expo/vector-icons/Entypo';
 import { Image, StyleSheet } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useNavigation } from "@react-navigation/native";
+import { CommonActions, useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { navigationRef } from "../App";
 function UserSettings(){
 
     const [user, setUser]=useState([]);
@@ -130,7 +131,15 @@ function UserSettings(){
         await AsyncStorage.removeItem("authToken");
         console.log("Token removed successfully");
 
-        navigation.replace("Login");
+        //navigation.replace("Login");
+        if (navigationRef.isReady()) {
+          navigationRef.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Login' }], // Ensure 'Chats' exists in your stack
+            })
+          );
+        }
       } catch (error) {
         console.log('Error:', error); 
         if (error.response) {

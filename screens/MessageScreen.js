@@ -46,6 +46,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import AudioSlider from "../components/AudioSlider";
 import ConfirmationDialog from "../components/ConfirmationDialog";
+import useBackHandler from "../components/CustomBackHandler";
 
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
@@ -96,6 +97,8 @@ const MessageSrceen = () => {
   const [isDeleteMessagesOpen, setIsDeleteMessagesOpen] = useState(false); // State for the first dialog
   const [isDeleteChatOpen, setIsDeleteChatOpen] = useState(false); // State for the second dialog
 
+
+  useBackHandler('Home');
 
   useEffect(() => {
     return () => {
@@ -555,15 +558,13 @@ const MessageSrceen = () => {
           }
           
       } catch (error) {
-          if (error.response) {
-              console.log('Server Error:', error.response.data); 
-              setErrorMessage("Server Error: " + error.response.data.message);
+          if (error.response && error.response.data.error) {
+              setErrorMessage(error.response.data.error);
           } else if (error.request) {
               console.log('Network Error:', error.request);
               setErrorMessage("Network Error: Please check your internet connection.");
           } else {
-              console.log('Other Error:', error.message);
-              setErrorMessage("Error: " + error.message);
+            setErrorMessage("Upload Error Something went wrong. Please try again.");
           }
       } finally{
         setIsSending(false);

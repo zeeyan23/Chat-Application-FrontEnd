@@ -1,4 +1,4 @@
-import { NavigationContainer } from '@react-navigation/native';
+import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -48,80 +48,42 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const checkAuthToken = async () => {
+    const checkUserStatus = async () => {
       try {
-        const authToken = await AsyncStorage.getItem('authToken');
-        if (authToken) {
+        const token = await AsyncStorage.getItem('authToken');
+        if (token) {
           setIsAuthenticated(true);
+  
+          const response = await axios.get(`${mainURL}/get-user-id-from-token`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const userId = response.data.userId;
+  
+          const friendResponse = await axios.get(`${mainURL}/has-friends/${userId}`);
+          setIsNewUser(!friendResponse.data.exists);
         }
       } catch (error) {
-        console.error('Failed to fetch auth token:', error);
+        console.error('Error checking user status:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
-    checkAuthToken();
-  }, []); 
-
-  useEffect(() => {
-    const isLoggedIn = async () => {
-
-        try {
-            const token = await AsyncStorage.getItem("authToken");
-            if (token) {
-                const response = await axios.get(`${mainURL}/get-user-id-from-token`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const userId = response.data.userId;
-                const friendResponse = await axios.get(`${mainURL}/has-friends/${userId}`);
-                if (friendResponse.data.exists) {
-                    setIsNewUser(false);
-                } else {
-                    setIsNewUser(true);
-                }
-            }
-        } catch (error) {
-            console.log("error", error);
-        }
-    };
-
-    isLoggedIn();
+  
+    checkUserStatus();
   }, []);
-
+  
   function AuthenticatedComponents(){
     return(
-      <Stack.Navigator>
-        {isNewUser ? <Stack.Screen name="Home" component={HomeScreen} /> : <Stack.Screen name="Chats" component={ChatScreen} options={{ headerShown: true }} />}
-        <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}}/>
-        <Stack.Screen name="Register" component={RegisterScreen} options={{headerShown: false}}/>
-        
-        <Stack.Screen name="FriendRequests" component={FriendsScreen} options={{
-          title: 'Friend Requests',
-        }}/>
-        
-        <Stack.Screen name="MessageScreen" component={MessageScreen}  options={{ headerShown: true }}/>
-        <Stack.Screen name="MessageForwardScreen" component={ForwardMessagesScreen}  options={{ headerShown: true }}/>
-        <Stack.Screen name="StarredMessageScreen" component={StarredMessagesScreen}  options={{ headerShown: true }}/>
-        <Stack.Screen name="AddFriendsToGroup" component={AddFriendsToGroup}  options={{ headerShown: true }}/>
-        <Stack.Screen name="UsersProfileScreen" component={UsersProfileScreen}  options={{ headerShown: false }}/>
-        <Stack.Screen name="Settings" component={UserSettings}/>
-        <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{headerShown: false}}/>
-      </Stack.Navigator>
-
-    )
-  }
-
-  function AuthStack(){
-    return(
-      <Stack.Navigator>
-        <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}}/>
-        <Stack.Screen name="Register" component={RegisterScreen} options={{headerShown: false}}/>
+      <Stack.Navigator initialRouteName={isNewUser ? "Home" : "Chats"}>
         <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Chats" component={ChatScreen} options={{ headerShown: true }} />
+        <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}}/>
+        <Stack.Screen name="Register" component={RegisterScreen} options={{headerShown: false}}/>
+        
         <Stack.Screen name="FriendRequests" component={FriendsScreen} options={{
           title: 'Friend Requests',
         }}/>
-        <Stack.Screen name="Chats" component={ChatScreen} options={{ headerShown: true }} />
+        
         <Stack.Screen name="MessageScreen" component={MessageScreen}  options={{ headerShown: true }}/>
         <Stack.Screen name="MessageForwardScreen" component={ForwardMessagesScreen}  options={{ headerShown: true }}/>
         <Stack.Screen name="StarredMessageScreen" component={StarredMessagesScreen}  options={{ headerShown: true }}/>
@@ -133,9 +95,20 @@ export default function App() {
 
     )
   }
+
+  function AuthStack() {
+    return (
+      <Stack.Navigator>
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{ headerShown: false }} />
+      </Stack.Navigator>
+    );
+  }
+  
   function Navigation() {
     return (
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         {isAuthenticated ? <AuthenticatedComponents /> : <AuthStack/>}
         <NotificationHandler />
       </NavigationContainer>
@@ -159,3 +132,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+export const navigationRef = createNavigationContainerRef();

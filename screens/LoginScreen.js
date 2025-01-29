@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Box, Text, Heading, VStack, FormControl, Input, Link, Button, HStack, Center, NativeBaseProvider, Pressable, Icon } from "native-base";
 import { Platform, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { CommonActions, useNavigation } from "@react-navigation/native";
 import { useState } from "react";
 import { mainURL } from "../Utils/urls";
 import axios from "axios";
@@ -11,6 +11,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Ionicons } from "@expo/vector-icons";
+import { navigationRef } from "../App";
 
 function LoginScreen(){
 
@@ -143,9 +144,25 @@ function LoginScreen(){
             const token = response.data.token;
             await AsyncStorage.setItem("authToken", token); 
             if(response.data.hasValidFriends || response.data.hasValidGroups){
-                navigation.navigate('Chats');
+                //navigation.navigate('Chats');
+                if (navigationRef.isReady()) {
+                    navigationRef.dispatch(
+                      CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'Chats' }], // Ensure 'Chats' exists in your stack
+                      })
+                    );
+                  }
+                
             }else{
-                navigation.navigate('Home');
+                if (navigationRef.isReady()) {
+                    navigationRef.dispatch(
+                      CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'Home' }], // Ensure 'Chats' exists in your stack
+                      })
+                    );
+                  }
             }
             
         } catch (error) {

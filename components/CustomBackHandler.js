@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { BackHandler } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-const useBackHandler = (excludeScreen = 'HomeScreen') => {
+const useBackHandler = (excludeScreen = 'Chats') => {
   const navigation = useNavigation();
   
   useEffect(() => {
