@@ -15,6 +15,7 @@ function AddFriendsToGroup(){
     const [myfriends, setMyFriends]=useState([]);
     const [seletedFriends,setSelectedFriends]=useState([]);
     const [formData, setData] = useState({});
+    const [error, setError] = useState(false);
 
     useLayoutEffect(()=>{
         navigation.setOptions({
@@ -46,6 +47,7 @@ function AddFriendsToGroup(){
 
     function onInputChange(enteredValue){
         setData({ ...formData, groupName: enteredValue });
+        setError(false);
     }
     const addToGroupMemeberList = async(item)=>{
         const isSelected = seletedFriends.includes(item._id);
@@ -58,6 +60,11 @@ function AddFriendsToGroup(){
     }
 
     const createGroupHandle = async() =>{
+        if (!formData.groupName || formData.groupName.length < 3) {
+            setError(true);
+            return;
+        }
+        
         const groupData = {
             groupName: formData.groupName,
             groupMembers: Array.from(seletedFriends) 
@@ -150,8 +157,8 @@ function AddFriendsToGroup(){
                 </Box>
             </Box>
             <Box bg={"white"} padding={3}> 
-                <FormControl bottom={2}>
-                    <FormControl.Label fontSize="md" fontWeight={"semibold"}>Group Name</FormControl.Label>
+                <FormControl bottom={2} isInvalid={error}>
+                    <FormControl.Label fontSize="md" fontWeight={"semibold"}>{error ? "Please enter group name" : "Group Name"}</FormControl.Label>
                     <Input width={"75%"} rounded="sm" fontSize="xs" ref={initialFocusRef} onChangeText={onInputChange}/>
                 </FormControl>
                 <Fab renderInPortal={false} shadow={5} size="sm" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 

@@ -46,7 +46,7 @@ function UserSettings(){
             userId,
             [field]: value, // Dynamically assign the field (e.g., user_name or email)
           };
-      
+          console.log("payload",payload);
           const response = await axios.patch(`${mainURL}/users/update`, payload);
       
           if (response.status === 200) {
@@ -197,6 +197,27 @@ function UserSettings(){
                     </Box>
                 }}
             </Pressable>
+
+            <Pressable onPress={() => {
+              setEditType("password"); 
+              setInputValue(user.password); 
+              onOpen();}}>
+                {({ isHovered, isFocused, isPressed }) => {
+                    return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'white'} p="3" rounded="8" style={{
+                        transform: [{ scale: isPressed ? 0.96 : 1}]}}>
+                        <HStack alignItems="center">
+                            <VStack>
+                            <Text color={"trueGray.600"}>Password</Text>
+                            <Text fontSize={"md"} bold >
+                            {'•'.repeat(user.password?.length)} 
+                            </Text>
+                            </VStack>
+                            <Spacer />
+                            <Entypo name="pencil" size={24} color="green" />
+                        </HStack>
+                    </Box>
+                }}
+            </Pressable>
               <Box flex={1} justifyContent="flex-end" alignItems="center">
                 <Pressable onPress={handleLogout} width={"full"}>
                     {({
@@ -240,8 +261,9 @@ function UserSettings(){
                         user.user_name = inputValue;
                       } else if (editType === "email") {
                         user.email = inputValue;
+                      }else if(editType === "password"){
+                        user.password = inputValue;
                       }
-                      console.log("User updated locally:", user);
                     } else {
                       console.error("Failed to update user:", result.error);
                     }

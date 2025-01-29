@@ -24,7 +24,10 @@ function RegisterScreen(){
     }
 
     async function createAccount(){
-        navigation.navigate('Login');
+        if (!formData.name || !formData.email || !formData.password) {
+            alert('Something went wrong. Please fill in all the fields.');
+            return;
+        }
         try {
             const response = await axios.post(
                 `${mainURL}/create_user/`,
@@ -35,18 +38,22 @@ function RegisterScreen(){
                     }
                 }
             );
+            navigation.navigate('Login');
         }  catch (error) {
-            console.log('Error:', error); // Log error details
+            console.log('Error:', error); 
             if (error.response) {
-                console.log('Server Error:', error.response.data); // Server-side error
+                console.log('Server Error:', error.response.data); 
             } else if (error.request) {
-                console.log('Network Error:', error.request); // Network-related issue
+                console.log('Network Error:', error.request); 
             } else {
-                console.log('Other Error:', error.message); // Any other error
+                console.log('Other Error:', error.message); 
             }
         }
     }
 
+    function handleLoginClick(){
+        navigation.navigate('Login'); 
+    }
     return(
         <Center w="100%" style={styles.container}>
             <Box safeArea p="2" w="90%" maxW="290" py="8">
@@ -76,6 +83,18 @@ function RegisterScreen(){
                 <Button mt="2" colorScheme="indigo" onPress={createAccount}>
                     Sign up
                 </Button>
+                <HStack mt="6" justifyContent="center">
+                    <Text fontSize="sm" color="coolGray.600" _dark={{color: "warmGray.200"}}>
+                        Already have an account?{" "}
+                        </Text>
+                        <Link _text={{
+                        color: "indigo.500",
+                        fontWeight: "medium",
+                        fontSize: "sm"
+                    }} onPress={handleLoginClick}>
+                        Log In 
+                        </Link>
+                    </HStack>
                 </VStack>
             </Box>
         </Center>

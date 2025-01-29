@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Box, Text, Heading, VStack, FormControl, Input, Link, Button, HStack, Center, NativeBaseProvider } from "native-base";
+import { Box, Text, Heading, VStack, FormControl, Input, Link, Button, HStack, Center, NativeBaseProvider, Pressable, Icon } from "native-base";
 import { Platform, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useState } from "react";
@@ -10,11 +10,15 @@ import { useEffect } from "react";
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import { Ionicons } from "@expo/vector-icons";
 
 function LoginScreen(){
 
     const [formData, setData] = useState({});
     const [expoPushToken, setExpoPushToken] = useState('');
+    const [isLoading, setIsLoading] = useState(true); 
+    const [showPassword, setShowPassword] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     const navigation = useNavigation();
 
@@ -135,21 +139,36 @@ function LoginScreen(){
                 }
             );
     
+            console.log(response.data)
             const token = response.data.token;
             await AsyncStorage.setItem("authToken", token); 
-            navigation.navigate('Home');
+            if(response.data.hasValidFriends || response.data.hasValidGroups){
+                navigation.navigate('Chats');
+            }else{
+                navigation.navigate('Home');
+            }
+            
         } catch (error) {
-            console.log('Error:', error); 
             if (error.response) {
-                console.log('Server Error:', error.response.data); 
-            } else if (error.request) {
-                console.log('Network Error:', error.request); 
+                if (error.response.status === 404) {
+                    setErrorMessage("User not found");
+                } else if(error.response.data && error.response.data.message){
+                    setErrorMessage("Failed to login. Please try again.");
+                }
             } else {
-                console.log('Other Error:', error.message); 
+                setErrorMessage("Network error. Please check your connection.");
             }
         }
     }
     
+    // if (isLoading) {
+    //     return (
+    //         <Center w="100%" style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+    //             <Heading>Loading...</Heading>
+    //         </Center>
+    //     );
+    // }
+
     return(
         <Center w="100%" style={styles.container}>
             <Box safeArea p="2" py="8" w="90%" maxW="290">
@@ -171,15 +190,25 @@ function LoginScreen(){
                 </FormControl>
                 <FormControl>
                     <FormControl.Label>Password</FormControl.Label>
-                    <Input type="password" onChangeText={changePasswordHandler}/>
+                    <Input type={showPassword ? "text" : "password"}  onChangeText={changePasswordHandler} InputRightElement={
+                        <Pressable onPress={() => setShowPassword(!showPassword)}>
+                            <Icon
+                            as={<Ionicons name={showPassword ? "eye-off" : "eye"} />}
+                            size={5}
+                            mr="2"
+                            color="muted.400"
+                            />
+                        </Pressable>
+                        }/>
                     <Link _text={{
-                    fontSize: "xs",
-                    fontWeight: "500",
-                    color: "indigo.500"
-                }} alignSelf="flex-end" mt="1">
+                        fontSize: "xs",
+                        fontWeight: "500",
+                        color: "indigo.500"
+                    }} alignSelf="flex-end" mt="1" onPress={() => navigation.navigate('ForgotPassword')}>
                     Forget Password?
                     </Link>
                 </FormControl>
+                {errorMessage && <Text color="red.500" fontSize="xs">{errorMessage}</Text>}
                 <Button mt="2" colorScheme="indigo" onPress={SignInHandler}>
                     Sign in
                 </Button>

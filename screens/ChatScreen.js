@@ -28,6 +28,28 @@ function ChatScreen(){
 
   const onToggle = () => setIsOpen((prev) => !prev);
 
+  // useEffect(() => {
+  //   const backAction = () => {
+  //     BackHandler.exitApp();
+  //   };
+
+  //   const backHandler = BackHandler.addEventListener(
+  //     'hardwareBackPress',
+  //     backAction
+  //   );
+
+  //   return () => backHandler.remove(); 
+  // }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+        setIsOpen(false)
+        fetchUser();
+
+        return () => {
+        };
+    }, [])
+  );
   const fetchUser = async () => {
     setIsLoading(true);
     const token = await AsyncStorage.getItem("authToken");
@@ -40,7 +62,6 @@ function ChatScreen(){
           `${mainURL}/get-all-friends/${userId}`
       );
       if (response.status === 200) {
-          setIsLoading(false);
           setFriendsData(response.data);
 
           const friendsData = response.data.friends || [];  
@@ -76,9 +97,6 @@ function ChatScreen(){
               const updatedGroups = await Promise.all(
                 groupsData.map(async (group) => {
                   const lastMessage = await fetchLastMessageForFriend(null, group._id, 'group');
-
-                    //const isPinned = pinnedChats.some(chat => chat._id === group._id);
-
                     const isPinned = pinnedChats.some(pinnedId => {
                         // Handle primitive ID comparison
                         if (!pinnedId || !group._id) {
@@ -124,7 +142,9 @@ function ChatScreen(){
       } else {
           console.log('Other Error:', error.message);
       }
-    } 
+    }finally {
+      setIsLoading(false); // Stop loading
+    }
   }
 
   useEffect(() => {
@@ -233,7 +253,7 @@ function ChatScreen(){
                           </Text>
                         </Box>
               )}
-          <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5} >
+          <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5}>
             <Stagger visible={isOpen} initial={{ opacity: 0, scale: 0, translateY: 34 }} 
               animate={{ translateY: 0, scale: 1, opacity: 1, 
               transition: { type: "spring", mass: 0.8, stagger: { offset: 30, reverse: true } } }} 
