@@ -1,4 +1,4 @@
-import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
+import { CommonActions, createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -13,7 +13,7 @@ import MessageScreen from './screens/MessageScreen';
 import NotificationHandler from './components/Notification';
 import ForwardMessagesScreen from './screens/ForwardMessagesScreen';
 import StarredMessagesScreen from './screens/StarredMessagesScreen';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { mainURL } from './Utils/urls';
 import AddFriendsToGroup from './screens/AddFriendsToGroup';
@@ -22,14 +22,16 @@ import UserSettings from './screens/UserSettings';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import ForgotPassword from './screens/ForgotPassword';
+import { AuthContext, AuthProvider } from './Context/AuthContext';
 
+export const navigationRef = createNavigationContainerRef();
 
 export default function App() {
 
   const Stack= createStackNavigator();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isNewUser, setIsNewUser]=useState(false);
+  
+
+  
 
   useEffect(() => {
     const socket = io(mainURL);
@@ -47,32 +49,9 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    const checkUserStatus = async () => {
-      try {
-        const token = await AsyncStorage.getItem('authToken');
-        if (token) {
-          setIsAuthenticated(true);
+ 
   
-          const response = await axios.get(`${mainURL}/get-user-id-from-token`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const userId = response.data.userId;
-  
-          const friendResponse = await axios.get(`${mainURL}/has-friends/${userId}`);
-          setIsNewUser(!friendResponse.data.exists);
-        }
-      } catch (error) {
-        console.error('Error checking user status:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-  
-    checkUserStatus();
-  }, []);
-  
-  function AuthenticatedComponents(){
+  const AuthenticatedComponents = ({isNewUser})=>{
     return(
       <Stack.Navigator initialRouteName={isNewUser ? "Home" : "Chats"}>
         <Stack.Screen name="Home" component={HomeScreen} />
@@ -107,20 +86,36 @@ export default function App() {
   }
   
   function Navigation() {
+    const { isAuthenticated, isNewUser } = useContext(AuthContext);
+    useEffect(() => {
+      if (isAuthenticated && navigationRef.isReady()) {
+        setTimeout(() => {
+          navigationRef.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Chats' }],
+            })
+          );
+        }, 300); // Increased delay to 300ms
+      }
+    }, [isAuthenticated]);
+    
     return (
       <NavigationContainer ref={navigationRef}>
-        {isAuthenticated ? <AuthenticatedComponents /> : <AuthStack/>}
+        {isAuthenticated ? <AuthenticatedComponents isNewUser={isNewUser}/> : <AuthStack/>}
         <NotificationHandler />
       </NavigationContainer>
     );
   }
   
   return (
-    <UserContext>
-      <NativeBaseProvider>
-        <Navigation />
-      </NativeBaseProvider>
-    </UserContext>
+    <AuthProvider>
+      <UserContext>
+        <NativeBaseProvider>
+          <Navigation />
+        </NativeBaseProvider>
+      </UserContext>
+    </AuthProvider>
   );
 }
 
@@ -132,4 +127,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-export const navigationRef = createNavigationContainerRef();

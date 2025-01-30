@@ -10,6 +10,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { navigationRef } from "../App";
+import { AuthContext } from "../Context/AuthContext";
 function UserSettings(){
 
     const [user, setUser]=useState([]);
@@ -21,6 +22,7 @@ function UserSettings(){
     const [selectedFile, setSelectedFile] = useState(null);
     const [imageChanged, setImageChanged] = useState(false);
     const navigation = useNavigation();
+    const { signOut } = useContext(AuthContext);
     useEffect(() => {
         fetchUserData();
       }, [imageChanged]);
@@ -128,18 +130,7 @@ function UserSettings(){
 
     const handleLogout = async()=>{
       try {
-        await AsyncStorage.removeItem("authToken");
-        console.log("Token removed successfully");
-
-        //navigation.replace("Login");
-        if (navigationRef.isReady()) {
-          navigationRef.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'Login' }], // Ensure 'Chats' exists in your stack
-            })
-          );
-        }
+        signOut();
       } catch (error) {
         console.log('Error:', error); 
         if (error.response) {

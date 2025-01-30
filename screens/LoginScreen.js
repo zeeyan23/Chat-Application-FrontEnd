@@ -12,6 +12,8 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Ionicons } from "@expo/vector-icons";
 import { navigationRef } from "../App";
+import { AuthContext } from "../Context/AuthContext";
+import { useContext } from "react";
 
 function LoginScreen(){
 
@@ -20,33 +22,33 @@ function LoginScreen(){
     const [isLoading, setIsLoading] = useState(true); 
     const [showPassword, setShowPassword] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-
+    const { signIn } = useContext(AuthContext);
     const navigation = useNavigation();
 
-    useEffect(() => {
-        const isLoggedIn = async () => {
+    // useEffect(() => {
+    //     const isLoggedIn = async () => {
 
-            try {
-                const token = await AsyncStorage.getItem("authToken");
-                if (token) {
-                    const response = await axios.get(`${mainURL}/get-user-id-from-token`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    const userId = response.data.userId;
-                    const friendResponse = await axios.get(`${mainURL}/has-friends/${userId}`);
-                    if (friendResponse.data.exists) {
-                        navigation.navigate("Chats");
-                    } else {
-                        navigation.navigate("Home");
-                    }
-                }
-            } catch (error) {
-                console.log("error", error);
-            }
-        };
+    //         try {
+    //             const token = await AsyncStorage.getItem("authToken");
+    //             if (token) {
+    //                 const response = await axios.get(`${mainURL}/get-user-id-from-token`, {
+    //                     headers: { Authorization: `Bearer ${token}` }
+    //                 });
+    //                 const userId = response.data.userId;
+    //                 const friendResponse = await axios.get(`${mainURL}/has-friends/${userId}`);
+    //                 if (friendResponse.data.exists) {
+    //                     navigation.navigate("Chats");
+    //                 } else {
+    //                     navigation.navigate("Home");
+    //                 }
+    //             }
+    //         } catch (error) {
+    //             console.log("error", error);
+    //         }
+    //     };
     
-        isLoggedIn();
-    }, []);
+    //     isLoggedIn();
+    // }, []);
     
     Notifications.setNotificationHandler({
         handleNotification: async () => ({
@@ -143,27 +145,38 @@ function LoginScreen(){
             console.log(response.data)
             const token = response.data.token;
             await AsyncStorage.setItem("authToken", token); 
-            if(response.data.hasValidFriends || response.data.hasValidGroups){
-                //navigation.navigate('Chats');
+            signIn();
+            setTimeout(() => {
                 if (navigationRef.isReady()) {
-                    navigationRef.dispatch(
-                      CommonActions.reset({
-                        index: 0,
-                        routes: [{ name: 'Chats' }], // Ensure 'Chats' exists in your stack
-                      })
-                    );
-                  }
+                  navigationRef.dispatch(
+                    CommonActions.reset({
+                      index: 0,
+                      routes: [{ name: response.data.hasValidFriends || response.data.hasValidGroups ? 'Chats' : 'Home' }],
+                    })
+                  );
+                }
+              }, 300);
+            // if(response.data.hasValidFriends || response.data.hasValidGroups){
+            //     //navigation.navigate('Chats');
+            //     if (navigationRef.isReady()) {
+            //         navigationRef.dispatch(
+            //           CommonActions.reset({
+            //             index: 0,
+            //             routes: [{ name: 'Chats' }], // Ensure 'Chats' exists in your stack
+            //           })
+            //         );
+            //       }
                 
-            }else{
-                if (navigationRef.isReady()) {
-                    navigationRef.dispatch(
-                      CommonActions.reset({
-                        index: 0,
-                        routes: [{ name: 'Home' }], // Ensure 'Chats' exists in your stack
-                      })
-                    );
-                  }
-            }
+            // }else{
+            //     if (navigationRef.isReady()) {
+            //         navigationRef.dispatch(
+            //           CommonActions.reset({
+            //             index: 0,
+            //             routes: [{ name: 'Home' }], // Ensure 'Chats' exists in your stack
+            //           })
+            //         );
+            //       }
+            // }
             
         } catch (error) {
             if (error.response) {

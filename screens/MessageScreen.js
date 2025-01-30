@@ -27,7 +27,7 @@
  * SOFTWARE.
  */
 
-import { StyleSheet, View, ScrollView, KeyboardAvoidingView, TextInput, Image, Modal, Platform,Linking,} from "react-native";
+import { StyleSheet, View, ScrollView, KeyboardAvoidingView, TextInput, Image, Modal, Platform,Linking, Animated, PanResponder, TouchableOpacity,} from "react-native";
 import React, { useState, useContext, useLayoutEffect, useEffect,useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
@@ -97,8 +97,58 @@ const MessageSrceen = () => {
   const [isDeleteMessagesOpen, setIsDeleteMessagesOpen] = useState(false); // State for the first dialog
   const [isDeleteChatOpen, setIsDeleteChatOpen] = useState(false); // State for the second dialog
 
+  const [cancelSwipe, setCancelSwipe] = useState(false); // To track the swipe action
+  const [opacity] = useState(new Animated.Value(1)); // For blinking effect
+  const [swipeX, setSwipeX] = useState(0); // Track horizontal swipe position
+  const [isRecording, setIsRecording] = useState(false); // Track if recording is in progress
+  const [isRecordingInProgress, setIsRecordingInProgress] = useState(false); 
+
+  const [recordingDuration, setRecordingDuration] = useState(0); // Track duration of recording
+
+
+  const micSize = useRef(new Animated.Value(1)).current; // Animated value for mic size
+  const micOpacity = useRef(new Animated.Value(1)).current; // Animated value for mic opacity
+  const inputOpacity = useRef(new Animated.Value(1)).current; // For animating the text input opacity
+  const timerOpacity = useRef(new Animated.Value(0)).current; // For animating the timer opacity
+  const [micPosition, setMicPosition] = useState(new Animated.Value(0)); // mic position
+  const [showCancelText, setShowCancelText] = useState(true); // Toggle for "Slide to Cancel" text blinking
+  const [opacity1] = useState(new Animated.Value(1)); // For blinking effect
 
   useBackHandler('Home');
+
+  useEffect(() => {
+    let interval;
+    // Make "Slide to cancel" text blink when recording starts
+    if (isRecording) {
+      interval = setInterval(() => {
+        // Animate opacity from 1 to 0 and vice versa for smooth blinking
+        Animated.sequence([
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 500, // 500ms to fade out
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 500, // 500ms to fade in
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }, 1000); // Repeat every 1 second
+    } else {
+      clearInterval(interval);
+    }
+
+    return () => clearInterval(interval); // Clean up the interval on unmount or stop recording
+  }, [isRecording, opacity]);
+
+
+  useEffect(() => {
+    // Reset mic position when recording stops
+    if (!isRecording) {
+      setMicPosition(new Animated.Value(0)); // Reset position if recording stops
+    }
+  }, [isRecording]);
 
   useEffect(() => {
     return () => {
@@ -851,7 +901,19 @@ const MessageSrceen = () => {
     setViewOnceSelected(prevState => !prevState);
   };
   
-  let isRecordingInProgress = false; // Add a flag to prevent simultaneous calls
+  //let isRecordingInProgress = false; // Add a flag to prevent simultaneous calls
+  useEffect(() => {
+    let timer;
+    if (isRecording) {
+      timer = setInterval(() => {
+        setRecordingDuration(prev => prev + 1); // Increment recording duration
+      }, 1000);
+    } else {
+      clearInterval(timer); // Clear the timer when not recording
+    }
+
+    return () => clearInterval(timer); // Cleanup on unmount or stop recording
+  }, [isRecording]);
 
   const voiceRecordHandle = async () => {
     console.log("Voice recording started");
@@ -862,8 +924,9 @@ const MessageSrceen = () => {
     }
 
     try {
-      isRecordingInProgress = true;
-
+      setIsRecordingInProgress(true)
+      setRecordingDuration(0); // Reset duration
+      setIsRecording(true); // Show timer and hide input UI
       if (recording) {
         console.log("Stopping the previous recording...");
         await recording.stopAndUnloadAsync();
@@ -873,7 +936,7 @@ const MessageSrceen = () => {
       const { granted } = await Audio.requestPermissionsAsync();
       if (!granted) {
         alert("You need to enable microphone permissions to use this feature.");
-        isRecordingInProgress = false;
+        setIsRecordingInProgress(false)
         return;
       }
 
@@ -894,7 +957,7 @@ const MessageSrceen = () => {
     } catch (err) {
       console.error("Failed to start recording", err);
     } finally {
-      isRecordingInProgress = false;
+      setIsRecordingInProgress(false);
     }
   };
 
@@ -938,6 +1001,8 @@ const MessageSrceen = () => {
       setRecordingUri(uri);
       setRecording(null);
 
+      setIsRecording(false); // Hide timer and show input UI
+    setRecordingDuration(0); // Reset timer
       if (!uri) {
         console.log("Recording URI not available. The recording might not have been stopped properly.");
         return;
@@ -973,6 +1038,51 @@ const MessageSrceen = () => {
       console.warn('Message not found in the list.');
     }
   };
+
+  const minutes1 = Math.floor(recordingDuration / 60);
+const seconds1 = recordingDuration % 60;
+// Format minutes and seconds to always show 2 digits
+const formattedMinutes = minutes1 < 10 ? `0${minutes1}` : `${minutes1}`;
+const formattedSeconds = seconds1 < 10 ? `0${seconds1}` : `${seconds1}`;
+// Start the blinking animation for "Slide to Cancel"
+
+
+// PanResponder to handle the swipe gesture
+const panResponder = PanResponder.create({
+  onStartShouldSetPanResponder: () => true,
+  onMoveShouldSetPanResponder: (e, gestureState) => {
+    // Only detect horizontal movement
+    return Math.abs(gestureState.dx) > 0;
+  },
+  onPanResponderMove: (e, gestureState) => {
+    setSwipeX(gestureState.dx); // Track swipe distance
+    console.log('Swipe distance (gestureState.dx):', gestureState.dx); // Debugging log
+    // Animate the mic icon based on horizontal swipe distance
+    Animated.spring(micPosition, {
+      toValue: gestureState.dx, // Move mic icon based on swipe
+      useNativeDriver: false,
+    }).start();
+  },
+  onPanResponderRelease: (e, gestureState) => {
+    console.log('Final swipe distance (gestureState.dx):', gestureState.dx); // Debugging log
+
+    // Adjust the threshold to a smaller value for a more sensitive swipe cancellation
+    const cancelThreshold = -2; // Adjust threshold to -20px for more sensitive swipe
+
+    // If the mic icon is swiped enough to the left (e.g., less than -20px), stop the recording
+    if (gestureState.dx < cancelThreshold) {
+      voiceStopRecordHandle(); // Stop recording when swiped sufficiently
+    } else {
+      // Reset mic icon to original position if swipe isn't enough
+      Animated.spring(micPosition, {
+        toValue: 0, // Reset to initial position
+        useNativeDriver: false,
+      }).start();
+    }
+
+    setSwipeX(0); // Reset swipeX value after release
+  },
+});
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#F0F0F0" }}>
@@ -1504,9 +1614,7 @@ const MessageSrceen = () => {
                   </View>
                 )
               }
-            
-    
-            
+          
           }} />
           {isSending && (
                 <HStack space={2} justifyContent="flex-end" paddingRight={5}>
@@ -1564,84 +1672,121 @@ const MessageSrceen = () => {
           {replyMessage && <ReplyMessageView />}
 
           <View style={{ flexDirection: "row", alignItems: "center", padding: 10 }}>
-            <TextInput
-              value={
-                selectedFile
-                  ? selectedFile.fileName || (messageType === "image" ? "Image" : "Video")
-                  : replyMessage || message 
-              }
-              onChangeText={handleInputChange}
-              style={{
-                flex: 1,
-                height: 40,
-                borderWidth: 1,
-                borderColor: "#dddddd",
-                borderRadius: 20,
-                paddingHorizontal: 10,
-              }}
-              placeholder="Type Your message..."
-              editable={!selectedFile} 
-            />
-
-              { !selectedFile &&
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  {!isTyping && (
-                    <IconButton
-                      icon={<Icon as={Entypo} name="camera" />}
-                      borderRadius="full"
-                      _icon={{ size: "lg" }}
-                      onPress={handleImage}
-                    />
+          {isRecording ? (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+            {/* Recording Time on the left */}
+              <Text style={{ fontSize: 18, color: 'black' }}>
+                {formattedMinutes}:{formattedSeconds}
+              </Text>
+              {/* Slide to cancel text, left of mic icon */}
+                  {/* Slide to cancel text, left of mic icon */}
+                  {isRecording && (
+                    <Animated.Text
+                      style={{
+                        fontSize: 16,
+                        color: 'black',
+                        paddingRight: 10,
+                        opacity: opacity, // Bind the opacity to the animated value
+                      }}
+                    >
+                      Slide to cancel
+                    </Animated.Text>
                   )}
-                  <IconButton
-                    icon={<Icon as={Entypo} name="attachment" />}
-                    borderRadius="full"
-                    _icon={{ size: "lg" }}
-                    onPress={handleDocument}
-                  />
-                  
-                </View>
-              }
-            {selectedFile ? (
-              <>
-              <IconButton
-                icon={<Icon as={MaterialCommunityIcons} name={viewOnceSelected ? 'numeric-1-circle' : 'numeric-1-circle-outline'} />}
-                borderRadius="full"
-                _icon={{ size: "lg" }}
-                onPress={handleViewOnceClick}
-              />
-              <IconButton
-                icon={<Icon as={Ionicons} name="send-outline" />}
-                borderRadius="full"
-                _icon={{ size: "lg" }}
-                onPress={handleSendFileMessage}
-              />
+
+
+                  <TouchableOpacity style={{ padding: 10 }}>
+                          <Animated.View
+                            style={{
+                              transform: [{ translateX: micPosition }], // Animate mic position based on swipe
+                            }}
+                            {...panResponder.panHandlers} // Attach the panResponder to the mic icon
+                          >
+                            <Ionicons name="mic" size={24} color="black" />
+                          </Animated.View>
+                        </TouchableOpacity>
+                  </View>) : (
+                        <>
+                        <TextInput
+                          value={
+                            selectedFile
+                              ? selectedFile.fileName || (messageType === "image" ? "Image" : "Video")
+                              : replyMessage || message 
+                          }
+                          onChangeText={handleInputChange}
+                          style={{
+                            flex: 1,
+                            height: 40,
+                            borderWidth: 1,
+                            borderColor: "#dddddd",
+                            borderRadius: 20,
+                            paddingHorizontal: 10,
+                          }}
+                          placeholder="Type Your message..."
+                          editable={!selectedFile} 
+                        />
+
+                          { !selectedFile &&
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                              {!isTyping && (
+                                <IconButton
+                                  icon={<Icon as={Entypo} name="camera" />}
+                                  borderRadius="full"
+                                  _icon={{ size: "lg" }}
+                                  onPress={handleImage}
+                                />
+                              )}
+                              <IconButton
+                                icon={<Icon as={Entypo} name="attachment" />}
+                                borderRadius="full"
+                                _icon={{ size: "lg" }}
+                                onPress={handleDocument}
+                              />
+                              
+                            </View>
+                          }
+                        {selectedFile ? (
+                          <>
+                          <IconButton
+                            icon={<Icon as={MaterialCommunityIcons} name={viewOnceSelected ? 'numeric-1-circle' : 'numeric-1-circle-outline'} />}
+                            borderRadius="full"
+                            _icon={{ size: "lg" }}
+                            onPress={handleViewOnceClick}
+                          />
+                          <IconButton
+                            icon={<Icon as={Ionicons} name="send-outline" />}
+                            borderRadius="full"
+                            _icon={{ size: "lg" }}
+                            onPress={handleSendFileMessage}
+                          />
+                          </>
+                          
+                        ) : isTyping ? (
+                          <IconButton
+                            icon={<Icon as={Ionicons} name="send-outline" />}
+                            borderRadius="full"
+                            _icon={{ size: "lg" }}
+                            onPress={() => sendMessage("text")}
+                          />
+                        ) : (
+                          <IconButton
+                            icon={<Icon as={Entypo} name="mic" color={"white"}/>}
+                            borderRadius="full"
+                            background={"green.800"}
+                            _icon={{ size: "lg", color: "green" }}
+                            _pressed={{
+                              transform: [{ scale: 1.5 }],
+                            }}
+                            onPressIn={() => {
+                              setTimeout(() => voiceRecordHandle(), 200); 
+                            }}
+                            onPressOut={() => {
+                              setTimeout(() => voiceStopRecordHandle(), 500); 
+                            }}
+                          />
+                        )}
               </>
-              
-            ) : isTyping ? (
-              <IconButton
-                icon={<Icon as={Ionicons} name="send-outline" />}
-                borderRadius="full"
-                _icon={{ size: "lg" }}
-                onPress={() => sendMessage("text")}
-              />
-            ) : (
-              <IconButton
-                icon={<Icon as={Entypo} name="mic" color={"white"}/>}
-                borderRadius="full"
-                background={"green.800"}
-                _icon={{ size: "lg", color: "green" }}
-                _pressed={{
-                  transform: [{ scale: 1.5 }],
-                }}
-                onPressIn={() => {
-                  setTimeout(() => voiceRecordHandle(), 200); 
-                }}
-                onPressOut={() => {
-                  setTimeout(() => voiceStopRecordHandle(), 500); 
-                }}
-              />
             )}
+            
           </View>
 
         </View>  
@@ -1734,5 +1879,20 @@ const styles = StyleSheet.create({
   slider: {
     width: '90%',
     height: 40,
+  },
+
+  recordingDuration: {
+    fontSize: 18,
+    color: '#333',
+  },
+  micButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  micIcon: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 50, // Make it round
+    padding: 10,
   },
 });
