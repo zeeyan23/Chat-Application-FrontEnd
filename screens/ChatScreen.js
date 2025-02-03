@@ -83,7 +83,7 @@ function ChatScreen(){
                             return false;
                         }
                         // Compare directly with group._id
-                        console.log('Comparing:', pinnedId.toString(), 'with', item._id.toString());
+                        // console.log('Comparing:', pinnedId.toString(), 'with', item._id.toString());
                         return pinnedId.toString() === item._id.toString();
                     });
                     
@@ -104,7 +104,7 @@ function ChatScreen(){
                             return false;
                         }
                         // Compare directly with group._id
-                        console.log('Comparing:', pinnedId.toString(), 'with', group._id.toString());
+                        //console.log('Comparing:', pinnedId.toString(), 'with', group._id.toString());
                         return pinnedId.toString() === group._id.toString();
                     });
                   
@@ -227,7 +227,7 @@ function ChatScreen(){
       
     return(
         <>
-          {isLoading ? (
+          {/* {isLoading ? (
               <Box alignItems="center" mt={5}>
                 <Spinner size="lg" color="blue.500" />
                 <Text color="gray.500" fontSize="md" mt={2}>
@@ -252,7 +252,15 @@ function ChatScreen(){
                             </Pressable>
                           </Text>
                         </Box>
-              )}
+              )} */}
+          {friendsWithLastMessage?.length > 0 && 
+                <ScrollView background={"white"}> 
+                  <Pressable>
+                    {friendsWithLastMessage?.map((item, index)=>(
+                          <UserChat key={index} item={item} selectedChats={selectedChats} setSelectedChats={setSelectedChats} onPinUpdate={fetchUser} onChatUpdate={fetchUser}/>
+                      ))}
+                  </Pressable>
+                </ScrollView>}
           <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5}>
             <Stagger visible={isOpen} initial={{ opacity: 0, scale: 0, translateY: 34 }} 
               animate={{ translateY: 0, scale: 1, opacity: 1, 
@@ -261,21 +269,22 @@ function ChatScreen(){
               stagger: { offset: 30, reverse: true } } }}>
 
               <IconButton mb="4" variant="solid" bg="blue.500" colorScheme="indigo" 
-                  borderRadius="full" icon={<Icon as={Ionicons} size="6" name="people-sharp" 
+                  borderRadius="md" icon={<Icon as={Ionicons} size="6" name="people-sharp" 
                   _dark={{ color: "warmGray.50" }} color="warmGray.50" />} onPress={()=>navigation.navigate("FriendRequests")}/>
                     
-              <IconButton mb="4" variant="solid" bg="green.500" colorScheme="yellow" 
-                  borderRadius="full" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 
-                  size="6" name="add-circle-outline" color="warmGray.50" />} onPress={()=>navigation.navigate("AddFriendsToGroup")}/>
+              <IconButton mb="4" variant="solid" bg="violet.600" colorScheme="yellow" 
+                  borderRadius="md" icon={<Icon as={MaterialCommunityIcons} _dark={{ color: "warmGray.50" }} 
+                  size="6" name="account-group" color="warmGray.50" />} onPress={()=>navigation.navigate("AddFriendsToGroup")}/>
 
               <IconButton mb="4" variant="solid" bg="amber.500" colorScheme="yellow" 
-                  borderRadius="full" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 
+                  borderRadius="md" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 
                   size="6" name="person-add" color="warmGray.50" />} onPress={()=>navigation.navigate("Home")}/>
                     
             </Stagger>
           </Box>
-          <HStack position={"absolute"} alignSelf={"flex-end"} bottom={10} right={5} >
-            <IconButton variant="solid" borderRadius="full" size="lg" onPress={onToggle} bg="cyan.400" icon={<Icon as={MaterialCommunityIcons} size="6" name="dots-horizontal" color="warmGray.50" _dark={{ color: "warmGray.50" }} />} />
+          <HStack position={"absolute"} alignSelf={"flex-end"} bottom={10} right={5}>
+            <IconButton variant="solid" borderRadius="md" size="lg" onPress={onToggle} bg="green.700"
+              icon={<Icon as={MaterialCommunityIcons} size="6" name="chat-plus" color="warmGray.50" _dark={{ color: "warmGray.50" }} />} />
           </HStack>
         </>
     )

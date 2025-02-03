@@ -117,7 +117,7 @@ function StarredMessagesScreen({navigation}){
         }
       };
     
-      console.log(JSON.stringify(starredMessages, null, 2))
+      //console.log(JSON.stringify(starredMessages, null, 2))
     return(
         <Box flex={1} background={"white"}>
             <FlatList

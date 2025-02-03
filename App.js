@@ -1,19 +1,19 @@
 import { CommonActions, createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { AppState, StyleSheet, Text, View } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import { NativeBaseProvider } from 'native-base';
 import HomeScreen from './screens/HomeScreen';
-import { UserContext } from './Context/UserContext';
+import { UserContext, UserType } from './Context/UserContext';
 import FriendsScreen from './screens/FriendsScreen';
 import ChatScreen from './screens/ChatScreen';
 import MessageScreen from './screens/MessageScreen';
 import NotificationHandler from './components/Notification';
 import ForwardMessagesScreen from './screens/ForwardMessagesScreen';
 import StarredMessagesScreen from './screens/StarredMessagesScreen';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { mainURL } from './Utils/urls';
 import AddFriendsToGroup from './screens/AddFriendsToGroup';
@@ -29,26 +29,7 @@ export const navigationRef = createNavigationContainerRef();
 export default function App() {
 
   const Stack= createStackNavigator();
-  
-
-  
-
-  useEffect(() => {
-    const socket = io(mainURL);
-
-    socket.on('connect', () => {
-      console.log('Socket connected:', socket.id);
-    });
-
-    socket.on('connect_error', (err) => {
-      console.error('Connection error:', err);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-
+  const socket = useRef();
  
   
   const AuthenticatedComponents = ({isNewUser})=>{
@@ -87,6 +68,7 @@ export default function App() {
   
   function Navigation() {
     const { isAuthenticated, isNewUser } = useContext(AuthContext);
+    
     useEffect(() => {
       if (isAuthenticated && navigationRef.isReady()) {
         setTimeout(() => {
@@ -99,6 +81,7 @@ export default function App() {
         }, 300); // Increased delay to 300ms
       }
     }, [isAuthenticated]);
+
     
     return (
       <NavigationContainer ref={navigationRef}>

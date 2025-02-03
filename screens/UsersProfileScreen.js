@@ -1,23 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { FlatList, SafeAreaView } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { Box, HStack, Avatar, Text, Badge, Spacer, Divider, Flex, Pressable } from 'native-base';
+import { Box, HStack, Avatar, Text, Badge, Spacer, Divider, Flex, Pressable, VStack } from 'native-base';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
 import moment from 'moment';
 import { mainURL } from '../Utils/urls';
 import * as ImagePicker from "expo-image-picker";
 import Entypo from '@expo/vector-icons/Entypo';
+import { UserType } from '../Context/UserContext';
 
 function UsersProfileScreen() {
-  const [groupData, setGroupData] = useState(null);
+  const [chatUserInfo, setChatUserInfo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const {userId, setUserId} = useContext(UserType);
 
   const route = useRoute();
   const navigation = useNavigation();
   
   const [imageChanged, setImageChanged] = useState(false);
-  const { groupId } = route.params || {};
+  const { id, isGroupChat } = route.params || {};
 
   useEffect(() => {
     fetchGroupData();
@@ -25,8 +27,8 @@ function UsersProfileScreen() {
 
   const fetchGroupData = async () => {
     try {
-      const response = await axios.get(`${mainURL}/get-groupInfo/${groupId}`);
-      setGroupData(response.data);
+      const response = await axios.get(`${mainURL}/get_chat_info/${id}`);
+      setChatUserInfo(response.data);
     } catch (error) {
       console.log('Error:', error);
       if (error.response) {
@@ -48,7 +50,7 @@ function UsersProfileScreen() {
     });
     try {
         const response = await axios.patch(
-            `${mainURL}/update-groupData/${groupId}`,
+            `${mainURL}/update-groupData/${id}`,
             formData,
             {
                 headers: {
@@ -92,22 +94,24 @@ function UsersProfileScreen() {
     }
   }
   // Avoid accessing properties of undefined
-  const formattedData = groupData
+  const formattedData = chatUserInfo
     ? [
-        { ...groupData.groupAdmin, role: 'Admin' }, 
-        ...(groupData.groupMembers || []), 
+        { ...chatUserInfo.groupAdmin, role: 'Admin' }, 
+        ...(chatUserInfo.groupMembers || []), 
       ]
     : [];
 
     const baseUrl = `${mainURL}/files/`;
-    const imageUrl = groupData?.image;
+    const imageUrl = chatUserInfo?.image;
     const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
     const filename = normalizedPath.split('/').pop();
     const source = selectedFile?.uri 
     ? { uri: selectedFile.uri } 
-    : groupData?.image 
+    : chatUserInfo?.image 
         ? { uri: baseUrl + filename } 
         : null;
+
+  //console.log(JSON.stringify(chatUserInfo, null, 2))
   return (
     <Box flex={1} padding={5}  background="white" safeArea width={"full"}>
       <Box flexDirection="row" width={"full"}>
@@ -119,14 +123,14 @@ function UsersProfileScreen() {
         />
       </Box>
 
-      {groupData && (
+      {chatUserInfo && (
         <>
             <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>
-                <Pressable onPress={handleImage}>
+                {isGroupChat && userId === chatUserInfo?.groupAdmin?._id ? <Pressable onPress={handleImage}>
                   {({ isHovered, isFocused, isPressed }) => {
                       return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'white'} borderWidth={1}  rounded="full" style={{
                           transform: [{ scale: isPressed ? 0.96 : 1}]}}>
-                          {imageChanged || groupData.image ? (
+                          {imageChanged || chatUserInfo.image ? (
                                   <Avatar size="2xl" source={source} />
                               ) : (
                                   <Ionicons name="person-circle-outline" size={100} color="gray" />
@@ -137,11 +141,47 @@ function UsersProfileScreen() {
                           </Box>
                       </Box>
                   }}
-                </Pressable>
-                <Text fontSize="lg" fontWeight="semibold">
-                    {groupData.groupName}
-                </Text>
-                <Flex direction="row" justifyContent="center" w="full" h="58" p="4">
+                </Pressable> : isGroupChat ? <Box maxW="96" bg={'white'} borderWidth={1}  rounded="full">
+                          {imageChanged || chatUserInfo.image ? (
+                                  <Avatar size="2xl" source={source} />
+                              ) : (
+                                  <Ionicons name="person-circle-outline" size={100} color="gray" />
+                              )}
+                          
+                      </Box> : <Box maxW="96" bg={'white'} borderWidth={1}  rounded="full">
+                          {imageChanged || chatUserInfo.image ? (
+                                  <Avatar size="2xl" source={source} />
+                              ) : (
+                                  <Ionicons name="person-circle-outline" size={100} color="gray" />
+                              )}
+                        </Box>}
+                
+                {!isGroupChat && 
+                <>
+                  <HStack alignItems="center" pb={5}>
+                    <VStack>
+                      <Text color={"trueGray.600"}>User name</Text>
+                      <Text fontSize={"md"} bold>
+                          {chatUserInfo.user_name}
+                      </Text>
+                    </VStack>
+                    <Spacer />
+                  </HStack>
+                  <HStack alignItems="center">
+                    <VStack>
+                      <Text color={"trueGray.600"}>Email address</Text>
+                      <Text fontSize={"md"} bold>
+                          {chatUserInfo.email}
+                      </Text>
+                    </VStack>
+                    <Spacer />
+                  </HStack>
+                </>}
+
+                {isGroupChat && <Text fontSize="lg" fontWeight="semibold">
+                    {chatUserInfo.groupName}
+                </Text>}
+                {isGroupChat && <Flex direction="row" justifyContent="center" w="full" h="58" p="4">
                     <Text color="trueGray.700" fontSize="md">
                     Group
                     </Text>
@@ -151,49 +191,53 @@ function UsersProfileScreen() {
                     </Text>
                     <Divider bg="emerald.500" thickness="2" mx="2" orientation="vertical" />
                     <Text color="trueGray.700" fontSize="md">
-                    {moment(groupData.created_date).format('DD/MM/YYYY')}
+                    {moment(chatUserInfo.created_date).format('DD/MM/YYYY')}
                     </Text>
-                </Flex>
+                </Flex>}
             </Box>
         </>
       )}
-        <Text color="trueGray.700" fontSize="sm">
-          {formattedData.length} members
-        </Text>
-        <FlatList
-          data={formattedData}
-          contentContainerStyle={{ }}
-          renderItem={({ item }) => {
+        {isGroupChat && 
+        <>
+          <Text color="trueGray.700" fontSize="sm">
+            {formattedData.length} members
+          </Text>
+          <FlatList
+            data={formattedData}
+            contentContainerStyle={{ }}
+            renderItem={({ item,index }) => {
 
-            const baseUrl = `${mainURL}/files/`;
-            const imageUrl = item.image;
-            const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
-            const filename = normalizedPath.split('/').pop();
+              const baseUrl = `${mainURL}/files/`;
+              const imageUrl = item.image;
+              const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
+              const filename = normalizedPath.split('/').pop();
 
-            const source = item.image 
-                ? { uri: baseUrl + filename } 
-                : null;
-            return(
-              <Box
-                borderBottomWidth="1"
-                _dark={{ borderColor: "muted.50" }}
-                borderColor="muted.800"
-                pl={["0", "4"]}
-                pr={["0", "5"]}
-                py="2"
-              >
-                <HStack space={[2, 3]} alignItems="center">
-                  {source ? <Avatar size="md"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
-                  <Text _dark={{ color: "warmGray.50" }} color="coolGray.800" bold>
-                    {item.user_name}
-                  </Text>
-                  <Spacer />
-                  {item.role === 'Admin' && <Badge colorScheme="success">Admin</Badge>}
-                </HStack>
-              </Box>
-            )}}
-          keyExtractor={(item) => item._id}
-        />
+              const source = item.image 
+                  ? { uri: baseUrl + filename } 
+                  : null;
+              return(
+                <Box
+                  borderBottomWidth="1"
+                  _dark={{ borderColor: "muted.50" }}
+                  borderColor="muted.800"
+                  pl={["0", "4"]}
+                  pr={["0", "5"]}
+                  py="2"
+                  key={index}
+                >
+                  <HStack space={[2, 3]} alignItems="center">
+                    {source ? <Avatar size="md"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
+                    <Text _dark={{ color: "warmGray.50" }} color="coolGray.800" bold>
+                      {item.user_name}
+                    </Text>
+                    <Spacer />
+                    {item.role === 'Admin' && <Badge colorScheme="success">Admin</Badge>}
+                  </HStack>
+                </Box>
+              )}}
+            keyExtractor={(item) => item._id}
+          />
+        </>}
       
     </Box>
   );
