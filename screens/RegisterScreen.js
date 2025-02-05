@@ -24,10 +24,10 @@ function RegisterScreen(){
     }
 
     async function createAccount(){
-        if (!formData.name || !formData.email || !formData.password) {
-            alert('Something went wrong. Please fill in all the fields.');
-            return;
-        }
+        // if (!formData.name || !formData.email || !formData.password) {
+        //     alert('Something went wrong. Please fill in all the fields.');
+        //     return;
+        // }
         try {
             const response = await axios.post(
                 `${mainURL}/create_user/`,

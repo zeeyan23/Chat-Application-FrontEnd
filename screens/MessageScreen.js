@@ -50,6 +50,7 @@ import ConfirmationDialog from "../components/ConfirmationDialog";
 import useBackHandler from "../components/CustomBackHandler";
 import {ImageBackground} from 'react-native';
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
+import MessageDeleteDialog from "../components/MessagesDeleteDialog";
 
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
@@ -251,10 +252,44 @@ const MessageSrceen = () => {
         updateVideoViewed(messageId._id);
       });
       
-      socket.current.emit("user_online", { userId, recipentId });
+      const fetchStatus = async () => {
+        try {
+            const response = await axios.get(`${mainURL}/user/status/${recipentId}`);
+            setStatus({
+                isOnline: response.data.isOnline,
+                lastOnlineTime: response.data.lastOnlineTime
+            });
+
+            // Only emit "user_online" after fetching the status
+            //socket.current = io(mainURL);
+            socket.current.emit("user_online", { userId });
+
+            // Listen for real-time status updates
+            const handleStatusUpdate = ({ userId, isOnline, lastOnlineTime }) => {
+                if (userId === senderId || userId === recipentId) {
+                    setStatus({
+                        isOnline,
+                        lastOnlineTime: isOnline ? null : (lastOnlineTime ? new Date(lastOnlineTime).toISOString() : null)
+                    });
+                }
+            };
+
+            socket.current.on("update_user_status", handleStatusUpdate);
+
+            return () => {
+                socket.current.emit("user_offline", { userId });
+                socket.current.off("update_user_status", handleStatusUpdate);
+                socket.current.disconnect();
+            };
+        } catch (error) {
+            console.error("Error fetching user status:", error);
+        }
+      };
+
+      fetchStatus();
       
     return () => {
-      socket.current.emit("user_offline", { userId, recipentId });
+      socket.current.emit("user_offline", { userId });
       socket.current.disconnect();
     
     };
@@ -263,7 +298,7 @@ const MessageSrceen = () => {
   useEffect(() => {
       if (socket) {
           socket.current.on("update_user_status", ({ userId, isOnline, lastOnlineTime }) => {
-            if (userId === senderId || userId === recipentId) {
+            if ( userId === recipentId) {
               setStatus({
                 isOnline,
                 lastOnlineTime: isOnline ? null : lastOnlineTime
@@ -362,7 +397,7 @@ const MessageSrceen = () => {
   useEffect(() => {
     navigation.setParams({ headerNeedsUpdate: true });
   }, [seletedMessages]);
-
+console.log(status)
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: '',
@@ -393,7 +428,7 @@ const MessageSrceen = () => {
                         {!isGroupChat ? userName : groupName}
                       </Text>
                       <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
-                        {status.isOnline ? "online" :  "offline"}
+                        {status.isOnline ? "online" :  "last seen at "+formatTime(status.lastOnlineTime)}
                       </Text>
                     </Box>;
               }}
@@ -506,11 +541,37 @@ const MessageSrceen = () => {
     setIsDeleteMessagesOpen(false); // Close the dialog after deletion
   };
 
+  const handleDeleteForMe = async () => {
+    // Call deleteMessage with the selected messages
+    await deleteMessageForMe(seletedMessages);
+    setIsDeleteMessagesOpen(false); // Close the dialog after deletion
+  };
+
   
   const deleteMessage = async(messageIds)=>{
     const formData = messageIds;
     try {
       const response = await axios.post(`${mainURL}/deleteMessages/`, {messages: formData}).then((res)=>{
+        setSelectedMessages((prevMessage)=> prevMessage.filter((id) => !messageIds.includes(id)))
+        fetchMessages();
+      })
+    } catch (error) {
+      console.log('Error:', error);
+          if (error.response) {
+              console.log('Server Error:', error.response.data); 
+          } else if (error.request) {
+              console.log('Network Error:', error.request); 
+          } else {
+              console.log('Other Error:', error.message);
+          }
+    }
+  }
+
+  const deleteMessageForMe = async(messageIds)=>{
+    const formData = { messages: messageIds, userId: userId }; 
+    console.log(formData)
+    try {
+      const response = await axios.post(`${mainURL}/deleteForMeMessages/`, formData).then((res)=>{
         setSelectedMessages((prevMessage)=> prevMessage.filter((id) => !messageIds.includes(id)))
         fetchMessages();
       })
@@ -1110,7 +1171,7 @@ const panResponder = PanResponder.create({
 });
 
 
-const bckimage = require('../assets/download.png');
+const bckimage = require('../assets/test.png');
 
 return (
   <SafeAreaProvider>
@@ -1154,7 +1215,8 @@ return (
                             alignSelf: 'center',
                             backgroundColor: '#333',
                             color: 'white',
-                            padding: 5,
+                            paddingVertical:8,
+                            paddingHorizontal:25,
                             borderRadius: 10,
                             marginVertical: 10,
                           }}
@@ -1251,18 +1313,18 @@ return (
                               
                           </Pressable>: null
                         }
-                        <Box>
-                          <Box flexDirection={"row"} paddingBottom={2}>
+                        <Box flexDirection={"row"}>
+                          <Box flexDirection={"row"} paddingBottom={2} paddingRight={1}>
                             {!item.replyMessage ? profileImageSource ? 
                               <Avatar size="xs" source={profileImageSource}/> : 
                               <Ionicons name="person-circle-outline" size={25} color="grey" /> : null}
                           
-                            {!item.replyMessage && <Text
+                            {/* {!item.replyMessage && <Text
                               color={"blue.900"} fontWeight={"semibold"} paddingLeft={2}>
                                 {item?.senderId?._id ===userId ? "You" : item?.senderId?.user_name}
-                            </Text>}
+                            </Text>} */}
                           </Box>
-                          <Text>{item?.message}</Text>
+                          <Text paddingRight={5}>{item?.message}</Text>
                         </Box>
                         
                         <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>
@@ -1826,14 +1888,21 @@ return (
             style={{ height: 250 }}
           />
         )}
-        <ConfirmationDialog
+        <MessageDeleteDialog
           isOpen={isDeleteMessagesOpen} 
           onClose={() => setIsDeleteMessagesOpen(false)}
-          onConfirm={handleDeleteConfirm}
+          //onConfirm={handleDeleteConfirm}
           header="Delete Messages"
-          body="Are you sure you want to delete the selected messages? This action cannot be undone."
-          confirmText="Delete"
-          cancelText="Cancel"
+          //body="Are you sure you want to delete the selected messages? This action cannot be undone."
+          //confirmText="Delete"
+          //cancelText="Cancel"
+          
+          body="Do you want to delete the messages just for yourself or for everyone?"
+          confirmText="Delete for everyone"
+          // cancelText="Cancel"
+          extraActionText="Delete for me"
+          onConfirm={handleDeleteConfirm}
+          onExtraAction={handleDeleteForMe}
         />
 
         {/* Second ConfirmationDialog */}
@@ -1862,6 +1931,7 @@ const styles = StyleSheet.create({
   image: {
     flex: 1,
     justifyContent: 'center',
+    resizeMode:"repeat"
   },
   text: {
     color: 'white',

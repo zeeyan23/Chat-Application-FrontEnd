@@ -72,15 +72,14 @@ export default function App() {
     useEffect(() => {
       if (isAuthenticated && navigationRef.isReady()) {
         setTimeout(() => {
-          navigationRef.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'Chats' }],
-            })
-          );
-        }, 300); // Increased delay to 300ms
+          if(!isNewUser){
+            navigationRef.navigate('Chats');
+          }else {
+            navigationRef.navigate('Home');
+          }
+        }, 300);
       }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, isNewUser]);
 
     
     return (

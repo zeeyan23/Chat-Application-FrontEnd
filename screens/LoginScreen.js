@@ -148,12 +148,18 @@ function LoginScreen(){
             signIn();
             setTimeout(() => {
                 if (navigationRef.isReady()) {
-                  navigationRef.dispatch(
-                    CommonActions.reset({
-                      index: 0,
-                      routes: [{ name: response.data.hasValidFriends || response.data.hasValidGroups ? 'Chats' : 'Home' }],
-                    })
-                  );
+                    if(response.data.hasValidFriends || response.data.hasValidGroups){
+                        navigation.navigate('Chats');
+                    }else {
+                        navigation.navigate('Home');
+                    }
+                //     navigationRef.navigate('Login');
+                //   navigationRef.dispatch(
+                //     CommonActions.reset({
+                //       index: 0,
+                //       routes: [{ name: response.data.hasValidFriends || response.data.hasValidGroups ? 'Chats' : 'Home' }],
+                //     })
+                //   );
                 }
               }, 300);
             // if(response.data.hasValidFriends || response.data.hasValidGroups){
