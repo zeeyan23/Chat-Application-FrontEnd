@@ -179,7 +179,7 @@ export default class AudioSlider extends PureComponent {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         height: 35,
-                        width: "auto"
+                        width: "95%"
                     }}
                 >
                     <TouchableOpacity

@@ -13,12 +13,13 @@ function ForwardMessagesScreen({ route, navigation }){
     const [friends, setFriends] = useState([]); 
     const [selectedFriends, setSelectedFriends] = useState([]); 
     const {userId, setUserId} = useContext(UserType);
-
+    console.log(seletedMessages)
     useEffect(() => {
         const fetchFriends = async () => {
         try {
             const response = await axios.get(`${mainURL}/get-all-friends/${userId}`);
             setFriends(response.data.friends); 
+            console.log(response.data)
         } catch (error) {
             console.error('Error fetching friends:', error);
         }
@@ -58,11 +59,13 @@ function ForwardMessagesScreen({ route, navigation }){
           console.error('Error forwarding messages:', error);
         }
       };
-      
+      console.log(JSON.stringify(friends,null, 2))
+
+      const friendsData = friends[0]?.friendsList || [];
     return(
         <View style={{ flex: 1, padding: 10 }}>
             <FlatList
-                data={friends}
+                data={friendsData}
                 keyExtractor={(item) => item._id}
                 renderItem={({ item }) => {
                   const baseUrl = `${mainURL}/files/`;

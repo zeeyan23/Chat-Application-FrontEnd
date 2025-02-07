@@ -294,22 +294,22 @@ const [wasDragged, setWasDragged] = useState(false);
     };
   }, [userId, recipentId]);
 
-  // useEffect(() => {
-  //     if (socket) {
-  //         socket.current.on("update_user_status", ({ userId, isOnline, lastOnlineTime }) => {
-  //           if ( userId === recipentId) {
-  //             setStatus({
-  //               isOnline,
-  //               lastOnlineTime: isOnline ? null : lastOnlineTime
-  //             }); // Update the status for the sender or recipient
-  //           }
-  //         });
-  //     }
+  useEffect(() => {
+      if (socket) {
+          socket.current.on("update_user_status", ({ userId, isOnline, lastOnlineTime }) => {
+            if ( userId === recipentId) {
+              setStatus({
+                isOnline,
+                lastOnlineTime: isOnline ? null : lastOnlineTime
+              }); // Update the status for the sender or recipient
+            }
+          });
+      }
 
-  //     return () => {
-  //         socket.current.off("update_user_status");
-  //     };
-  // }, [socket, senderId, recipentId]);
+      return () => {
+          socket.current.off("update_user_status");
+      };
+  }, [socket, senderId, recipentId]);
   
   const handleVideoPress = async(videoUrl, item) => {
     
@@ -1691,8 +1691,9 @@ return (
                             alignSelf={item?.senderId?._id === userId ? "flex-end" : "flex-start"}
                             p={2}
                           >
+                            <AudioSlider audio={source} />
                             <HStack space={2} alignItems="center">
-                              <Box>
+                              {/* <Box>
                                 {!item.replyMessage && (
                                   profileImageSource ? (
                                     <Avatar size="md" source={profileImageSource} alignSelf="center" />
@@ -1700,9 +1701,9 @@ return (
                                     <Ionicons name="person-circle-outline" size={25} color="grey" />
                                   )
                                 )}
-                              </Box>
+                              </Box> */}
                               <Box flex={1}>
-                                <AudioSlider audio={item.source} />
+                                
                               </Box>
                             </HStack>
                             <HStack justifyContent="space-between" alignItems="center" >
