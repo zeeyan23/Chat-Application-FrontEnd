@@ -37,7 +37,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserType } from "../Context/UserContext";
 import axios from "axios";
 import { mainURL } from "../Utils/urls";
-import { Box,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable, useToast, Avatar, Divider, Flex, FlatList } from "native-base";
+import { Box,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable, useToast, Avatar, Divider, Flex, FlatList, Spacer } from "native-base";
 import * as ImagePicker from "expo-image-picker"
 import { Video, Audio } from 'expo-av';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -101,6 +101,8 @@ const MessageSrceen = () => {
   const [isDeleteMessagesOpen, setIsDeleteMessagesOpen] = useState(false); // State for the first dialog
   const [isDeleteChatOpen, setIsDeleteChatOpen] = useState(false); // State for the second dialog
 
+  const [isCanceled, setIsCanceled] = useState(false);
+const [wasDragged, setWasDragged] = useState(false);
   const [cancelSwipe, setCancelSwipe] = useState(false); // To track the swipe action
   const [opacity] = useState(new Animated.Value(1)); // For blinking effect
   const [swipeX, setSwipeX] = useState(0); // Track horizontal swipe position
@@ -109,7 +111,7 @@ const MessageSrceen = () => {
 
   const [recordingDuration, setRecordingDuration] = useState(0); // Track duration of recording
 
-
+  const [recordingCancel, setRecordingCancel]=useState(false);
   const micSize = useRef(new Animated.Value(1)).current; // Animated value for mic size
   const micOpacity = useRef(new Animated.Value(1)).current; // Animated value for mic opacity
   const inputOpacity = useRef(new Animated.Value(1)).current; // For animating the text input opacity
@@ -259,9 +261,6 @@ const MessageSrceen = () => {
                 isOnline: response.data.isOnline,
                 lastOnlineTime: response.data.lastOnlineTime
             });
-
-            // Only emit "user_online" after fetching the status
-            //socket.current = io(mainURL);
             socket.current.emit("user_online", { userId });
 
             // Listen for real-time status updates
@@ -295,22 +294,22 @@ const MessageSrceen = () => {
     };
   }, [userId, recipentId]);
 
-  useEffect(() => {
-      if (socket) {
-          socket.current.on("update_user_status", ({ userId, isOnline, lastOnlineTime }) => {
-            if ( userId === recipentId) {
-              setStatus({
-                isOnline,
-                lastOnlineTime: isOnline ? null : lastOnlineTime
-              }); // Update the status for the sender or recipient
-            }
-          });
-      }
+  // useEffect(() => {
+  //     if (socket) {
+  //         socket.current.on("update_user_status", ({ userId, isOnline, lastOnlineTime }) => {
+  //           if ( userId === recipentId) {
+  //             setStatus({
+  //               isOnline,
+  //               lastOnlineTime: isOnline ? null : lastOnlineTime
+  //             }); // Update the status for the sender or recipient
+  //           }
+  //         });
+  //     }
 
-      return () => {
-          socket.current.off("update_user_status");
-      };
-  }, [socket, senderId, recipentId]);
+  //     return () => {
+  //         socket.current.off("update_user_status");
+  //     };
+  // }, [socket, senderId, recipentId]);
   
   const handleVideoPress = async(videoUrl, item) => {
     
@@ -397,7 +396,7 @@ const MessageSrceen = () => {
   useEffect(() => {
     navigation.setParams({ headerNeedsUpdate: true });
   }, [seletedMessages]);
-console.log(status)
+  
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: '',
@@ -416,15 +415,15 @@ console.log(status)
           ) : (
             <Box flexDirection="row" alignItems="center" marginLeft={1}>
               {source ? <Avatar size="35px"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={35} color="gray" />}
-              <Pressable width={"64"} onPress={() => {
+              <Pressable width={"48"} onPress={() => {
                   viewUsersProfile(isGroupChat ? groupId : recipentId);}}>
                 {({
                 isHovered,
                 isFocused,
                 isPressed
               }) => {
-                return <Box justifyContent={"center"} h={"full"} bg={isPressed ? "coolGray.200" : isHovered ? "coolGray.200" : "white"}>
-                      <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
+                return <Box pl={2} justifyContent={"center"} h={"full"} bg={isPressed ? "coolGray.200" : isHovered ? "coolGray.200" : "white"}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold' }}>
                         {!isGroupChat ? userName : groupName}
                       </Text>
                       <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
@@ -449,13 +448,16 @@ console.log(status)
               seletedMessages: seletedMessages,} )} />
           </Box>
         ) : (
-          <Box w="90%" alignItems="flex-end" paddingRight={4}>
-            <Menu w="190" trigger={triggerProps => {
+          <Box w="90%" justifyContent={"space-between"} flexDirection={"row"}>
+            <Ionicons name="call-sharp" size={24} color="black" />
+            <Ionicons name="videocam" size={24} color="black" />
+            <Menu trigger={triggerProps => {
                 return <Pressable accessibilityLabel="More options menu" {...triggerProps} >
-                        <Entypo name="dots-three-vertical" size={20} color="black" />
+                        <Entypo name="dots-three-vertical" size={20} color="black"   style={{marginTop:3, paddingRight:15}}/>
                       </Pressable>}}>
               <Menu.Item onPress={() => setIsDeleteChatOpen(true)}>Clear Chat</Menu.Item>
             </Menu>
+
           </Box>
         ),
     });
@@ -468,7 +470,7 @@ console.log(status)
   const handleClearChatConfirm = async () => {
     // Call deleteMessage with the selected messages
     await handleClearChat();
-    setIsDeleteChatOpen(false); // Close the dialog after deletion
+    setIsDeleteChatOpen(false); 
   };
 
   
@@ -1138,10 +1140,16 @@ const panResponder = PanResponder.create({
   onStartShouldSetPanResponder: () => true,
   onMoveShouldSetPanResponder: (e, gestureState) => {
     // Only detect horizontal movement
-    return Math.abs(gestureState.dx) > 0;
+    return Math.abs(gestureState.dx) > 5;
+  },
+  onPanResponderGrant: () => {
+    setWasDragged(false); // Reset when interaction starts
   },
   onPanResponderMove: (e, gestureState) => {
+    setIsCanceled(true); // Mark recording as canceled
+    setWasDragged(true); // Mark as dragged
     setSwipeX(gestureState.dx); // Track swipe distance
+
     console.log('Swipe distance (gestureState.dx):', gestureState.dx); // Debugging log
     // Animate the mic icon based on horizontal swipe distance
     Animated.spring(micPosition, {
@@ -1150,23 +1158,18 @@ const panResponder = PanResponder.create({
     }).start();
   },
   onPanResponderRelease: (e, gestureState) => {
-    console.log('Final swipe distance (gestureState.dx):', gestureState.dx); // Debugging log
-
-    // Adjust the threshold to a smaller value for a more sensitive swipe cancellation
-    const cancelThreshold = -2; // Adjust threshold to -20px for more sensitive swipe
-
-    // If the mic icon is swiped enough to the left (e.g., less than -20px), stop the recording
+    //voiceStopRecordHandle();
+    const cancelThreshold = -2; 
     if (gestureState.dx < cancelThreshold) {
-      voiceStopRecordHandle(); // Stop recording when swiped sufficiently
+      console.log("excuted")
     } else {
-      // Reset mic icon to original position if swipe isn't enough
       Animated.spring(micPosition, {
-        toValue: 0, // Reset to initial position
+        toValue: 0, 
         useNativeDriver: false,
       }).start();
     }
 
-    setSwipeX(0); // Reset swipeX value after release
+    setSwipeX(0);
   },
 });
 
@@ -1227,7 +1230,7 @@ return (
                       <Pressable style={[
                           item?.senderId?._id ===userId ? {
                               alignSelf:'flex-end',
-                              backgroundColor:'#29F200',
+                              backgroundColor:'#d8fdd2',
                               padding:8,
                               maxWidth:'60%',
                               margin:10,
@@ -1313,29 +1316,36 @@ return (
                               
                           </Pressable>: null
                         }
-                        <Box flexDirection={"row"}>
-                          <Box flexDirection={"row"} paddingBottom={2} paddingRight={1}>
-                            {!item.replyMessage ? profileImageSource ? 
-                              <Avatar size="xs" source={profileImageSource}/> : 
-                              <Ionicons name="person-circle-outline" size={25} color="grey" /> : null}
-                          
-                            {/* {!item.replyMessage && <Text
-                              color={"blue.900"} fontWeight={"semibold"} paddingLeft={2}>
-                                {item?.senderId?._id ===userId ? "You" : item?.senderId?.user_name}
-                            </Text>} */}
+                        <Box flexDirection={"row"} alignItems="center">
+                          {isGroupChat && (
+                            <Box flexDirection={"row"} paddingBottom={2} paddingRight={1}>
+                              {!item.replyMessage ? (
+                                profileImageSource ? (
+                                  <Avatar size="xs" source={profileImageSource} />
+                                ) : (
+                                  <Ionicons name="person-circle-outline" size={25} color="grey" />
+                                )
+                              ) : null}
+                            </Box>
+                          )}
+
+                          {/* Wrap message and timestamp in a row */}
+                          <Box flexDirection="row" alignItems="center" flexWrap="wrap">
+                            <Text paddingRight={5}>{item?.message}</Text>
+                            <Text
+                              style={[
+                                styles.infoText,
+                                { color: item?.senderId?._id === userId ? "black" : "black", marginLeft:"auto" } ,
+                              ]}
+                            >
+                              {formatTime(item.timeStamp)}
+                              {item?.starredBy[0] === userId && (
+                                <Entypo name="star" size={10} color="#828282" />
+                              )}
+                            </Text>
                           </Box>
-                          <Text paddingRight={5}>{item?.message}</Text>
                         </Box>
-                        
-                        <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>
-                            {formatTime(item.timeStamp)} 
-                            {item?.starredBy[0] === userId && (
-                              <Text
-                                style={{ position: 'absolute', right: 0, top: -4,  fontSize: 14, color: '#FFD700',}}>
-                                <Entypo name="star" size={10} color="#828282"/>
-                              </Text>
-                            )}
-                        </Text>
+
                       </Pressable>
                     </View>
                   )
@@ -1499,7 +1509,7 @@ return (
                       <Pressable key={index} style={[
                           item?.senderId?._id ===userId ? {
                               alignSelf:'flex-end',
-                              backgroundColor:'#29F200',
+                              backgroundColor:'#d8fdd2',
                               padding:8,
                               maxWidth:'60%',
                               margin:10,
@@ -1540,9 +1550,9 @@ return (
                             <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"}>{item.videoName}</Text>
                           )}
                           
-                          <Box flexDirection={"row"}>
-                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{formatDuration(item.duration)}</Text>
-                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{formatTime(item.timeStamp)}</Text>
+                          <Box flexDirection={"row"} justifyContent={"space-between"}>
+                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{formatDuration(item.duration)}</Text>
+                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{formatTime(item.timeStamp)}</Text>
                             {item?.starredBy[0] === userId && (
                               <Entypo
                                 name="star"
@@ -1589,7 +1599,7 @@ return (
                           style={[
                               item?.senderId?._id ===userId ? {
                                   alignSelf:'flex-end',
-                                  backgroundColor:'#29F200',
+                                  backgroundColor:'#d8fdd2',
                                   padding:8,
                                   maxWidth:'60%',
                                   margin:10,
@@ -1620,9 +1630,9 @@ return (
                               }} >{item.fileName}</Text>
                           </Box>
                           
-                          <Box flexDirection={"row"}>
-                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{item.messageType.toUpperCase()}</Text>
-                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}>{formatTime(item.timeStamp)}</Text>
+                          <Box flexDirection={"row"} justifyContent={"space-between"}>
+                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{item.messageType.toUpperCase()}</Text>
+                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{formatTime(item.timeStamp)}</Text>
                                 {item?.starredBy[0] === userId && (
                                   <Entypo
                                     name="star"
@@ -1643,6 +1653,11 @@ return (
                   const filename=normalizedPath.split("/").pop();
                   const source = {uri: baseUrl + filename}
     
+                  const profileImageUrl = item?.senderId?.image;
+                const normalizedProfileImagePath = profileImageUrl ? profileImageUrl.replace(/\\/g, '/') : '';
+                const profileImageFilename = normalizedProfileImagePath.split('/').pop();
+    
+                const profileImageSource =  item.senderId.image ? { uri: baseUrl + profileImageFilename } : null;
                   return(
                     <View key={index}>
                         {showDateSeparator && (
@@ -1656,7 +1671,7 @@ return (
                           style={[
                               item?.senderId?._id ===userId ? {
                                   alignSelf:'flex-end',
-                                  backgroundColor:'#29F200',
+                                  backgroundColor:'#d8fdd2',
                                   padding:8,
                                   maxWidth:'60%',
                                   margin:10,
@@ -1670,39 +1685,46 @@ return (
                                   borderRadius:7
                               }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
                           ]} onLongPress={() => handleSelectedMessage(item)}>
-                          <View >
-                              <AudioSlider audio={source}/>
-                          </View>
-                          <Box flexDirection="row" justifyContent="space-between" alignItems="center">
-                            <Text 
-                              style={[
-                                styles.infoText,
-                                { color: item?.senderId?._id === userId ? "white" : "black" }
-                              ]}
-                            >
-                              {formatDuration(item.duration)}
-                            </Text>
-    
-                            <Box flexDirection="row" alignItems="center">
-                              <Text 
-                                style={[
-                                  styles.infoText,
-                                  { color: item?.senderId?._id === userId ? "white" : "black" }
-                                ]}
-                              >
-                                {formatTime(item.created_date)}
+                          <Box
+                            width={"56"}
+                            borderRadius="lg"
+                            alignSelf={item?.senderId?._id === userId ? "flex-end" : "flex-start"}
+                            p={2}
+                          >
+                            <HStack space={2} alignItems="center">
+                              <Box>
+                                {!item.replyMessage && (
+                                  profileImageSource ? (
+                                    <Avatar size="md" source={profileImageSource} alignSelf="center" />
+                                  ) : (
+                                    <Ionicons name="person-circle-outline" size={25} color="grey" />
+                                  )
+                                )}
+                              </Box>
+                              <Box flex={1}>
+                                <AudioSlider audio={item.source} />
+                              </Box>
+                            </HStack>
+                            <HStack justifyContent="space-between" alignItems="center" >
+                              {/* Duration */}
+                              <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>
+                                {formatDuration(item.duration)}
                               </Text>
-                              {item?.starredBy[0] === userId && (
-                                <Entypo 
-                                  name="star" 
-                                  size={14}  
-                                  color="#828282"  
-                                  style={{ left: 5, top: 2 }}
-                                />
-                              )}
-                            </Box>
+
+                              {/* Timestamp + Star Icon */}
+                              <HStack alignItems="center" space={1}>
+                                <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>
+                                  {formatTime(item.created_date)}
+                                </Text>
+
+                                {item?.starredBy[0] === userId && (
+                                  <Entypo name="star" size={14} color="#828282" />
+                                )}
+                              </HStack>
+                            </HStack>
                           </Box>
-    
+
+                            
                         </Pressable>
                     </View>
                   )
@@ -1758,44 +1780,27 @@ return (
                   </View>
                 </Modal>
             )}
-        <View
-          style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 10}}>
+        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 10}}>
           <View style={{ flex: 1, justifyContent: "flex-end" }}>
             {replyMessage && <ReplyMessageView />}
-
             <View style={{ flexDirection: "row", alignItems: "center", padding: 10 }}>
-            {isRecording ? (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
-                <Text style={{ fontSize: 18, color: 'black' }}>
-                  {formattedMinutes}:{formattedSeconds}
-                </Text>
-                    {isRecording && (
-                      <Animated.Text
-                        style={{
-                          fontSize: 16,
-                          color: 'black',
-                          paddingRight: 10,
-                          opacity: opacity, // Bind the opacity to the animated value
-                        }}
-                      >
-                        Slide to cancel
-                      </Animated.Text>
-                    )}
-
-
-                    <TouchableOpacity style={{ padding: 10 }}>
-                            <Animated.View
-                              style={{
-                                transform: [{ translateX: micPosition }], // Animate mic position based on swipe
-                              }}
-                              {...panResponder.panHandlers} // Attach the panResponder to the mic icon
-                            >
-                              <Ionicons name="mic" size={24} color="black" />
-                            </Animated.View>
-                          </TouchableOpacity>
-                    </View>) : (
+              {isRecording && ( 
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+                  <> 
+                    <Text style={{ fontSize: 18, color: 'black' }}>
+                      {formattedMinutes}:{formattedSeconds}
+                    </Text>  
+                    <Animated.Text
+                      style={{
+                        fontSize: 16,
+                        color: 'black',
+                        paddingRight: 10,
+                        opacity: opacity,
+                      }}>Slide to cancel</Animated.Text>
+                  </>
+                </View>)}
                           <>
-                          <TextInput
+                          {!isRecording && <TextInput
                             value={
                               selectedFile
                                 ? selectedFile.fileName || (messageType === "image" ? "Image" : "Video")
@@ -1811,8 +1816,7 @@ return (
                             }}
                             placeholder="Type Your message..."
                             editable={!selectedFile} 
-                          />
-
+                          />}
                             { !selectedFile &&
                               <View style={{ flexDirection: "row", alignItems: "center" }}>
                                 {!isTyping && (
@@ -1856,8 +1860,13 @@ return (
                               onPress={() => sendMessage("text")}
                             />
                           ) : (
+                            <Animated.View
+                              style={{
+                                transform: [{ translateX: micPosition }], // Apply animated movement
+                              }}
+                              {...panResponder.panHandlers}>
                             <IconButton
-                              icon={<Icon as={Entypo} name="mic" color={"white"}/>}
+                              icon={<Icon as={MaterialCommunityIcons} name="microphone" color={"white"}/>}
                               borderRadius="full"
                               background={"green.800"}
                               _icon={{ size: "lg", color: "green" }}
@@ -1865,15 +1874,21 @@ return (
                                 transform: [{ scale: 1.5 }],
                               }}
                               onPressIn={() => {
+                                setIsCanceled(false);
                                 setTimeout(() => voiceRecordHandle(), 200); 
                               }}
                               onPressOut={() => {
-                                setTimeout(() => voiceStopRecordHandle(), 500); 
+                                if (!wasDragged) {
+                                  setTimeout(() => voiceStopRecordHandle(), 500);
+                                } else {
+                                  console.log("Swipe detected, preventing submission.");
+                                }
                               }}
                             />
+                            </Animated.View>
                           )}
-                </>
-              )}
+                        </>
+             
               
             </View>
 
@@ -1959,7 +1974,7 @@ const styles = StyleSheet.create({
     textAlign:'right',
     fontWeight: 'bold',
     color: 'white',
-    marginLeft: 10, // Add spacing between duration and timestamp
+    //marginLeft: 10,
   },
   modalContainer: {
     flex: 1,

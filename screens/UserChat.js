@@ -270,6 +270,9 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
                     <>
                       <Entypo name="text-document-inverted" size={15} color="grey" style={{alignSelf:"center"}}/>
                       <Text>{item.lastMessage?.messageType}</Text>
+                    </> : item.lastMessage?.messageType === "audio" ? <>
+                      <Ionicons name="mic" size={15} color="grey" style={{alignSelf:"center"}}/>
+                      <Text>{item.lastMessage?.messageType}</Text>
                     </> : ""}
                 </Text> : ""}
 
