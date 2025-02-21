@@ -28,7 +28,7 @@
  * SOFTWARE.
  */
 
-import { StyleSheet, View, ScrollView, KeyboardAvoidingView, TextInput, Image, Modal, Platform,Linking, Animated, PanResponder, TouchableOpacity,} from "react-native";
+import { StyleSheet, View, ScrollView, KeyboardAvoidingView, TextInput, Image, Modal, Platform,Linking, Animated, PanResponder, TouchableOpacity,PermissionsAndroid, Alert} from "react-native";
 import React, { useState, useContext, useLayoutEffect, useEffect,useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
@@ -51,6 +51,19 @@ import useBackHandler from "../components/CustomBackHandler";
 import {ImageBackground} from 'react-native';
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 import MessageDeleteDialog from "../components/MessagesDeleteDialog";
+import {
+  createAgoraRtcEngine,
+  ChannelProfileType,
+  ClientRoleType,
+  RtcSurfaceView,
+} from 'react-native-agora';
+import DialComponent from "../components/DialComponent";
+import ReceiverComponent from "../components/ReceiverComponent";
+
+const appId = 'b1b769d4b203413881261d9f64b00d47';
+const token = '007eJxTYJi01jJa7Sjr8clCJ7W3nGlrYtQSe7uYyy+nTqXuyoLegycVGJIMk8zNLFNMkowMjE0MjS0sDI3MDFMs08xMkgwMUkzMHzFtTm8IZGSw+7GbiZEBAkF8Loay/Mzk1PjkxJwcBgYAsfMg2g==';
+// const channelName = 'voice_call';
+const uid = 0;
 
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
@@ -120,11 +133,37 @@ const [wasDragged, setWasDragged] = useState(false);
   const [showCancelText, setShowCancelText] = useState(true); // Toggle for "Slide to Cancel" text blinking
   const [opacity1] = useState(new Animated.Value(1)); // For blinking effect
 
+  const agoraEngineRef = useRef(null); // IRtcEngine instance
+  const [isJoined, setIsJoined] = useState(false); // Whether the local user has joined the channel
+  const [isHost, setIsHost] = useState(true); // User role
+  const eventHandler = useRef(null); // Callback functions
+  const [dial , setDial]=useState(false);
+  const [callStatus, setCallStatus] = useState("Waiting...");
+
+  //const [isVisible, setIsVisible] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [incomingCall, setIncomingCall] = useState(null);
+
   const [status, setStatus] = useState({
     isOnline: false,
     lastOnlineTime: null
   });
   useBackHandler('Home');
+
+  const [callStartTime, setCallStartTime] = useState(null);
+  const [callDuration, setCallDuration] = useState(0);
+  const intervalRef = useRef(null);
+  const channelNameRef = useRef("");
+  const [isVideoCalling, setIsVideoCalling]=useState(null);
+
+  useEffect(() => {
+    if (dial || incomingCall) {
+        navigation.setOptions({ headerShown: false }); // Hide header
+       
+    } else {
+            navigation.setOptions({ headerShown: true }); 
+    }
+  }, [dial, incomingCall]);
 
   useEffect(() => {
     let interval;
@@ -152,7 +191,208 @@ const [wasDragged, setWasDragged] = useState(false);
     return () => clearInterval(interval); // Clean up the interval on unmount or stop recording
   }, [isRecording, opacity]);
 
+  socket.current = io(mainURL);
 
+  useEffect(() => {
+          
+          socket.current.emit("registerUser", userId);
+
+          socket.current.emit("online_user", userId);
+  
+          socket.current.on("incoming-call", ({ from, channelName }) => {
+              setCallStatus("Waiting...")
+              setIncomingCall( from );
+          });
+
+          socket.current.on("incoming-callvideo", ({ from, channelName }) => {
+            setCallStatus("Waiting...")
+            setIncomingCall( from );
+        });
+      
+          socket.current.on("call-accepted", ({ channelName }) => {
+            console.log(channelName)
+              setCallStatus("Call Connected");
+              join(channelName);
+          });
+      
+          socket.current.on("call-declined", () => {
+              setCallStatus("Call Declined");
+              setIncomingCall(false)
+              setDial(false)
+              Alert.alert("Call Declined", "The user declined your call.");
+
+          });
+  
+          socket.current.on("join-call", ({ channelName }) => {
+            setCallStatus("Call Connected")
+              join(channelName);
+          });
+          
+          // socket.current.on("incoming_video_call",({userId, recipentId}) => {
+          //   navigation.navigate("VideoScreen", { userId: userId, recipentId: recipentId, isCallingSession: true, isHost: false });
+            
+          // });
+          socket.current.on("incoming_video_call", (data) => {
+            if (data.recipientId === userId) {
+              navigation.navigate("VideoScreen", {
+                callerId: data.callerId,
+                callerName: data.callerName,
+                callerImage: data.callerImage,
+              });
+            }
+          });
+      
+          // Handle call decline
+          socket.current.on("video_call_declined", () => {
+            Alert.alert("Call Declined", "The recipient declined the call.");
+          });
+          
+          // socket.current.on("video_call_declined", () => {
+          //   Alert.alert("Video Call Declined", "The user declined your call.");
+          //   navigation.navigate("Chats");
+          // });
+
+          // socket.current.on("video_call_approved", () => {
+
+          //   navigation.setParams({ isCallingSession: false });
+          // });
+          // socket.current.on("video_call_approved", ({userId,recipentId, token, channelName, isHost, appId }) => {
+          //   navigation.navigate("VideoScreen",{userId,recipentId, token, channelName, isHost, appId });
+          // });
+
+          return () => {
+              if (agoraEngineRef.current && eventHandler.current) {
+                  agoraEngineRef.current.unregisterEventHandler(eventHandler.current);
+              }
+              if (agoraEngineRef.current) {
+                  agoraEngineRef.current.release();
+              }
+              
+              socket.current.off("incoming-call");
+              socket.current.off("call-accepted");
+              socket.current.off("call-declined");
+              socket.current.off("join-call");
+              socket.current.off("incoming_video_call");
+      socket.current.off("video_call_declined");
+              //socket.current.off("video_call_approved");
+              socket.current.disconnect();
+          };
+  
+      }, []);
+      useEffect(() => {
+        if (callStartTime) {
+          intervalRef.current = setInterval(() => {
+            setCallDuration(Math.floor((Date.now() - callStartTime) / 1000));
+          }, 1000);
+        } else {
+          clearInterval(intervalRef.current);
+        }
+      
+        return () => clearInterval(intervalRef.current);
+      }, [callStartTime]);
+      
+  useEffect(() => {
+        setupVideoSDKEngine();
+    }, []);
+
+    const setupVideoSDKEngine = async () => {
+            try {
+                if (Platform.OS === 'android') {
+                    await getPermission();
+                }
+                agoraEngineRef.current = createAgoraRtcEngine();
+                const agoraEngine = agoraEngineRef.current;
+    
+                eventHandler.current = {
+                    onJoinChannelSuccess: () => {
+                        
+                        setIsJoined(true);
+                        setCallStartTime(Date.now());
+                        agoraEngineRef.current?.enableAudio(); 
+                        
+                    },
+                    onUserJoined: (_connection, uid) => {
+                      
+                      
+                    },
+                    onUserOffline: (_connection, uid) => {
+                      setCallStatus("User Left");
+                      if (callStartTime) {
+                        const duration = Math.floor((Date.now() - callStartTime) / 1000);
+                        setCallDuration(duration);
+                        clearInterval(intervalRef.current);
+                      }
+                      
+                    },
+                    onAudioVolumeIndication : (speakers, totalVolume) => {
+                        console.log("Audio volume detected:", totalVolume);
+                        if (speakers.length > 0) {
+                            console.log("Speaking user:", speakers[0].uid, "Volume:", speakers[0].volume);
+                        }
+                    }
+                };
+                agoraEngine.registerEventHandler(eventHandler.current);
+                agoraEngine.initialize({
+                    appId: appId,
+                });
+            } catch (e) {
+                console.log(e);
+            }
+        };
+    
+        // Define the join method called after clicking the join channel button
+        const join = async () => { 
+            if (isJoined) return;
+        
+            console.log("Joining Agora channel:", channelNameRef.current, "Token:", token);
+        
+            try {
+                if (isHost) {
+                    agoraEngineRef.current?.joinChannel(token, channelNameRef.current, uid, {
+                        channelProfile: ChannelProfileType.ChannelProfileCommunication,
+                        clientRoleType: ClientRoleType.ClientRoleBroadcaster,
+                        publishMicrophoneTrack: true,
+                        autoSubscribeAudio: true,
+                    });
+                }
+            } catch (e) {
+                console.log("Join error:", e);
+            }
+        };
+
+      const leave = () => {
+            try {
+                agoraEngineRef.current?.leaveChannel();
+                setIsJoined(false);
+                setDial(false);
+                socket.current.emit("decline-call", { from: userId, to: recipentId });
+            } catch (e) {
+                console.log(e);
+            }
+        };
+    
+
+        const acceptCall = (from) => {
+          const finalChannel = channelNameRef.current;
+          console.log("✅ Final acceptCall - channelName:", finalChannel);
+
+          if (!finalChannel) {
+              console.error("❌ Error: Channel name is still empty!");
+              
+          }
+
+          socket.current.emit("accept-call", { from, to: userId, channelName: channelNameRef.current });
+          join();
+      };
+      
+      
+      const declineCall = (from) => {
+       
+          setIncomingCall(false);
+          socket.current.emit("decline-call", { from: userId, to: recipentId });
+      };
+      const formattedCallDuration = new Date(callDuration * 1000).toISOString().substr(14, 5);
+      
   useEffect(() => {
     // Reset mic position when recording stops
     if (!isRecording) {
@@ -232,7 +472,7 @@ const [wasDragged, setWasDragged] = useState(false);
   };
 
   useEffect(() => {
-    socket.current = io(mainURL);
+    
 
     socket.current.on("connect", () => {
       socket.current.emit("joinRoom", userId);
@@ -346,6 +586,7 @@ const [wasDragged, setWasDragged] = useState(false);
     }
   };
 
+  
   //console.log(JSON.stringify(getMessage, null, 2))
   const handleImagePress = async(imageUrl, item) => {
 
@@ -449,8 +690,8 @@ const [wasDragged, setWasDragged] = useState(false);
           </Box>
         ) : (
           <Box w="90%" justifyContent={"space-between"} flexDirection={"row"}>
-            <Ionicons name="call-sharp" size={24} color="black" />
-            <Ionicons name="videocam" size={24} color="black" />
+            <Ionicons name="call-sharp" size={24} color="black" onPress={() => voiceCallHandle(userId, recipentId)}/>
+            <Ionicons name="videocam" size={24} color="black" onPress={videoCallHandler} />
             <Menu trigger={triggerProps => {
                 return <Pressable accessibilityLabel="More options menu" {...triggerProps} >
                         <Entypo name="dots-three-vertical" size={20} color="black"   style={{marginTop:3, paddingRight:15}}/>
@@ -463,6 +704,38 @@ const [wasDragged, setWasDragged] = useState(false);
     });
   }, [navigation, seletedMessages, Platform.OS, userName, status]);
 
+  function voiceCallHandle(userId, recepientId){
+    // setCallStatus("Waiting...");
+    const newChannelName = "voice_call";
+    channelNameRef.current = newChannelName;
+    console.log("🔹 voiceCallHandle - channelNameRef:", channelNameRef.current);
+    socket.current.emit("call-user", {
+      from: userId, 
+      to: recepientId, 
+      channelName: channelNameRef.current
+    });
+    setDial(!dial);
+  }
+
+  function videoCallHandler(){
+    socket.current.emit("video_calling", {
+      callerId: userId,
+      recipientId: recipentId,
+      callerName: userName,
+      callerImage: userImage,
+    });
+
+    navigation.navigate("VideoScreen", {
+      isCalling: true,
+      recipientId: recipentId,
+    });
+  }
+
+  useEffect(() => {
+    if (channelNameRef) {
+        channelNameRef.current = channelNameRef.current;
+    }
+}, [channelNameRef]);
   function viewUsersProfile(id){
     navigation.navigate('UsersProfileScreen', {id, isGroupChat})
   }
@@ -722,6 +995,14 @@ const [wasDragged, setWasDragged] = useState(false);
         : `${seconds} sec`;
   };
 
+  useEffect(() => {
+    return () => {
+        
+        if (agoraEngineRef.current) {
+            agoraEngineRef.current.unregisterEventHandler(eventHandler);
+        }
+    };
+  }, []);
   const handleImage = async()=>{
       let result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images', 'videos'],
@@ -1176,10 +1457,15 @@ const panResponder = PanResponder.create({
 
 const bckimage = require('../assets/test.png');
 
+const formatCallDuration = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+};
 return (
   <SafeAreaProvider>
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
-      <ImageBackground source={bckimage} resizeMode="cover" style={styles.image}>
+      {!dial && !incomingCall && !isVideoCalling && <ImageBackground source={bckimage} resizeMode="cover" style={styles.image}>
         <KeyboardAvoidingView style={{ flex: 1}}>
         <FlatList
             data={getMessage}
@@ -1932,11 +2218,55 @@ return (
           cancelText="Cancel"
         />
       </KeyboardAvoidingView>
-      </ImageBackground>
+      </ImageBackground>}
+      {dial && (
+            <DialComponent 
+              userImage={userImage} 
+              userName={userName} 
+              callStatus={callStatus} 
+              callDuration={formatCallDuration(callDuration)}
+              onLeaveCall={leave} />)}
+
+        {incomingCall && (
+            <ReceiverComponent
+                //caller={incomingCall}
+                userImage={userImage} 
+                userName={userName} 
+                callStatus={callStatus} 
+                callDuration={formatCallDuration(callDuration)}
+                declineCall={()=>declineCall(recipentId)}
+                acceptCall={() => {
+                  console.log("📞 Accept Call Button Clicked");
+          
+                  // Ensure the channel name is set before calling `acceptCall`
+                  if (!channelNameRef.current) {
+                      console.warn("⚠️ Channel name is missing! Setting it manually...");
+                      channelNameRef.current = "voice_call";  // Default to voice_call
+                  }
+          
+                  console.log("✅ Calling acceptCall with channel:", channelNameRef.current);
+                  acceptCall(recipentId, channelNameRef.current);
+                }}
+            />
+        )}
+
+       
     </SafeAreaView>
   </SafeAreaProvider>
 );
 }
+
+const getPermission = async () => {
+    
+  const granted = await PermissionsAndroid.requestMultiple([
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+      PermissionsAndroid.PERMISSIONS.CAMERA,
+  ]);
+
+  return granted[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED &&
+         granted[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED;
+
+}  
 
 export default MessageSrceen;
 
@@ -2020,6 +2350,14 @@ const styles = StyleSheet.create({
     borderRadius: 50, // Make it round
     padding: 10,
   },
-
+  animatedView: {
+    width: 250,
+    height: 150,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  videoView: { width: '90%', height: 200 },
 });
 

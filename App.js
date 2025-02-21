@@ -23,10 +23,42 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import ForgotPassword from './screens/ForgotPassword';
 import { AuthContext, AuthProvider } from './Context/AuthContext';
+import CallScreen from './screens/CallScreen';
+import * as Notifications from "expo-notifications";
+import { initializeApp } from "firebase/app";
+import { getReactNativePersistence, initializeAuth } from "firebase/auth";
+import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
+import VideoScreen from './screens/VideoScreen';
+import VideoCallScreen from './screens/VideoCallScreen';
 
 export const navigationRef = createNavigationContainerRef();
+const firebaseConfig = {
+  apiKey: "AIzaSyDNMObk5i4DCZE8hm7CU4PeYAs9j3PkbFM",
+  //authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "real-time-chat-app-89425",
+  storageBucket: "real-time-chat-app-89425.firebasestorage.app",
+  //messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "1:844526207661:android:3f188c4649487fb74a3c24"
+};
+
+const app = initializeApp(firebaseConfig);
+
+// Ensure Firebase Auth is initialized properly
+const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+});
 
 export default function App() {
+
+  useEffect(() => {
+    async function getPermission() {
+        const { status } = await Notifications.getPermissionsAsync();
+        if (status !== "granted") {
+            await Notifications.requestPermissionsAsync();
+        }
+    }
+    getPermission();
+}, []);
 
   const Stack= createStackNavigator();
   const socket = useRef();
@@ -51,6 +83,9 @@ export default function App() {
         <Stack.Screen name="UsersProfileScreen" component={UsersProfileScreen}  options={{ headerShown: false }}/>
         <Stack.Screen name="Settings" component={UserSettings}/>
         <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{headerShown: false}}/>
+        <Stack.Screen name="CallScreen" component={CallScreen}/>
+        <Stack.Screen name="VideoScreen" component={VideoScreen} options={{headerShown: false}}/>
+        <Stack.Screen name="VideoCallScreen" component={VideoCallScreen} options={{headerShown: false}}/>
       </Stack.Navigator>
 
     )
