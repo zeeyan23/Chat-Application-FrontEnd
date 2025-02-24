@@ -199,6 +199,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
     if (friend.type === 'friend') {
       navigation.navigate("MessageScreen", {
         userName: friend.user_name,
+        isGroupChat: false,
         recipentId: friend._id,
         userImage: friend.image
       });

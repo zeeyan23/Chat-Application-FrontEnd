@@ -13,7 +13,6 @@ function ForwardMessagesScreen({ route, navigation }){
     const [friends, setFriends] = useState([]); 
     const [selectedFriends, setSelectedFriends] = useState([]); 
     const {userId, setUserId} = useContext(UserType);
-    console.log(seletedMessages)
     useEffect(() => {
         const fetchFriends = async () => {
         try {
@@ -36,6 +35,7 @@ function ForwardMessagesScreen({ route, navigation }){
       };
       
       const handleForwardMessage = async () => {
+        console.log(userId, selectedFriends, seletedMessages)
         try {
           await Promise.all(
             selectedFriends.map(async (friendId) => {
@@ -59,7 +59,6 @@ function ForwardMessagesScreen({ route, navigation }){
           console.error('Error forwarding messages:', error);
         }
       };
-      console.log(JSON.stringify(friends,null, 2))
 
       const friendsData = friends[0]?.friendsList || [];
     return(

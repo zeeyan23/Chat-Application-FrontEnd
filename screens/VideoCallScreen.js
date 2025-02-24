@@ -23,7 +23,7 @@ import {
 } from 'react-native-agora';
 
 const appId = '77de8ca3881e4be1a07052447ee4cb51';
-const token = '007eJxTYLiTOPfZKc++6bvenl+07sauzg5fH4ULK903/H578OSXu0aTFBjMzVNSLZITjS0sDFNNklINEw3MDUyNTEzMU1NNkpNMDY3+bk9vCGRk2NN9i5mRAQJBfC6GssyU1Pz45MScHAYGAO1tJ8Y=';
+const token = '007eJxTYLD+8cFo+uqWbxxdJfPeLthz5ubKE+v4WF/Yl1msDn1ZcoVFgcHcPCXVIjnR2MLCMNUkKdUw0cDcwNTIxMQ8NdUkOcnUsP3GzvSGQEaGh7b3WRgZIBDE52Ioy0xJzY9PTszJYWAAABFAJSM=';
 const channelName = 'video_call';
 const localUid = 0;
 

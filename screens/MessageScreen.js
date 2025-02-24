@@ -59,25 +59,23 @@ import {
 } from 'react-native-agora';
 import DialComponent from "../components/DialComponent";
 import ReceiverComponent from "../components/ReceiverComponent";
+import AudioRecorderPlayer from "react-native-audio-recorder-player";
 
 const appId = 'b1b769d4b203413881261d9f64b00d47';
-const token = '007eJxTYJi01jJa7Sjr8clCJ7W3nGlrYtQSe7uYyy+nTqXuyoLegycVGJIMk8zNLFNMkowMjE0MjS0sDI3MDFMs08xMkgwMUkzMHzFtTm8IZGSw+7GbiZEBAkF8Loay/Mzk1PjkxJwcBgYAsfMg2g==';
-// const channelName = 'voice_call';
+const token = '007eJxTYBDPmD556UZHLsZzV/5u05YxUVgn1Hlfe6lixJ7cuNNzexQUGJIMk8zNLFNMkowMjE0MjS0sDI3MDFMs08xMkgwMUkzMm2/vTG8IZGRgj/ZgYWSAQBCfi6EsPzM5NT45MSeHgQEAcL8fcQ==';
+const channelName = 'voice_call';
 const uid = 0;
 
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [showUnStar, setShowUnStar]=useState(false);
-  const [isReplyPressed, setIsReplyPressed] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [viewOnceSelected, setViewOnceSelected]=useState(false);
 
-  const [selectedFile, setSelectedFile] = useState(null); // Store the selected file
+  const [selectedFile, setSelectedFile] = useState(null);
   const [messageType, setMessageType] = useState(null);
  
-  const [recording, setRecording] = useState(null);
-  const [recordingUri, setRecordingUri] = useState(null);
   const [sound, setSound] = useState();
 
   const [errorMessage, setErrorMessage] = useState("");
@@ -87,6 +85,7 @@ const MessageSrceen = () => {
   const [starredMessages, setStarredMessages] = useState([]);
   const [getMessage, setGetMessage]=useState([]);
   const [seletedMessages,setSelectedMessages]=useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -99,49 +98,28 @@ const MessageSrceen = () => {
   const [videoRef, setVideoRef] = useState(null);
   const [imageRef, setImageRef] = useState(null);
   const [highLight, setHighLight]=useState(null);
-  const [document, setDocument] = useState(null);
   const toast = useToast();
 
   const { senderId, recipentId, userName,isGroupChat, groupName, groupId,userImage, groupImage, highlightedMessageId } = route.params || {};
   
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const baseUrl = `${mainURL}/files/`;
   const imageUrl = userImage ? userImage : groupImage;
   const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
   const filename = normalizedPath.split('/').pop();
-
   const source = userImage || groupImage ? { uri: baseUrl + filename } : null;
 
-  const [isDeleteMessagesOpen, setIsDeleteMessagesOpen] = useState(false); // State for the first dialog
-  const [isDeleteChatOpen, setIsDeleteChatOpen] = useState(false); // State for the second dialog
-
-  const [isCanceled, setIsCanceled] = useState(false);
-const [wasDragged, setWasDragged] = useState(false);
-  const [cancelSwipe, setCancelSwipe] = useState(false); // To track the swipe action
-  const [opacity] = useState(new Animated.Value(1)); // For blinking effect
-  const [swipeX, setSwipeX] = useState(0); // Track horizontal swipe position
-  const [isRecording, setIsRecording] = useState(false); // Track if recording is in progress
+  const [isDeleteMessagesOpen, setIsDeleteMessagesOpen] = useState(false);
+  const [isDeleteChatOpen, setIsDeleteChatOpen] = useState(false);
   const [isRecordingInProgress, setIsRecordingInProgress] = useState(false); 
 
-  const [recordingDuration, setRecordingDuration] = useState(0); // Track duration of recording
-
-  const [recordingCancel, setRecordingCancel]=useState(false);
-  const micSize = useRef(new Animated.Value(1)).current; // Animated value for mic size
-  const micOpacity = useRef(new Animated.Value(1)).current; // Animated value for mic opacity
-  const inputOpacity = useRef(new Animated.Value(1)).current; // For animating the text input opacity
-  const timerOpacity = useRef(new Animated.Value(0)).current; // For animating the timer opacity
-  const [micPosition, setMicPosition] = useState(new Animated.Value(0)); // mic position
-  const [showCancelText, setShowCancelText] = useState(true); // Toggle for "Slide to Cancel" text blinking
-  const [opacity1] = useState(new Animated.Value(1)); // For blinking effect
-
-  const agoraEngineRef = useRef(null); // IRtcEngine instance
-  const [isJoined, setIsJoined] = useState(false); // Whether the local user has joined the channel
-  const [isHost, setIsHost] = useState(true); // User role
-  const eventHandler = useRef(null); // Callback functions
+  const agoraEngineRef = useRef(null); 
+  const [isJoined, setIsJoined] = useState(false);
+  const [isHost, setIsHost] = useState(true);
+  const eventHandler = useRef(null); 
   const [dial , setDial]=useState(false);
   const [callStatus, setCallStatus] = useState("Waiting...");
-
-  //const [isVisible, setIsVisible] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
   const [incomingCall, setIncomingCall] = useState(null);
 
   const [status, setStatus] = useState({
@@ -153,8 +131,13 @@ const [wasDragged, setWasDragged] = useState(false);
   const [callStartTime, setCallStartTime] = useState(null);
   const [callDuration, setCallDuration] = useState(0);
   const intervalRef = useRef(null);
-  const channelNameRef = useRef("");
   const [isVideoCalling, setIsVideoCalling]=useState(null);
+
+  const recordingRef = useRef(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recording, setRecording] = useState(null);
+  const [timer, setTimer] = useState(0);
+  const translateX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (dial || incomingCall) {
@@ -165,120 +148,8 @@ const [wasDragged, setWasDragged] = useState(false);
     }
   }, [dial, incomingCall]);
 
-  useEffect(() => {
-    let interval;
-    // Make "Slide to cancel" text blink when recording starts
-    if (isRecording) {
-      interval = setInterval(() => {
-        // Animate opacity from 1 to 0 and vice versa for smooth blinking
-        Animated.sequence([
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 500, // 500ms to fade out
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 1,
-            duration: 500, // 500ms to fade in
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }, 1000); // Repeat every 1 second
-    } else {
-      clearInterval(interval);
-    }
-
-    return () => clearInterval(interval); // Clean up the interval on unmount or stop recording
-  }, [isRecording, opacity]);
-
   socket.current = io(mainURL);
 
-  useEffect(() => {
-          
-          socket.current.emit("registerUser", userId);
-
-          socket.current.emit("online_user", userId);
-  
-          socket.current.on("incoming-call", ({ from, channelName }) => {
-              setCallStatus("Waiting...")
-              setIncomingCall( from );
-          });
-
-          socket.current.on("incoming-callvideo", ({ from, channelName }) => {
-            setCallStatus("Waiting...")
-            setIncomingCall( from );
-        });
-      
-          socket.current.on("call-accepted", ({ channelName }) => {
-            console.log(channelName)
-              setCallStatus("Call Connected");
-              join(channelName);
-          });
-      
-          socket.current.on("call-declined", () => {
-              setCallStatus("Call Declined");
-              setIncomingCall(false)
-              setDial(false)
-              Alert.alert("Call Declined", "The user declined your call.");
-
-          });
-  
-          socket.current.on("join-call", ({ channelName }) => {
-            setCallStatus("Call Connected")
-              join(channelName);
-          });
-          
-          // socket.current.on("incoming_video_call",({userId, recipentId}) => {
-          //   navigation.navigate("VideoScreen", { userId: userId, recipentId: recipentId, isCallingSession: true, isHost: false });
-            
-          // });
-          socket.current.on("incoming_video_call", (data) => {
-            if (data.recipientId === userId) {
-              navigation.navigate("VideoScreen", {
-                callerId: data.callerId,
-                callerName: data.callerName,
-                callerImage: data.callerImage,
-              });
-            }
-          });
-      
-          // Handle call decline
-          socket.current.on("video_call_declined", () => {
-            Alert.alert("Call Declined", "The recipient declined the call.");
-          });
-          
-          // socket.current.on("video_call_declined", () => {
-          //   Alert.alert("Video Call Declined", "The user declined your call.");
-          //   navigation.navigate("Chats");
-          // });
-
-          // socket.current.on("video_call_approved", () => {
-
-          //   navigation.setParams({ isCallingSession: false });
-          // });
-          // socket.current.on("video_call_approved", ({userId,recipentId, token, channelName, isHost, appId }) => {
-          //   navigation.navigate("VideoScreen",{userId,recipentId, token, channelName, isHost, appId });
-          // });
-
-          return () => {
-              if (agoraEngineRef.current && eventHandler.current) {
-                  agoraEngineRef.current.unregisterEventHandler(eventHandler.current);
-              }
-              if (agoraEngineRef.current) {
-                  agoraEngineRef.current.release();
-              }
-              
-              socket.current.off("incoming-call");
-              socket.current.off("call-accepted");
-              socket.current.off("call-declined");
-              socket.current.off("join-call");
-              socket.current.off("incoming_video_call");
-      socket.current.off("video_call_declined");
-              //socket.current.off("video_call_approved");
-              socket.current.disconnect();
-          };
-  
-      }, []);
       useEffect(() => {
         if (callStartTime) {
           intervalRef.current = setInterval(() => {
@@ -344,11 +215,11 @@ const [wasDragged, setWasDragged] = useState(false);
         const join = async () => { 
             if (isJoined) return;
         
-            console.log("Joining Agora channel:", channelNameRef.current, "Token:", token);
+            console.log("Joining Agora channel:", channelName, "Token:", token);
         
             try {
                 if (isHost) {
-                    agoraEngineRef.current?.joinChannel(token, channelNameRef.current, uid, {
+                    agoraEngineRef.current?.joinChannel(token, channelName, uid, {
                         channelProfile: ChannelProfileType.ChannelProfileCommunication,
                         clientRoleType: ClientRoleType.ClientRoleBroadcaster,
                         publishMicrophoneTrack: true,
@@ -372,16 +243,9 @@ const [wasDragged, setWasDragged] = useState(false);
         };
     
 
-        const acceptCall = (from) => {
-          const finalChannel = channelNameRef.current;
-          console.log("✅ Final acceptCall - channelName:", finalChannel);
-
-          if (!finalChannel) {
-              console.error("❌ Error: Channel name is still empty!");
-              
-          }
-
-          socket.current.emit("accept-call", { from, to: userId, channelName: channelNameRef.current });
+        const acceptCall = (from, channelName) => {
+          
+          socket.current.emit("accept-call", { from, to: userId, channelName: channelName });
           join();
       };
       
@@ -393,12 +257,6 @@ const [wasDragged, setWasDragged] = useState(false);
       };
       const formattedCallDuration = new Date(callDuration * 1000).toISOString().substr(14, 5);
       
-  useEffect(() => {
-    // Reset mic position when recording stops
-    if (!isRecording) {
-      setMicPosition(new Animated.Value(0)); // Reset position if recording stops
-    }
-  }, [isRecording]);
 
   useEffect(() => {
     return () => {
@@ -416,7 +274,7 @@ const [wasDragged, setWasDragged] = useState(false);
     if (highlightedMessageId && getMessage.length > 0) {
       const index = getMessage.findIndex((msg) => msg._id === highlightedMessageId);
       if (index !== -1 && flatListRef.current) {
-        flatListRef.current.scrollToIndex({ index, animated: true });
+        flatListRef.current.scrollToIndex({ index, animated: true, viewPosition: 1 });
         
       }
     }
@@ -472,63 +330,88 @@ const [wasDragged, setWasDragged] = useState(false);
   };
 
   useEffect(() => {
-    
 
-    socket.current.on("connect", () => {
-      socket.current.emit("joinRoom", userId);
-      socket.current.emit("joinRoom", groupId);
-    });
+    //Realtime-chat
+    socket.current.emit("join", userId);
 
     socket.current.on("newMessage", (message) => {
-      console.log(message)
-      setGetMessage((prevMessages) => [message, ...prevMessages]);
+      //console.log("Received message: ", message);
+      setGetMessage((prevMessages) => [{...message}, ...prevMessages]);
+      setRefreshKey((prev) => prev + 1);
     });
 
-      socket.current.on("imageViewedUpdate", (messageId) => {
-        
-        updateImageViewed(messageId._id);
-      });
+    //Video Call
+    socket.current.on("incoming_video_call", (data) => {
+      if (data.recipientId === userId) {
+        navigation.navigate("VideoScreen", {
+          callerId: data.callerId,
+          callerName: data.callerName,
+          callerImage: data.callerImage,
+        });
+      }
+    });
 
-      socket.current.on("videoViewedUpdate", (messageId) => {
-        
-        updateVideoViewed(messageId._id);
-      });
-      
-      const fetchStatus = async () => {
-        try {
-            const response = await axios.get(`${mainURL}/user/status/${recipentId}`);
-            setStatus({
-                isOnline: response.data.isOnline,
-                lastOnlineTime: response.data.lastOnlineTime
-            });
-            socket.current.emit("user_online", { userId });
+    socket.current.on("video_call_declined", () => {
+      Alert.alert("Call Declined", "The recipient declined the call.");
+    });
 
-            // Listen for real-time status updates
-            const handleStatusUpdate = ({ userId, isOnline, lastOnlineTime }) => {
-                if (userId === senderId || userId === recipentId) {
-                    setStatus({
-                        isOnline,
-                        lastOnlineTime: isOnline ? null : (lastOnlineTime ? new Date(lastOnlineTime).toISOString() : null)
-                    });
-                }
-            };
+    //Voice Call
+    socket.current.on("incoming-call", ({ from, channelName }) => {
+        setCallStatus("Waiting...")
+        setIncomingCall( from );
+    });
 
-            socket.current.on("update_user_status", handleStatusUpdate);
+    socket.current.on("call-accepted", ({ channelName }) => {
+      console.log(channelName)
+        setCallStatus("Call Connected");
+        join(channelName);
+    });
 
-            return () => {
-                socket.current.emit("user_offline", { userId });
-                socket.current.off("update_user_status", handleStatusUpdate);
-                socket.current.disconnect();
-            };
-        } catch (error) {
-            console.error("Error fetching user status:", error);
-        }
-      };
+    socket.current.on("join-call", ({ channelName }) => {
+      setCallStatus("Call Connected")
+        join(channelName);
+    });
 
-      fetchStatus();
-      
+    //Delete messages
+    socket.current.on('messages_deleted_for_me', ({messages}) => {
+      setSelectedMessages([]);
+      fetchMessages()
+    });
+
+    socket.current.on('messages_deleted_for_both', () => {
+      setSelectedMessages([]);
+      fetchMessages()
+    });
+
+    //Image and Video view once
+    socket.current.on("imageViewedUpdate", (messageId) => {
+      updateImageViewed(messageId._id);
+    });
+
+    socket.current.on("videoViewedUpdate", (messageId) => {    
+      updateVideoViewed(messageId._id);
+    });
+
+    // socket.current.on("connect", () => {
+    //   socket.current.emit("joinRoom", userId);
+    //   socket.current.emit("joinRoom", groupId);
+    // });
+
     return () => {
-      socket.current.emit("user_offline", { userId });
+      if (agoraEngineRef.current && eventHandler.current) {
+          agoraEngineRef.current.unregisterEventHandler(eventHandler.current);
+      }
+      if (agoraEngineRef.current) {
+          agoraEngineRef.current.release();
+      }
+
+      socket.current.off("newMessage");
+      socket.current.off("incoming_video_call");
+      socket.current.off("video_call_declined");
+      socket.current.off("messages_deleted_for_me");
+      socket.current.off("messages_deleted_for_both");
+      socket.current.off("imageViewedUpdate");
+      socket.current.off("videoViewedUpdate");
       socket.current.disconnect();
     
     };
@@ -589,7 +472,7 @@ const [wasDragged, setWasDragged] = useState(false);
   
   //console.log(JSON.stringify(getMessage, null, 2))
   const handleImagePress = async(imageUrl, item) => {
-
+    //console.log(item)
     if(item && item.imageViewOnce){
       if(item.senderId._id===userId){
         toast.show({
@@ -705,14 +588,10 @@ const [wasDragged, setWasDragged] = useState(false);
   }, [navigation, seletedMessages, Platform.OS, userName, status]);
 
   function voiceCallHandle(userId, recepientId){
-    // setCallStatus("Waiting...");
-    const newChannelName = "voice_call";
-    channelNameRef.current = newChannelName;
-    console.log("🔹 voiceCallHandle - channelNameRef:", channelNameRef.current);
     socket.current.emit("call-user", {
       from: userId, 
       to: recepientId, 
-      channelName: channelNameRef.current
+      channelName: channelName
     });
     setDial(!dial);
   }
@@ -731,17 +610,12 @@ const [wasDragged, setWasDragged] = useState(false);
     });
   }
 
-  useEffect(() => {
-    if (channelNameRef) {
-        channelNameRef.current = channelNameRef.current;
-    }
-}, [channelNameRef]);
   function viewUsersProfile(id){
     navigation.navigate('UsersProfileScreen', {id, isGroupChat})
   }
 
   const handleClearChatConfirm = async () => {
-    // Call deleteMessage with the selected messages
+  
     await handleClearChat();
     setIsDeleteChatOpen(false); 
   };
@@ -771,9 +645,10 @@ const [wasDragged, setWasDragged] = useState(false);
     }
   }
   const handleReplyMessage = async (messageIds) => {
+    //console.log(messageIds)
     if (messageIds.length === 1) {
       const selectedMessage = getMessage.find(
-        (item) => item._id === messageIds[0]
+        (item) => item._id.toString() === messageIds[0].messageId
       );
       setReplyMessage(selectedMessage);
       setSelectedMessages([]); 
@@ -785,7 +660,6 @@ const [wasDragged, setWasDragged] = useState(false);
 
   const handleStarMessage = async (messageIds) => {
     console.log(messageIds)
-
     if (messageIds.length > 0) {
       try {
         await axios.patch(
@@ -811,25 +685,21 @@ const [wasDragged, setWasDragged] = useState(false);
   };
   
   const handleDeleteConfirm = async () => {
-    // Call deleteMessage with the selected messages
-    await deleteMessage(seletedMessages);
-    setIsDeleteMessagesOpen(false); // Close the dialog after deletion
+    await deleteMessageForBoth(seletedMessages);
+    setIsDeleteMessagesOpen(false);
   };
 
   const handleDeleteForMe = async () => {
-    // Call deleteMessage with the selected messages
     await deleteMessageForMe(seletedMessages);
-    setIsDeleteMessagesOpen(false); // Close the dialog after deletion
+    setIsDeleteMessagesOpen(false);
   };
 
   
-  const deleteMessage = async(messageIds)=>{
-    const formData = messageIds;
+  const deleteMessageForBoth = async(messageObjects)=>{
+    const messageIds = messageObjects.map(msg => msg.messageId);
+    const formData = { messages: messageIds, userId: userId, recipentId: recipentId };  
     try {
-      const response = await axios.post(`${mainURL}/deleteMessages/`, {messages: formData}).then((res)=>{
-        setSelectedMessages((prevMessage)=> prevMessage.filter((id) => !messageIds.includes(id)))
-        fetchMessages();
-      })
+      const response = await axios.post(`${mainURL}/deleteMessages/`,  formData)
     } catch (error) {
       console.log('Error:', error);
           if (error.response) {
@@ -842,14 +712,11 @@ const [wasDragged, setWasDragged] = useState(false);
     }
   }
 
-  const deleteMessageForMe = async(messageIds)=>{
-    const formData = { messages: messageIds, userId: userId }; 
-    console.log(formData)
+  const deleteMessageForMe = async(messageObjects)=>{
+    const messageIds = messageObjects.map(msg => msg.messageId);
+    const formData = { messages: messageIds, userId: userId, recipentId: recipentId }; 
     try {
-      const response = await axios.post(`${mainURL}/deleteForMeMessages/`, formData).then((res)=>{
-        setSelectedMessages((prevMessage)=> prevMessage.filter((id) => !messageIds.includes(id)))
-        fetchMessages();
-      })
+      const response = await axios.post(`${mainURL}/deleteForMeMessages/`, formData)
     } catch (error) {
       console.log('Error:', error);
           if (error.response) {
@@ -949,24 +816,25 @@ const [wasDragged, setWasDragged] = useState(false);
           setSelectedImage("");
           setReplyMessage(null);
           fetchMessages();
+          setIsTyping(false);
 
-          if(!isGroupChat){
-            socket.current.emit("send_message", {
-              senderId: userId,
-              receiverId: recipentId,
-              message: message,
-              isGroupChat: isGroupChat,
-              timestamp: new Date().toISOString(),
-            });
-          }else{
-            socket.current.emit("send_message", {
-              senderId: userId,
-              receiverId: groupId,
-              message: message,
-              isGroupChat: isGroupChat,
-              timestamp: new Date().toISOString(),
-            });
-          }
+          // if(!isGroupChat){
+          //   socket.current.emit("send_message", {
+          //     senderId: userId,
+          //     receiverId: recipentId,
+          //     message: message,
+          //     isGroupChat: isGroupChat,
+          //     timestamp: new Date().toISOString(),
+          //   });
+          // }else{
+          //   socket.current.emit("send_message", {
+          //     senderId: userId,
+          //     receiverId: groupId,
+          //     message: message,
+          //     isGroupChat: isGroupChat,
+          //     timestamp: new Date().toISOString(),
+          //   });
+          // }
           
       } catch (error) {
           if (error.response && error.response.data.error) {
@@ -1054,8 +922,8 @@ const [wasDragged, setWasDragged] = useState(false);
   };
 
   const unstarMessage = async (seletedMessages) => {
-    const idArray = seletedMessages;
-    const id = idArray[0]; 
+    const id = seletedMessages[0]?.messageId;
+    console.log(seletedMessages)
     try {
       const response = await axios.delete(`${mainURL}/delete-starred-message/${userId}/${id}/`);
       if(response.status==200){
@@ -1079,12 +947,25 @@ const [wasDragged, setWasDragged] = useState(false);
   const handleSelectedMessage = async(message)=>{
     try {
 
+      if (!isSelectionMode) {
+        setIsSelectionMode(true);
+      }
+
       if (!message.starredBy || message.starredBy.length === 0) {
-        const isSelected = seletedMessages.includes(message._id);
+        //const isSelected = seletedMessages.includes(message._id);
+        const isSelected = seletedMessages.some((selected) => selected.messageId === message._id);
         if (isSelected) {
-          setSelectedMessages((preMessage) => preMessage.filter((id) => id !== message._id));
+          // setSelectedMessages((preMessage) => preMessage.filter((id) => id !== message._id));
+          setSelectedMessages((preMessage) =>
+            preMessage.filter((item) => item.messageId !== message._id)
+          );
         } else {
-          setSelectedMessages((preMessage) => [...preMessage, message._id]);
+          //setSelectedMessages((preMessage) => [...preMessage, message._id]);
+          setSelectedMessages((preMessage) => [
+            ...preMessage,
+            { messageId: message._id, senderId: message.senderId._id },
+          ]);
+          
         }
         return; 
       }
@@ -1094,20 +975,36 @@ const [wasDragged, setWasDragged] = useState(false);
       if (response) {
         
         setShowUnStar(true)
-        const isSelected = seletedMessages.includes(message._id);
-
+        //const isSelected = seletedMessages.includes(message._id);
+        const isSelected = seletedMessages.some((selected) => selected.messageId === message._id);
         if(isSelected){
-          setSelectedMessages((preMessage)=> preMessage.filter((id)=> id !== message._id))
+          //setSelectedMessages((preMessage)=> preMessage.filter((id)=> id !== message._id))
+          setSelectedMessages((preMessage) =>
+            preMessage.filter((item) => item.messageId !== message._id)
+          );
+
         }else{
-          setSelectedMessages((preMessage)=> [...preMessage, message._id])
+          //setSelectedMessages((preMessage)=> [...preMessage, message._id])
+          setSelectedMessages((preMessage) => [
+            ...preMessage,
+            { messageId: message._id, senderId: message.senderId._id },
+          ]);
+          
         }
       } else {
-        const isSelected = seletedMessages.includes(message._id);
-
+        //const isSelected = seletedMessages.includes(message._id);
+        const isSelected = seletedMessages.some((selected) => selected.messageId === message._id);
         if(isSelected){
-          setSelectedMessages((preMessage)=> preMessage.filter((id)=> id !== message._id))
+          //setSelectedMessages((preMessage)=> preMessage.filter((id)=> id !== message._id))
+          setSelectedMessages((preMessage) =>
+            preMessage.filter((item) => item.messageId !== message._id)
+          );
         }else{
-          setSelectedMessages((preMessage)=> [...preMessage, message._id])
+          //setSelectedMessages((preMessage)=> [...preMessage, message._id])
+          setSelectedMessages((preMessage) => [
+            ...preMessage,
+            { messageId: message._id, senderId: message.senderId._id },
+          ]);
         }
       }
     } catch (error) {
@@ -1270,65 +1167,47 @@ const [wasDragged, setWasDragged] = useState(false);
     setViewOnceSelected(prevState => !prevState);
   };
   
-  //let isRecordingInProgress = false; // Add a flag to prevent simultaneous calls
-  useEffect(() => {
-    let timer;
-    if (isRecording) {
-      timer = setInterval(() => {
-        setRecordingDuration(prev => prev + 1); // Increment recording duration
-      }, 1000);
-    } else {
-      clearInterval(timer); // Clear the timer when not recording
-    }
 
-    return () => clearInterval(timer); // Cleanup on unmount or stop recording
-  }, [isRecording]);
 
   const voiceRecordHandle = async () => {
-    console.log("Voice recording started");
-
-    if (isRecordingInProgress) {
-      console.log("Recording is already in progress.");
-      return;
-    }
-
+    if (isRecordingInProgress) return;
+  
     try {
-      setIsRecordingInProgress(true)
-      setRecordingDuration(0); // Reset duration
-      setIsRecording(true); // Show timer and hide input UI
-      if (recording) {
-        console.log("Stopping the previous recording...");
-        await recording.stopAndUnloadAsync();
-        setRecording(null);
+      console.log("Starting voice recording...");
+      setIsRecordingInProgress(true);
+      setIsRecording(true);
+  
+      if (recordingRef.current) {
+        await recordingRef.current.stopAndUnloadAsync();
+        recordingRef.current = null;
       }
-
+  
       const { granted } = await Audio.requestPermissionsAsync();
       if (!granted) {
         alert("You need to enable microphone permissions to use this feature.");
-        setIsRecordingInProgress(false)
+        setIsRecording(false);
+        setIsRecordingInProgress(false);
         return;
       }
-
-      // Prepare for recording
+  
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
-
+  
       const newRecording = new Audio.Recording();
-      await newRecording.prepareToRecordAsync(
-        Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
-      );
+      await newRecording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
       await newRecording.startAsync();
-      setRecording(newRecording);
-
+  
+      recordingRef.current = newRecording;
       console.log("Recording started successfully.");
     } catch (err) {
       console.error("Failed to start recording", err);
-    } finally {
-      setIsRecordingInProgress(false);
+      setIsRecording(false);
+    setIsRecordingInProgress(false);
     }
   };
+  
 
   const getFileSize = async (fileUri) => {
     try {
@@ -1358,101 +1237,114 @@ const [wasDragged, setWasDragged] = useState(false);
     }
   };
 
-  const voiceStopRecordHandle = async () => {
-    if (!recording) {
-      console.log("No recording is in progress.");
-      return;
-    }
-
-    try {
-      await recording.stopAndUnloadAsync(); 
-      const uri = recording.getURI(); 
-      setRecordingUri(uri);
-      setRecording(null);
-
-      setIsRecording(false); // Hide timer and show input UI
-    setRecordingDuration(0); // Reset timer
-      if (!uri) {
-        console.log("Recording URI not available. The recording might not have been stopped properly.");
-        return;
-      }
-
-      const recordingStatus = await recording.getStatusAsync();
-      console.log("recordingStatus",recordingStatus)
-      const duration = await getAudioDuration(uri);
-      if (duration) {
-        console.log("Audio Duration (ms):", duration);
-      }
-
-      getFileSize(recording._uri);
-      const fileExtension = uri.split('.').pop();
-      const fileInfo = await FileSystem.getInfoAsync(uri);
-      const fileName = `audio_${Date.now()}.m4a`;
-      sendMessage("audio", uri, duration, fileName);
-    } catch (err) {
-      console.error("Failed to stop recording", err);
-    }
-  };
 
   const handleReplyPress = (messageId) => {
     const index = getMessage.findIndex((message) => message._id === messageId);
 
     if (index !== -1) {
-      flatListRef.current?.scrollToIndex({ animated: true, index });
-      setHighLight(messageId);
-      setTimeout(() => {
-        setHighLight(null); // Remove highlight after a delay
-      }, 2000);
+        flatListRef.current?.scrollToIndex({ animated: true, index, viewPosition: 0.5 });
+        setHighLight(messageId);
+        setTimeout(() => {
+          setHighLight(null); // Remove highlight after a delay
+        }, 2000);
     } else {
       console.warn('Message not found in the list.');
     }
   };
 
-const minutes1 = Math.floor(recordingDuration / 60);
-const seconds1 = recordingDuration % 60;
-// Format minutes and seconds to always show 2 digits
-const formattedMinutes = minutes1 < 10 ? `0${minutes1}` : `${minutes1}`;
-const formattedSeconds = seconds1 < 10 ? `0${seconds1}` : `${seconds1}`;
+// const minutes1 = Math.floor(recordingDuration / 60);
+// const seconds1 = recordingDuration % 60;
+// // Format minutes and seconds to always show 2 digits
+// const formattedMinutes = minutes1 < 10 ? `0${minutes1}` : `${minutes1}`;
+// const formattedSeconds = seconds1 < 10 ? `0${seconds1}` : `${seconds1}`;
 // Start the blinking animation for "Slide to Cancel"
 
 
-// PanResponder to handle the swipe gesture
-const panResponder = PanResponder.create({
-  onStartShouldSetPanResponder: () => true,
-  onMoveShouldSetPanResponder: (e, gestureState) => {
-    // Only detect horizontal movement
-    return Math.abs(gestureState.dx) > 5;
-  },
-  onPanResponderGrant: () => {
-    setWasDragged(false); // Reset when interaction starts
-  },
-  onPanResponderMove: (e, gestureState) => {
-    setIsCanceled(true); // Mark recording as canceled
-    setWasDragged(true); // Mark as dragged
-    setSwipeX(gestureState.dx); // Track swipe distance
+const resetRecorder = () => {
+  setIsRecording(false);
+  setRecording(null);
+  setRecordingDuration(0);
+  setIsCanceled(false);
+  Animated.spring(micPosition, {
+    toValue: 0,
+    useNativeDriver: false,
+  }).start();
+};
 
-    console.log('Swipe distance (gestureState.dx):', gestureState.dx); // Debugging log
-    // Animate the mic icon based on horizontal swipe distance
-    Animated.spring(micPosition, {
-      toValue: gestureState.dx, // Move mic icon based on swipe
-      useNativeDriver: false,
-    }).start();
-  },
-  onPanResponderRelease: (e, gestureState) => {
-    //voiceStopRecordHandle();
-    const cancelThreshold = -2; 
-    if (gestureState.dx < cancelThreshold) {
-      console.log("excuted")
-    } else {
-      Animated.spring(micPosition, {
-        toValue: 0, 
-        useNativeDriver: false,
+const startTimer = () => {
+  let timer = setInterval(() => {
+    setRecordingDuration((prev) => prev + 1);
+  }, 1000);
+
+  return () => clearInterval(timer);
+};
+
+
+
+const voiceStopRecordHandle = async () => {
+  if (!recordingRef.current) {
+    console.log("No recording to stop.");
+    return;
+  }
+
+
+
+  try {
+    console.log("Stopping recording...");
+    await recordingRef.current.stopAndUnloadAsync();
+    const uri = recordingRef.current.getURI();
+    recordingRef.current = null; // Clear reference
+    setIsRecording(false);
+    setIsRecordingInProgress(false);
+
+    if (!uri) return;
+
+    const duration = await getAudioDuration(uri);
+    const fileName = `audio_${Date.now()}.m4a`;
+    console.log('Audio URI:', uri, 'Duration:', duration);
+    
+    sendMessage('audio', uri, duration, fileName);
+  } catch (err) {
+    console.error("Failed to stop recording", err);
+
+  }
+};
+
+
+const cancelRecording = async () => {
+  if (recordingRef.current) {
+    console.log("Recording cancelled.");
+    await recordingRef.current.stopAndUnloadAsync();
+    recordingRef.current = null;
+  }
+  setIsRecording(false);
+  setIsRecordingInProgress(false);
+};
+
+
+const panResponder = useRef(
+  PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
+      voiceRecordHandle();
+    },// Start recording on press
+    onPanResponderMove: (_, gestureState) => {
+      translateX.setValue(gestureState.dx);
+    },
+    onPanResponderRelease: async (_, gestureState) => {
+      if (gestureState.dx < -100) {
+        await cancelRecording(); // Cancel if swiped left
+      } else {
+        await voiceStopRecordHandle(); // Stop otherwise
+      }
+      Animated.timing(translateX, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
       }).start();
-    }
-
-    setSwipeX(0);
-  },
-});
+    },
+  })
+).current;
 
 
 const bckimage = require('../assets/test.png');
@@ -1462,6 +1354,167 @@ const formatCallDuration = (seconds) => {
   const secs = seconds % 60;
   return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 };
+
+const handlePress = (source, item) => {
+  //console.log(item)
+  if (isSelectionMode) {
+    // If already in selection mode, toggle message selection
+    handleSelectedMessage(item);
+  } else {
+    switch (item.messageType) {
+      case "image":
+        if(item.imageViewed){
+          return;
+        }
+        handleImagePress(source, item.imageViewOnce ? item : null);
+        break;
+      case "video":
+        if(item.videoViewed){
+          return;
+        }
+        handleVideoPress(source, item);
+        break;
+      default:
+        openFile(item.documentUrl);
+    }
+  }
+};
+
+const renderMediaStatus = ({
+  viewed,
+  type,
+  timeStamp,
+  senderId,
+  userId,
+  starredBy,
+  formatTime,
+  duration,
+  formatDuration,
+  name,
+}) => {
+  const isSender = senderId === userId;
+  const iconName = viewed ? 'circle' : 'numeric-1-circle-outline';
+  const iconColor = viewed ? 'grey' : '#219BC7';
+  const label = viewed ? 'Opened' : type === 'image' ? 'Photo' : 'Video';
+
+  return (
+    <>
+      <Box flexDirection="row" alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2}>
+        <MaterialCommunityIcons
+          name={iconName}
+          size={14}
+          color={iconColor}
+          style={{ marginRight: 5 }}
+        />
+        <Text
+          style={{
+            fontSize: 14,
+            color: iconColor,
+            fontWeight: '500',
+            fontStyle: 'italic', // Italic for the label
+          }}
+        >
+          {label}
+        </Text>
+      </Box>
+
+      <Box flexDirection="row" justifyContent={type === 'image' ? 'flex-end' : 'space-between'} paddingRight={2}>
+        {type === 'video' && (
+          <Text style={[styles.infoText,{ color: "black", marginHorizontal:10}]}>
+            {formatDuration ? formatDuration(duration) : null}
+          </Text>
+        )}
+        <Text style={[styles.infoText,{ color: "black"}]}>{formatTime(timeStamp)}</Text>
+        {starredBy?.includes(userId) && (
+          <Entypo name="star" size={14} color="#828282" style={{ left: 5, top: 2 }} />
+        )}
+      </Box>
+
+      {type === 'video' && name && (
+        <Text fontWeight="medium" fontSize="md" color="#0082BA">
+          {name}
+        </Text>
+      )}
+    </>
+  );
+};
+
+
+const renderReplyMessage = (replyMessage, handleReplyPress, userId) => {
+  if (!replyMessage) return null;
+
+  const baseUrl = `${mainURL}/files/`;
+  const imageUrl= replyMessage?.imageUrl;
+  const normalizedPath = imageUrl?.replace(/\\/g, "/"); 
+  const filename=normalizedPath?.split("/").pop();
+  const source = {uri: baseUrl + filename}
+
+  switch (replyMessage.messageType) {
+    case 'text':
+      return (
+        <Pressable onPress={() => handleReplyPress(replyMessage._id)} style={styles.commonStyle}>
+          <Text color={"violet.800"} fontWeight={"semibold"}>
+            {replyMessage.senderId?._id === userId ? "You" : replyMessage.senderId?.user_name}
+          </Text>
+          <Text style={{ fontSize: 12, fontWeight: "500", color: "#333", marginTop: 2 }} numberOfLines={1} ellipsizeMode="tail">
+            {truncateText(replyMessage.message, 5)}
+          </Text>
+        </Pressable>
+      );
+
+    case 'image':
+      return (
+        <Pressable onPress={() => handleReplyPress(replyMessage._id)} style={styles.commonStyle}>
+          <Image
+            source={source}
+            style={{ width: 50, height: 50 }}
+            onError={(error) => console.log("Image Load Error:", error)}
+          />
+        </Pressable>
+      );
+
+    case 'video':
+      return (
+        <Pressable onPress={() => handleReplyPress(replyMessage._id)} style={styles.commonStyle}>
+          <Text>{replyMessage.videoName}</Text>
+        </Pressable>
+      );
+
+    case 'audio':
+      return (
+        <Pressable onPress={() => handleReplyPress(replyMessage._id)} style={styles.commonStyle}>
+          <Flex direction="row" h="38" alignItems="center">
+            <Entypo name="mic" size={10} color="black" style={{ paddingHorizontal: 5 }} />
+            <Text style={{ fontSize: 12, fontWeight: "500", color: "#333" }}>voice message</Text>
+            <Divider bg="black" thickness="2" mx="1" h={5} orientation="vertical" />
+            <Text style={{ fontSize: 12, fontWeight: "500", color: "#333" }}>{formatDuration(replyMessage.duration)}</Text>
+          </Flex>
+        </Pressable>
+      );
+
+    case 'pdf':
+    case 'docx':
+    case 'pptx':
+    case 'zip':
+    case 'xlsx':
+      return (
+        <Pressable onPress={() => handleReplyPress(replyMessage._id)} style={styles.commonStyle}>
+          <MaterialCommunityIcons
+            name={getIconName(replyMessage.messageType)}
+            size={35}
+            color="#007A33"
+            style={{ marginRight: 10 }}
+          />
+          <Text>{replyMessage.fileName}</Text>
+        </Pressable>
+      );
+
+    default:
+      return null;
+  }
+};
+
+
 return (
   <SafeAreaProvider>
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
@@ -1470,6 +1523,7 @@ return (
         <FlatList
             data={getMessage}
             ref={flatListRef}
+            key={refreshKey}
             inverted
             keyExtractor={(item) => item._id.toString()}
             initialNumToRender={10} 
@@ -1484,7 +1538,8 @@ return (
               const previousDate = index < getMessage.length - 1 ? formatDate(getMessage[index + 1].timeStamp) : null;
               const showDateSeparator = currentDate !== previousDate;
               if(item.messageType === 'text'){
-                const isSelected = seletedMessages.includes(item._id)
+                const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
+
                 const baseUrl = `${mainURL}/files/`;
                 const imageUrl= item.replyMessage?.imageUrl;
                 const normalizedPath = imageUrl?.replace(/\\/g, "/"); 
@@ -1497,7 +1552,9 @@ return (
     
                 const profileImageSource =  item.senderId.image ? { uri: baseUrl + profileImageFilename } : null;
                   return(
-                    <View key={item._id}>
+                    <View key={item._id} style={[
+                      isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
+                    ]}>
                       {showDateSeparator ? (
                         <Text
                           style={{
@@ -1528,80 +1585,11 @@ return (
                               margin:10,
                               maxWidth:'60%',
                               borderRadius:7
-                          }, isSelected && {width: "100%", backgroundColor:"#D2FFCD"},
+                          },
                           highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
                           highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                      ]} onLongPress={()=> handleSelectedMessage(item)}>
-                        {item.replyMessage?.messageType==='text' ? 
-                          <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
-                            style={{ backgroundColor: "#E0FFE8", padding: 8, borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",}}>
-                            <Text color={"violet.800"} fontWeight={"semibold"}>
-                                {item?.replyMessage?.senderId?._id ===userId ? "You" : item?.replyMessage?.senderId?.user_name}
-                            </Text>
-                            <Text 
-                              style={{ fontSize: 12, fontWeight: "500", color: "#333", marginTop: 2, }} numberOfLines={1} ellipsizeMode="tail">
-                              {truncateText(item?.replyMessage?.message, 5)}
-                            </Text>
-                          </Pressable> : 
-                          item.replyMessage?.messageType==='image' ? 
-                          <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
-                            style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800"}}>
-                              <Box flexDirection="row" alignItems="center">
-                                <Box>
-                                  <Image
-                                    source={source}
-                                    style={{
-                                      width: 50,
-                                      height: 50,
-                                    }}
-                                    onError={(error) => console.log("Image Load Error:", error)}
-                                  />
-                                </Box>
-                              </Box>
-                              
-                          </Pressable>: item.replyMessage?.messageType==='video' ? 
-                          <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
-                            style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",padding:2}}>
-                              <Box flexDirection="row" alignItems="center">
-                                <Box>
-                                  <Text>{item.replyMessage.videoName}</Text>
-                                </Box>
-                              </Box>
-                              
-                          </Pressable>: item.replyMessage?.messageType==='audio' ? 
-                          <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
-                            style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",padding:2}}>
-                              <Box >
-                                <Flex direction="row" h="38"alignItems="center"  >
-                                  <Entypo name="mic" size={10} color="black" style={{paddingHorizontal:5}}/>
-                                  
-                                  <Text 
-                                    style={{ fontSize: 12, fontWeight: "500", color: "#333" }} >
-                                    voice message
-                                  </Text>
-                                  <Divider bg="black" thickness="2" mx="1" h={5} orientation="vertical" />
-                                  <Text style={{ fontSize: 12, fontWeight: "500", color: "#333" }}>{formatDuration(item.replyMessage.duration)}</Text>
-                                </Flex>
-                              </Box>
-                              
-                          </Pressable> : item.replyMessage?.messageType==='pdf' || item.replyMessage?.messageType==='docx' ||
-                          item.replyMessage?.messageType==='pptx' || item.replyMessage?.messageType==='zip' || item.replyMessage?.messageType==='xlsx' ?
-                          <Pressable onPress={() => handleReplyPress(item.replyMessage._id)} 
-                            style={{ backgroundColor: "#E0FFE8", borderRadius: 5, borderLeftWidth: 4, borderLeftColor: "#2E7800",padding:2}}>
-                              <Box flexDirection="row" alignItems="center">
-                                <Box>
-                                  <MaterialCommunityIcons
-                                    name={getIconName(item.replyMessage?.messageType)}
-                                    size={35}
-                                    color="#007A33"
-                                    style={{ marginRight: 10 }}
-                                  />
-                                  <Text>{item.replyMessage.fileName}</Text>
-                                </Box>
-                              </Box>
-                              
-                          </Pressable>: null
-                        }
+                      ]} onLongPress={()=> handleSelectedMessage(item)} onPress={() => isSelectionMode && handleSelectedMessage(item)}>
+                        {renderReplyMessage(item.replyMessage, handleReplyPress, userId)}
                         <Box flexDirection={"row"} alignItems="center">
                           {isGroupChat && (
                             <Box flexDirection={"row"} paddingBottom={2} paddingRight={1}>
@@ -1638,7 +1626,8 @@ return (
               }
     
               if(item.messageType === "image"){
-                const isSelected = seletedMessages.includes(item._id)
+                
+                const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
                 const baseUrl = `${mainURL}/files/`;
                 const imageUrl= item.imageUrl;
                 const normalizedPath = imageUrl.replace(/\\/g, "/"); 
@@ -1646,7 +1635,9 @@ return (
                 const source = {uri: baseUrl + filename}
     
                 return(
-                  <View key={index} >
+                  <View key={index} style={[
+                    isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
+                ]}>
                   {showDateSeparator && (
                         <Text
                           style={{
@@ -1664,7 +1655,7 @@ return (
                   <Pressable key={index} style={[
                     item?.senderId?._id ===userId ? {
                         alignSelf:'flex-end',
-                        backgroundColor:'#29F200',
+                        backgroundColor:'#d8fdd2',
                         maxWidth:'60%',
                         margin:10,
                         borderRadius:7
@@ -1675,58 +1666,18 @@ return (
                         maxWidth:'60%',
                         borderRadius:7
                     },highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                  ]} onLongPress={()=> handleSelectedMessage(item)}  onPress={() => {
-                    if (item.imageViewOnce) {
-                      handleImagePress(source, item);
-                    } else {
-                      handleImagePress(source,null);
-                    }
-                  }} >
+                    highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                  ]} onLongPress={()=> handleSelectedMessage(item)}  onPress={() => {handlePress(source, item)}} >
                     
                       {item.imageViewOnce ? (
-                        <>
-                        <Box flexDirection="row"alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2} >
-                          <MaterialCommunityIcons
-                            name={item.imageViewed ? 'circle' : 'numeric-1-circle-outline'}
-                            size={14}
-                            color={item.imageViewed ? 'grey' : '#219BC7'}
-                            style={{
-                              marginRight: 5,
-                            }}
-                          />
-                          <Text
-                          
-                            style={{
-                              fontSize: 14,
-                              color: item.imageViewed ? 'grey' : '#219BC7',
-                              fontWeight: "500",
-                            }}
-                          >
-                            {item.imageViewed ? "Opened" : "Photo"}
-                          </Text>
-                        </Box>
-                        <Box
-                        flexDirection="row"
-                        justifyContent="flex-end"
-                        paddingRight={2}
-                        >
-                        <Text
-                          style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "black" }]}
-                        >
-                          {formatTime(item.timeStamp)}
-                        </Text>
-                        {item?.starredBy[0] === userId && (
-                          <Entypo
-                            name="star"
-                            size={14}
-                            color="white"
-                            
-                          />
-                        )}
-                      </Box>
-                        </>
                         
-                        
+                        renderMediaStatus({viewed :item.imageViewed,
+                        type:"image",
+                        timeStamp:item.timeStamp,
+                        senderId:item?.senderId?._id,
+                        userId:userId,
+                        starredBy:item?.starredBy,
+                        formatTime})
                       ) : (
                         <>
                         <Image
@@ -1770,14 +1721,16 @@ return (
               }
     
               if (item.messageType === 'video') {
-                const isSelected = seletedMessages.includes(item._id)
+                const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
                 const baseUrl = `${mainURL}/files/`;
                 const videoUrl= item.videoUrl;
                 const normalizedPath = videoUrl.replace(/\\/g, "/"); 
                 const filename=normalizedPath.split("/").pop();
                 const source = {uri: baseUrl + filename}
                 return (
-                  <View key={index} >
+                  <View key={index} style={[
+                    isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
+                ]}>
                   {showDateSeparator && (
                         <Text
                           style={{
@@ -1808,62 +1761,66 @@ return (
                               maxWidth:'60%',
                               borderRadius:7
                           }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                      ]} onPress={() => handleVideoPress(source,item)}  onLongPress={()=> handleSelectedMessage(item)}>
+                          highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                      ]} onPress={() => handlePress(source,item)}  onLongPress={()=> handleSelectedMessage(item)}>
                         
                             {item.videoViewOnce ? (
-                            <Box flexDirection="row"alignItems="center" paddingLeft={2} paddingRight={2} paddingTop={2} >
-                              <MaterialCommunityIcons
-                                //name="numeric-1-circle"
-                                name={item.videoViewed ? 'circle' : 'numeric-1-circle-outline'}
-                                size={14}
-                                color={item.videoViewed ? 'grey' : '#219BC7'}
-                                style={{
-                                  marginRight: 5,
-                                }}
-                              />
-                              <Text
-                              
-                                style={{
-                                  fontSize: 14,
-                                  color: item.videoViewed ? 'grey' : '#219BC7',
-                                  fontWeight: "500",
-                                }}
-                              >
-                                {item.videoViewed ? "Opened" : "Video"}
-                              </Text>
-                            </Box>
+                              renderMediaStatus({
+                                viewed: item.videoViewed,
+                                type: 'video',
+                                timeStamp: item.timeStamp,
+                                senderId: item?.senderId?._id,
+                                userId,
+                                starredBy: item?.starredBy,
+                                formatTime,
+                                duration: item.duration,
+                                formatDuration,
+                              })
                           ) : (
+                            <>
                             <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"}>{item.videoName}</Text>
+                            <Box flexDirection={"row"} justifyContent={"space-between"}>
+                              <Text style={[styles.infoText, { color: "black" }]}>
+                                {formatDuration(item.duration)}
+                              </Text>
+
+                              <Box flexDirection="row" alignItems="center">
+                                <Text style={[styles.infoText, { color: "black" }]}>
+                                  {formatTime(item.timeStamp)}
+                                </Text>
+                                {item?.starredBy[0] === userId && (
+                                  <Entypo
+                                    name="star"
+                                    size={14}
+                                    color="#828282"
+                                    style={{
+                                      marginLeft: 2, // Adjust spacing as needed
+                                    }}
+                                  />
+                                )}
+                              </Box>
+                            </Box>
+
+                          </>
                           )}
                           
-                          <Box flexDirection={"row"} justifyContent={"space-between"}>
-                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{formatDuration(item.duration)}</Text>
-                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{formatTime(item.timeStamp)}</Text>
-                            {item?.starredBy[0] === userId && (
-                              <Entypo
-                                name="star"
-                                size={14} 
-                                color="#828282" 
-                                style={{
-                                  left:5,
-                                  top:2
-                                }}
-                              />
-                            )}
-                          </Box>
+                          
                   </Pressable>
                   </View>
                 );}
     
                 if (item.messageType === "pdf" || item.messageType === "docx" || item.messageType === "xlsx" || item.messageType === "zip" || item.messageType === "pptx") {
-                  const isSelected = seletedMessages.includes(item._id)
+                  const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
+                  //console.log("isselected", isSelected)
                   const baseUrl = `${mainURL}/files/`;
                   const documentUrl= item.documentUrl;
                   const normalizedPath = documentUrl.replace(/\\/g, "/"); 
                   const filename=normalizedPath.split("/").pop();
                   const source = {uri: baseUrl + filename}
                   return (
-                    <View key={index} >
+                    <View key={index} style={[
+                      isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
+                  ]}>
                     {showDateSeparator && (
                           <Text
                             style={{
@@ -1898,8 +1855,9 @@ return (
                                   maxWidth:'60%',
                                   borderRadius:7
                               }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                              highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
                           ]}
-                          onLongPress={() => handleSelectedMessage(item)} onPress={() => openFile(item.documentUrl)}
+                          onLongPress={() => handleSelectedMessage(item)} onPress={() => handlePress(null,item)}
                         >
                           <Box padding={2} borderRadius={7} flexDirection={"row"} flexWrap="wrap" alignItems="flex-start" background={"#D4D4D4"}>
                             <MaterialCommunityIcons
@@ -1915,24 +1873,31 @@ return (
                                 maxWidth: '100%', 
                               }} >{item.fileName}</Text>
                           </Box>
-                          
+
                           <Box flexDirection={"row"} justifyContent={"space-between"}>
-                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{item.messageType.toUpperCase()}</Text>
+                          <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{item.messageType.toUpperCase()}</Text>
+
+                          <Box flexDirection="row" alignItems="center">
                             <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{formatTime(item.timeStamp)}</Text>
-                                {item?.starredBy[0] === userId && (
-                                  <Entypo
-                                    name="star"
-                                    size={14} 
-                                    color="#828282" 
-                                    style={{
-                                      left:5,
-                                      top:2
-                                    }}/>)}
+                            {item?.starredBy[0] === userId && (
+                              <Entypo
+                                name="star"
+                                size={14}
+                                color="#828282"
+                                style={{
+                                  marginLeft: 2, // Adjust spacing as needed
+                                }}
+                              />
+                            )}
                           </Box>
+                        </Box>
+
                         </Pressable>
                     </View>
-                  );}
+                  );
+                }
                 if(item.messageType==="audio"){
+                  const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
                   const baseUrl = `${mainURL}/files/`;
                   const audioUrl= item.audioUrl;
                   const normalizedPath = audioUrl.replace(/\\/g, "/"); 
@@ -1944,8 +1909,11 @@ return (
                 const profileImageFilename = normalizedProfileImagePath.split('/').pop();
     
                 const profileImageSource =  item.senderId.image ? { uri: baseUrl + profileImageFilename } : null;
+                
                   return(
-                    <View key={index}>
+                    <View key={index} style={[
+                      isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
+                    ]}>
                         {showDateSeparator && (
                           <Text style={{alignSelf: 'center',backgroundColor: '#333',color: 'white',padding: 5, borderRadius: 10, marginVertical: 10,}}>
                             {currentDate}
@@ -1970,7 +1938,8 @@ return (
                                   maxWidth:'60%',
                                   borderRadius:7
                               }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                          ]} onLongPress={() => handleSelectedMessage(item)}>
+                              highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+                          ]} onLongPress={() => handleSelectedMessage(item)} onPress={() => isSelectionMode && handleSelectedMessage(item)}>
                           <Box
                             width={"56"}
                             borderRadius="lg"
@@ -2071,21 +2040,12 @@ return (
           <View style={{ flex: 1, justifyContent: "flex-end" }}>
             {replyMessage && <ReplyMessageView />}
             <View style={{ flexDirection: "row", alignItems: "center", padding: 10 }}>
-              {isRecording && ( 
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
-                  <> 
-                    <Text style={{ fontSize: 18, color: 'black' }}>
-                      {formattedMinutes}:{formattedSeconds}
-                    </Text>  
-                    <Animated.Text
-                      style={{
-                        fontSize: 16,
-                        color: 'black',
-                        paddingRight: 10,
-                        opacity: opacity,
-                      }}>Slide to cancel</Animated.Text>
-                  </>
-                </View>)}
+            {isRecording && (
+  <>
+    <Text style={styles.timerText}>Recording: {timer}s</Text>
+    <Text style={styles.swipeText}>Swipe left to cancel</Text>
+  </>
+)}
                           <>
                           {!isRecording && <TextInput
                             value={
@@ -2147,32 +2107,33 @@ return (
                               onPress={() => sendMessage("text")}
                             />
                           ) : (
+                            // <Animated.View
+                            //   style={{
+                            //     transform: [{ translateX }],backgroundColor: isRecording ? '#FF6347' : '#4CAF50', borderRadius: 50, padding: 20  // Apply animated movement
+                            //   }}
+                            //   {...panResponder.panHandlers}>
+                            // <IconButton
+                            //   icon={<Icon as={MaterialCommunityIcons} name="microphone" color={"white"}/>}
+                            //   borderRadius="full"
+                            //   background={"green.800"}
+                            //   _icon={{ size: "lg", color: "green" }}
+                            //   _pressed={{
+                            //     transform: [{ scale: 1.5 }],
+                            //   }}
+                              
+                            // />
+                            // </Animated.View>
                             <Animated.View
-                              style={{
-                                transform: [{ translateX: micPosition }], // Apply animated movement
-                              }}
-                              {...panResponder.panHandlers}>
-                            <IconButton
-                              icon={<Icon as={MaterialCommunityIcons} name="microphone" color={"white"}/>}
-                              borderRadius="full"
-                              background={"green.800"}
-                              _icon={{ size: "lg", color: "green" }}
-                              _pressed={{
-                                transform: [{ scale: 1.5 }],
-                              }}
-                              onPressIn={() => {
-                                setIsCanceled(false);
-                                setTimeout(() => voiceRecordHandle(), 200); 
-                              }}
-                              onPressOut={() => {
-                                if (!wasDragged) {
-                                  setTimeout(() => voiceStopRecordHandle(), 500);
-                                } else {
-                                  console.log("Swipe detected, preventing submission.");
-                                }
-                              }}
-                            />
-                            </Animated.View>
+  style={{
+    transform: [{ translateX }],
+    backgroundColor: isRecording ? '#FF6347' : '#4CAF50',
+    borderRadius: 50,
+    padding: 20,
+  }}
+  {...panResponder.panHandlers}
+>
+  <Ionicons name="mic" size={32} color="white" />
+</Animated.View>
                           )}
                         </>
              
@@ -2191,20 +2152,34 @@ return (
           />
         )}
         <MessageDeleteDialog
-          isOpen={isDeleteMessagesOpen} 
+          isOpen={isDeleteMessagesOpen}
           onClose={() => setIsDeleteMessagesOpen(false)}
-          //onConfirm={handleDeleteConfirm}
           header="Delete Messages"
-          //body="Are you sure you want to delete the selected messages? This action cannot be undone."
-          //confirmText="Delete"
-          //cancelText="Cancel"
-          
-          body="Do you want to delete the messages just for yourself or for everyone?"
-          confirmText="Delete for everyone"
-          // cancelText="Cancel"
-          extraActionText="Delete for me"
-          onConfirm={handleDeleteConfirm}
-          onExtraAction={handleDeleteForMe}
+          body= {
+            seletedMessages.every((message) => message.senderId === userId)
+              ? "Do you want to delete the messages just for yourself or for everyone?"
+              : "Do you want to delete the message?"
+          }
+          confirmText={
+            seletedMessages.every((message) => message.senderId === userId)
+              ? "Delete for everyone"
+              : "Delete for me"
+          }
+          extraActionText={
+            seletedMessages.every((message) => message.senderId === userId)
+              ? "Delete for me"
+              : ""
+          }
+          onConfirm={
+            seletedMessages.every((message) => message.senderId === userId)
+              ? handleDeleteConfirm
+              : handleDeleteForMe
+          }
+          onExtraAction={
+            seletedMessages.every((message) => message.senderId === userId)
+              ? handleDeleteForMe
+              : undefined
+          }
         />
 
         {/* Second ConfirmationDialog */}
@@ -2235,18 +2210,7 @@ return (
                 callStatus={callStatus} 
                 callDuration={formatCallDuration(callDuration)}
                 declineCall={()=>declineCall(recipentId)}
-                acceptCall={() => {
-                  console.log("📞 Accept Call Button Clicked");
-          
-                  // Ensure the channel name is set before calling `acceptCall`
-                  if (!channelNameRef.current) {
-                      console.warn("⚠️ Channel name is missing! Setting it manually...");
-                      channelNameRef.current = "voice_call";  // Default to voice_call
-                  }
-          
-                  console.log("✅ Calling acceptCall with channel:", channelNameRef.current);
-                  acceptCall(recipentId, channelNameRef.current);
-                }}
+                acceptCall={() => { acceptCall(recipentId, channelName)}}
             />
         )}
 
@@ -2359,5 +2323,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   videoView: { width: '90%', height: 200 },
+  commonStyle:{
+    backgroundColor: "#E0FFE8",
+    borderRadius: 5,
+    borderLeftWidth: 4,
+    borderLeftColor: "#2E7800",
+    padding: 5,
+  }
 });
 

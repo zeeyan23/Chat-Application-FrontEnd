@@ -129,6 +129,7 @@ export default function App() {
     <AuthProvider>
       <UserContext>
         <NativeBaseProvider>
+          <StatusBar backgroundColor="#242424" barStyle="light-content" />
           <Navigation />
         </NativeBaseProvider>
       </UserContext>
