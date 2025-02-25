@@ -63,7 +63,7 @@ import AudioRecorderPlayer from "react-native-audio-recorder-player";
 import socketInstance from "../Utils/socket";
 
 const appId = 'b1b769d4b203413881261d9f64b00d47';
-const token = '007eJxTYBDPmD556UZHLsZzV/5u05YxUVgn1Hlfe6lixJ7cuNNzexQUGJIMk8zNLFNMkowMjE0MjS0sDI3MDFMs08xMkgwMUkzMm2/vTG8IZGRgj/ZgYWSAQBCfi6EsPzM5NT45MSeHgQEAcL8fcQ==';
+const token = '007eJxTYFh6c4Hf7O/lmj3XHpo8Ppe6cN7zf1ISEYIeShv3HWCvffpcgSHJMMnczDLFJMnIwNjE0NjCwtDIzDDFMs3MJMnAIMXE/FnW3vSGQEYGs7+zWBkZIBDE52Ioy89MTo1PTszJYWAAANhqJBc=';
 const channelName = 'voice_call';
 const uid = 0;
 
@@ -195,113 +195,6 @@ const MessageSrceen = () => {
   //   }).format(date);
   // };
 
-      useEffect(() => {
-        if (callStartTime) {
-          intervalRef.current = setInterval(() => {
-            setCallDuration(Math.floor((Date.now() - callStartTime) / 1000));
-          }, 1000);
-        } else {
-          clearInterval(intervalRef.current);
-        }
-      
-        return () => clearInterval(intervalRef.current);
-      }, [callStartTime]);
-      
-  useEffect(() => {
-        setupVideoSDKEngine();
-    }, []);
-
-    const setupVideoSDKEngine = async () => {
-            try {
-                if (Platform.OS === 'android') {
-                    await getPermission();
-                }
-                agoraEngineRef.current = createAgoraRtcEngine();
-                const agoraEngine = agoraEngineRef.current;
-    
-                eventHandler.current = {
-                    onJoinChannelSuccess: () => {
-                        
-                        setIsJoined(true);
-                        setCallStartTime(Date.now());
-                        agoraEngineRef.current?.enableAudio(); 
-                        
-                    },
-                    onUserJoined: (_connection, uid) => {
-                      
-                      
-                    },
-                    onUserOffline: (_connection, uid) => {
-                      setCallStatus("User Left");
-                      if (callStartTime) {
-                        const duration = Math.floor((Date.now() - callStartTime) / 1000);
-                        setCallDuration(duration);
-                        clearInterval(intervalRef.current);
-                      }
-                      
-                    },
-                    onAudioVolumeIndication : (speakers, totalVolume) => {
-                        console.log("Audio volume detected:", totalVolume);
-                        if (speakers.length > 0) {
-                            console.log("Speaking user:", speakers[0].uid, "Volume:", speakers[0].volume);
-                        }
-                    }
-                };
-                agoraEngine.registerEventHandler(eventHandler.current);
-                agoraEngine.initialize({
-                    appId: appId,
-                });
-            } catch (e) {
-                console.log(e);
-            }
-        };
-    
-        // Define the join method called after clicking the join channel button
-        const join = async () => { 
-            if (isJoined) return;
-        
-            console.log("Joining Agora channel:", channelName, "Token:", token);
-        
-            try {
-                if (isHost) {
-                    agoraEngineRef.current?.joinChannel(token, channelName, uid, {
-                        channelProfile: ChannelProfileType.ChannelProfileCommunication,
-                        clientRoleType: ClientRoleType.ClientRoleBroadcaster,
-                        publishMicrophoneTrack: true,
-                        autoSubscribeAudio: true,
-                    });
-                }
-            } catch (e) {
-                console.log("Join error:", e);
-            }
-        };
-
-      const leave = () => {
-            try {
-                agoraEngineRef.current?.leaveChannel();
-                setIsJoined(false);
-                setDial(false);
-                socket.emit("decline-call", { from: userId, to: recipentId });
-            } catch (e) {
-                console.log(e);
-            }
-        };
-    
-
-        const acceptCall = (from, channelName) => {
-          
-          socket.emit("accept-call", { from, to: userId, channelName: channelName });
-          join();
-      };
-      
-      
-      const declineCall = (from) => {
-       
-          setIncomingCall(false);
-          socket.emit("decline-call", { from: userId, to: recipentId });
-      };
-      const formattedCallDuration = new Date(callDuration * 1000).toISOString().substr(14, 5);
-      
 
   useEffect(() => {
     return () => {
@@ -401,20 +294,18 @@ const MessageSrceen = () => {
     });
 
     //Voice Call
-    socket.on("incoming-call", ({ from, channelName }) => {
-        setCallStatus("Waiting...")
-        setIncomingCall( from );
+    socket.on("incoming_voice_call", (data) => {
+      if (data.recipientId === userId) {
+        navigation.navigate("VoiceScreen", {
+          callerId: data.callerId,
+          callerName: data.callerName,
+          callerImage: data.callerImage,
+        });
+      }
     });
 
-    socket.on("call-accepted", ({ channelName }) => {
-      console.log(channelName)
-        setCallStatus("Call Connected");
-        join(channelName);
-    });
-
-    socket.on("join-call", ({ channelName }) => {
-      setCallStatus("Call Connected")
-        join(channelName);
+    socket.on("voice_call_declined", () => {
+      Alert.alert("Call Declined", "The recipient declined the call.");
     });
 
     //Delete messages
@@ -453,12 +344,6 @@ const MessageSrceen = () => {
     // });
 
     return () => {
-      if (agoraEngineRef.current && eventHandler.current) {
-          agoraEngineRef.current.unregisterEventHandler(eventHandler.current);
-      }
-      if (agoraEngineRef.current) {
-          agoraEngineRef.current.release();
-      }
 
       socket.off("newMessage");
       socket.off("incoming_video_call");
@@ -467,6 +352,8 @@ const MessageSrceen = () => {
       socket.off("messages_deleted_for_both");
       socket.off("imageViewedUpdate");
       socket.off("videoViewedUpdate");
+      socket.off("incoming_voice_call");
+      socket.off("voice_call_declined");
       // socket.off("userOnline");
       // socket.off("userOffline");
       socket.disconnect();
@@ -632,8 +519,13 @@ const MessageSrceen = () => {
           </Box>
         ) : (
           <Box w="90%" justifyContent={"space-between"} flexDirection={"row"}>
-            <Ionicons name="call-sharp" size={24} color="black" onPress={() => voiceCallHandle(userId, recipentId)}/>
-            <Ionicons name="videocam" size={24} color="black" onPress={videoCallHandler} />
+            {!isGroupChat ? <>
+                <Ionicons name="call-sharp" size={24} color="black" onPress={() => voiceCallHandle(userId, recipentId)}/>
+                <Ionicons name="videocam" size={24} color="black" onPress={videoCallHandler} />
+              </> : <>
+                <Ionicons name="call-sharp" size={24} color="black" onPress={() => groupVoiceCallHandle(userId, groupId)}/>
+                <Ionicons name="videocam" size={24} color="black"/></>
+            }
             <Menu trigger={triggerProps => {
                 return <Pressable accessibilityLabel="More options menu" {...triggerProps} >
                         <Entypo name="dots-three-vertical" size={20} color="black"   style={{marginTop:3, paddingRight:15}}/>
@@ -646,11 +538,25 @@ const MessageSrceen = () => {
     });
   }, [navigation, seletedMessages, Platform.OS, userName, status]);
 
-  function voiceCallHandle(userId, recepientId){
+  function voiceCallHandle(){
+    socket.emit("voice_calling", {
+      callerId: userId,
+      recipientId: recipentId,
+      callerName: userName,
+      callerImage: userImage,
+    });
+    navigation.navigate("VoiceScreen", {
+      isCalling: true,
+      recipientId: recipentId,
+    });
+  }
+
+  function groupVoiceCallHandle(userId, groupId){
     socket.emit("call-user", {
       from: userId, 
-      to: recepientId, 
-      channelName: channelName
+      to: groupId, 
+      channelName: channelName,
+      isGroupCall:true
     });
     setDial(!dial);
   }
@@ -1226,8 +1132,6 @@ const MessageSrceen = () => {
     setViewOnceSelected(prevState => !prevState);
   };
   
-
-
   const voiceRecordHandle = async () => {
     if (isRecordingInProgress) return;
   
@@ -1577,7 +1481,7 @@ const renderReplyMessage = (replyMessage, handleReplyPress, userId) => {
 return (
   <SafeAreaProvider>
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
-      {!dial && !incomingCall && !isVideoCalling && <ImageBackground source={bckimage} resizeMode="cover" style={styles.image}>
+      <ImageBackground source={bckimage} resizeMode="cover" style={styles.image}>
         <KeyboardAvoidingView style={{ flex: 1}}>
         <FlatList
             data={getMessage}
@@ -2252,44 +2156,11 @@ return (
           cancelText="Cancel"
         />
       </KeyboardAvoidingView>
-      </ImageBackground>}
-      {dial && (
-            <DialComponent 
-              userImage={userImage} 
-              userName={userName} 
-              callStatus={callStatus} 
-              callDuration={formatCallDuration(callDuration)}
-              onLeaveCall={leave} />)}
-
-        {incomingCall && (
-            <ReceiverComponent
-                //caller={incomingCall}
-                userImage={userImage} 
-                userName={userName} 
-                callStatus={callStatus} 
-                callDuration={formatCallDuration(callDuration)}
-                declineCall={()=>declineCall(recipentId)}
-                acceptCall={() => { acceptCall(recipentId, channelName)}}
-            />
-        )}
-
-       
+      </ImageBackground>
     </SafeAreaView>
   </SafeAreaProvider>
 );
 }
-
-const getPermission = async () => {
-    
-  const granted = await PermissionsAndroid.requestMultiple([
-      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-      PermissionsAndroid.PERMISSIONS.CAMERA,
-  ]);
-
-  return granted[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED &&
-         granted[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED;
-
-}  
 
 export default MessageSrceen;
 

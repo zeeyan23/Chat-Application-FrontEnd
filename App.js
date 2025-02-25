@@ -30,6 +30,8 @@ import { getReactNativePersistence, initializeAuth } from "firebase/auth";
 import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
 import VideoScreen from './screens/VideoScreen';
 import VideoCallScreen from './screens/VideoCallScreen';
+import VoiceScreen from './screens/VoiceScreen';
+import VoiceCallScreen from './screens/VoiceCallScreen';
 
 export const navigationRef = createNavigationContainerRef();
 const firebaseConfig = {
@@ -86,6 +88,8 @@ export default function App() {
         <Stack.Screen name="CallScreen" component={CallScreen}/>
         <Stack.Screen name="VideoScreen" component={VideoScreen} options={{headerShown: false}}/>
         <Stack.Screen name="VideoCallScreen" component={VideoCallScreen} options={{headerShown: false}}/>
+        <Stack.Screen name="VoiceScreen" component={VoiceScreen} options={{headerShown: false}}/>
+        <Stack.Screen name="VoiceCallScreen" component={VoiceCallScreen} options={{headerShown: false}}/>
       </Stack.Navigator>
 
     )
@@ -129,7 +133,7 @@ export default function App() {
     <AuthProvider>
       <UserContext>
         <NativeBaseProvider>
-          <StatusBar backgroundColor="#242424" barStyle="light-content" />
+          {/* <StatusBar backgroundColor="#242424" barStyle="light-content" /> */}
           <Navigation />
         </NativeBaseProvider>
       </UserContext>
