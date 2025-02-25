@@ -14,6 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Entypo, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import socketInstance from "../Utils/socket";
 function ChatScreen(){
 
   const [friendsData, setFriendsData]=useState([]);
@@ -22,7 +23,7 @@ function ChatScreen(){
 
   const {userId, setUserId} = useContext(UserType);
   const navigation = useNavigation();
-  const socket = useRef();
+  const socket = socketInstance.getSocket();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -204,9 +205,8 @@ function ChatScreen(){
       };
       
     useEffect(() => {
-        socket.current = io(mainURL);
-        socket.current.emit("registerUser", userId);
-        socket.current.on("pinnedChatsUpdated", (updatedPinnedChats) => {
+
+        socket.on("pinnedChatsUpdated", (updatedPinnedChats) => {
       
         setFriendsData((prevData) => ({
             ...prevData,
@@ -217,13 +217,14 @@ function ChatScreen(){
           }));
         });
       
-        socket.current.on("update_chat", (data) => {
+        socket.on("update_chat", (data) => {
+          console.log("update_chat",data)
             handleNewMessage(data);
           });
         return () => {
-          socket.current.disconnect();
+          socket.disconnect();
         };
-      }, [userId]);
+      }, [socket]);
       
     return(
         <>

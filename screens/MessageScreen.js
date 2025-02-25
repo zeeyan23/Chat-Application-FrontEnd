@@ -60,6 +60,7 @@ import {
 import DialComponent from "../components/DialComponent";
 import ReceiverComponent from "../components/ReceiverComponent";
 import AudioRecorderPlayer from "react-native-audio-recorder-player";
+import socketInstance from "../Utils/socket";
 
 const appId = 'b1b769d4b203413881261d9f64b00d47';
 const token = '007eJxTYBDPmD556UZHLsZzV/5u05YxUVgn1Hlfe6lixJ7cuNNzexQUGJIMk8zNLFNMkowMjE0MjS0sDI3MDFMs08xMkgwMUkzMm2/vTG8IZGRgj/ZgYWSAQBCfi6EsPzM5NT45MSeHgQEAcL8fcQ==';
@@ -89,7 +90,7 @@ const MessageSrceen = () => {
 
   const navigation = useNavigation();
   const route = useRoute();
-  const socket = useRef();
+  const socket = socketInstance.getSocket();
   const {userId, setUserId} = useContext(UserType);
   const flatListRef = useRef(null);
 
@@ -138,6 +139,10 @@ const MessageSrceen = () => {
   const [recording, setRecording] = useState(null);
   const [timer, setTimer] = useState(0);
   const translateX = useRef(new Animated.Value(0)).current;
+  const [userStatus, setUserStatus] = useState({
+    isOnline: false,
+    lastOnlineTime: null,
+  });
 
   useEffect(() => {
     if (dial || incomingCall) {
@@ -148,7 +153,47 @@ const MessageSrceen = () => {
     }
   }, [dial, incomingCall]);
 
-  socket.current = io(mainURL);
+  // const updateUserStatus = (userId, isOnline, lastOnlineTime = null) => {
+  //   if (userId === recipentId) {
+
+  //     setUserStatus((prevStatus) => {
+  //       // Preserve existing lastOnlineTime if new one is null
+  //       const updatedStatus = {
+  //         isOnline,
+  //         lastOnlineTime: lastOnlineTime || prevStatus.lastOnlineTime,
+  //       };
+  //       console.log("🔄 Updating status:", updatedStatus);
+  //       return updatedStatus;
+  //     });
+  //   }
+  // };
+  
+
+  // const fetchUserStatus = async () => {
+  //   try {
+  //     const { data } = await axios.get(`${mainURL}/user/status/${recipentId}`);
+  //     console.log("📊 Fetched user status:", data);
+  
+  //     // Update using accurate API data
+  //     updateUserStatus(recipentId, data.isOnline, data.lastOnlineTime);
+  //   } catch (error) {
+  //     console.error("Error fetching status:", error);
+  //   }
+  // };
+  
+  // useEffect(() => {
+  //   fetchUserStatus();
+  // }, [recipentId]);
+
+
+  // const formatLastSeen = (dateString) => {
+  //   if (!dateString) return "Last seen recently";
+  //   const date = new Date(dateString);
+  //   return new Intl.DateTimeFormat("en-US", {
+  //     dateStyle: "medium",
+  //     timeStyle: "short",
+  //   }).format(date);
+  // };
 
       useEffect(() => {
         if (callStartTime) {
@@ -236,7 +281,7 @@ const MessageSrceen = () => {
                 agoraEngineRef.current?.leaveChannel();
                 setIsJoined(false);
                 setDial(false);
-                socket.current.emit("decline-call", { from: userId, to: recipentId });
+                socket.emit("decline-call", { from: userId, to: recipentId });
             } catch (e) {
                 console.log(e);
             }
@@ -245,7 +290,7 @@ const MessageSrceen = () => {
 
         const acceptCall = (from, channelName) => {
           
-          socket.current.emit("accept-call", { from, to: userId, channelName: channelName });
+          socket.emit("accept-call", { from, to: userId, channelName: channelName });
           join();
       };
       
@@ -253,7 +298,7 @@ const MessageSrceen = () => {
       const declineCall = (from) => {
        
           setIncomingCall(false);
-          socket.current.emit("decline-call", { from: userId, to: recipentId });
+          socket.emit("decline-call", { from: userId, to: recipentId });
       };
       const formattedCallDuration = new Date(callDuration * 1000).toISOString().substr(14, 5);
       
@@ -329,19 +374,19 @@ const MessageSrceen = () => {
     );
   };
 
+
   useEffect(() => {
 
     //Realtime-chat
-    socket.current.emit("join", userId);
-
-    socket.current.on("newMessage", (message) => {
-      //console.log("Received message: ", message);
+    socket.emit("join", userId);
+    socket.on("newMessage", (message) => {
+      console.log("Received message: ", message);
       setGetMessage((prevMessages) => [{...message}, ...prevMessages]);
       setRefreshKey((prev) => prev + 1);
     });
 
     //Video Call
-    socket.current.on("incoming_video_call", (data) => {
+    socket.on("incoming_video_call", (data) => {
       if (data.recipientId === userId) {
         navigation.navigate("VideoScreen", {
           callerId: data.callerId,
@@ -351,50 +396,60 @@ const MessageSrceen = () => {
       }
     });
 
-    socket.current.on("video_call_declined", () => {
+    socket.on("video_call_declined", () => {
       Alert.alert("Call Declined", "The recipient declined the call.");
     });
 
     //Voice Call
-    socket.current.on("incoming-call", ({ from, channelName }) => {
+    socket.on("incoming-call", ({ from, channelName }) => {
         setCallStatus("Waiting...")
         setIncomingCall( from );
     });
 
-    socket.current.on("call-accepted", ({ channelName }) => {
+    socket.on("call-accepted", ({ channelName }) => {
       console.log(channelName)
         setCallStatus("Call Connected");
         join(channelName);
     });
 
-    socket.current.on("join-call", ({ channelName }) => {
+    socket.on("join-call", ({ channelName }) => {
       setCallStatus("Call Connected")
         join(channelName);
     });
 
     //Delete messages
-    socket.current.on('messages_deleted_for_me', ({messages}) => {
+    socket.on('messages_deleted_for_me', ({messages}) => {
       setSelectedMessages([]);
       fetchMessages()
     });
 
-    socket.current.on('messages_deleted_for_both', () => {
+    socket.on('messages_deleted_for_both', () => {
       setSelectedMessages([]);
       fetchMessages()
     });
 
     //Image and Video view once
-    socket.current.on("imageViewedUpdate", (messageId) => {
+    socket.on("imageViewedUpdate", (messageId) => {
       updateImageViewed(messageId._id);
     });
 
-    socket.current.on("videoViewedUpdate", (messageId) => {    
+    socket.on("videoViewedUpdate", (messageId) => {    
       updateVideoViewed(messageId._id);
     });
 
-    // socket.current.on("connect", () => {
-    //   socket.current.emit("joinRoom", userId);
-    //   socket.current.emit("joinRoom", groupId);
+    // //User online status
+    // socket.on("userOnline", ({ userId }) => {
+    //   console.log("user online", userId)
+    //   updateUserStatus(userId, true);
+    // });
+  
+    // socket.on("userOffline", ({ userId, lastOnlineTime }) => {
+    //   console.log("User offline event:", userId, lastOnlineTime); // Debug log
+    //   updateUserStatus(userId, false, lastOnlineTime);
+    // });
+    // socket.on("connect", () => {
+    //   socket.emit("joinRoom", userId);
+    //   socket.emit("joinRoom", groupId);
     // });
 
     return () => {
@@ -405,21 +460,23 @@ const MessageSrceen = () => {
           agoraEngineRef.current.release();
       }
 
-      socket.current.off("newMessage");
-      socket.current.off("incoming_video_call");
-      socket.current.off("video_call_declined");
-      socket.current.off("messages_deleted_for_me");
-      socket.current.off("messages_deleted_for_both");
-      socket.current.off("imageViewedUpdate");
-      socket.current.off("videoViewedUpdate");
-      socket.current.disconnect();
+      socket.off("newMessage");
+      socket.off("incoming_video_call");
+      socket.off("video_call_declined");
+      socket.off("messages_deleted_for_me");
+      socket.off("messages_deleted_for_both");
+      socket.off("imageViewedUpdate");
+      socket.off("videoViewedUpdate");
+      // socket.off("userOnline");
+      // socket.off("userOffline");
+      socket.disconnect();
     
     };
-  }, [userId, recipentId]);
+  }, [userId, recipentId,socket]);
 
   useEffect(() => {
       if (socket) {
-          socket.current.on("update_user_status", ({ userId, isOnline, lastOnlineTime }) => {
+          socket.on("update_user_status", ({ userId, isOnline, lastOnlineTime }) => {
             if ( userId === recipentId) {
               setStatus({
                 isOnline,
@@ -430,7 +487,7 @@ const MessageSrceen = () => {
       }
 
       return () => {
-          socket.current.off("update_user_status");
+          socket.off("update_user_status");
       };
   }, [socket, senderId, recipentId]);
   
@@ -550,9 +607,11 @@ const MessageSrceen = () => {
                       <Text style={{ fontSize: 14, fontWeight: 'bold' }}>
                         {!isGroupChat ? userName : groupName}
                       </Text>
-                      <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
-                        {status.isOnline ? "online" :  "last seen at "+formatTime(status.lastOnlineTime)}
-                      </Text>
+                      {/* <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
+                      {userStatus.isOnline
+    ? "Online"
+    : `Last seen: ${formatLastSeen(userStatus.lastOnlineTime)}`}
+                      </Text> */}
                     </Box>;
               }}
               </Pressable>
@@ -588,7 +647,7 @@ const MessageSrceen = () => {
   }, [navigation, seletedMessages, Platform.OS, userName, status]);
 
   function voiceCallHandle(userId, recepientId){
-    socket.current.emit("call-user", {
+    socket.emit("call-user", {
       from: userId, 
       to: recepientId, 
       channelName: channelName
@@ -597,7 +656,7 @@ const MessageSrceen = () => {
   }
 
   function videoCallHandler(){
-    socket.current.emit("video_calling", {
+    socket.emit("video_calling", {
       callerId: userId,
       recipientId: recipentId,
       callerName: userName,
@@ -818,23 +877,23 @@ const MessageSrceen = () => {
           fetchMessages();
           setIsTyping(false);
 
-          // if(!isGroupChat){
-          //   socket.current.emit("send_message", {
-          //     senderId: userId,
-          //     receiverId: recipentId,
-          //     message: message,
-          //     isGroupChat: isGroupChat,
-          //     timestamp: new Date().toISOString(),
-          //   });
-          // }else{
-          //   socket.current.emit("send_message", {
-          //     senderId: userId,
-          //     receiverId: groupId,
-          //     message: message,
-          //     isGroupChat: isGroupChat,
-          //     timestamp: new Date().toISOString(),
-          //   });
-          // }
+          if(!isGroupChat){
+            socket.emit("send_message", {
+              senderId: userId,
+              receiverId: recipentId,
+              message: message,
+              isGroupChat: isGroupChat,
+              timestamp: new Date().toISOString(),
+            });
+          }else{
+            socket.emit("send_message", {
+              senderId: userId,
+              receiverId: groupId,
+              message: message,
+              isGroupChat: isGroupChat,
+              timestamp: new Date().toISOString(),
+            });
+          }
           
       } catch (error) {
           if (error.response && error.response.data.error) {
