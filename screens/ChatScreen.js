@@ -221,9 +221,9 @@ function ChatScreen(){
           console.log("update_chat",data)
             handleNewMessage(data);
           });
-        return () => {
-          socket.disconnect();
-        };
+        // return () => {
+        //   socket.disconnect();
+        // };
       }, [socket]);
       
     return(

@@ -304,6 +304,21 @@ const MessageSrceen = () => {
       }
     });
 
+    socket.on("incoming_group_voice_call", (data) => {
+      if (data.groupId === groupId) {
+        navigation.navigate("VoiceScreen", {
+          isGroup: true,
+          groupId: data.groupId,
+          participants: data.participants,
+          callerId: data.callerId,
+          callerName: data.callerName,
+          callerImage: data.callerImage,
+        });
+      }
+    });
+
+  
+
     socket.on("voice_call_declined", () => {
       Alert.alert("Call Declined", "The recipient declined the call.");
     });
@@ -353,13 +368,14 @@ const MessageSrceen = () => {
       socket.off("imageViewedUpdate");
       socket.off("videoViewedUpdate");
       socket.off("incoming_voice_call");
+      socket.off("incoming_group_voice_call");
       socket.off("voice_call_declined");
       // socket.off("userOnline");
       // socket.off("userOffline");
-      socket.disconnect();
+      //socket.disconnect();
     
     };
-  }, [userId, recipentId,socket]);
+  }, [userId, recipentId,socket, groupId]);
 
   useEffect(() => {
       if (socket) {
@@ -552,13 +568,15 @@ const MessageSrceen = () => {
   }
 
   function groupVoiceCallHandle(userId, groupId){
-    socket.emit("call-user", {
-      from: userId, 
-      to: groupId, 
-      channelName: channelName,
-      isGroupCall:true
+    socket.emit("group_voice_calling", {
+      callerId: userId,
+      groupId,
     });
-    setDial(!dial);
+    navigation.navigate("VoiceScreen", {
+      isGroup: true,
+      groupId,
+      isCalling: true,
+    });
   }
 
   function videoCallHandler(){
