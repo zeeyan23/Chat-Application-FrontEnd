@@ -11,8 +11,7 @@ class SocketService {
         transports: ["websocket"],
         autoConnect: true,           // Automatically connect on app start
         reconnection: true,          // Enable auto-reconnection
-        reconnectionAttempts: 10,    // Retry up to 10 times
-        reconnectionDelay: 3000,
+        reconnectionDelay: 1000,     // Retry immediately without limit
       });
 
       this.setupListeners();
@@ -43,7 +42,7 @@ class SocketService {
       console.warn("⚠️ Socket disconnected:", reason);
       if (reason !== "io client disconnect") {
         console.log("🔄 Attempting to reconnect...");
-        this.socket.connect();
+        this.ensureConnected();
       }
     });
 
@@ -69,8 +68,10 @@ class SocketService {
 
   // Custom method to manually disconnect (only when needed)
   disconnect() {
-    console.log("❌ Manually disconnecting socket...");
-    this.socket.disconnect();
+    if (this.socket.connected) {
+      console.log("❌ Manually disconnecting socket...");
+      this.socket.disconnect();
+    }
   }
 }
 

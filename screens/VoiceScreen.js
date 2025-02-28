@@ -10,12 +10,14 @@ import { mainURL } from "../Utils/urls";
 import CustomButton from "../components/CustomButton";
 
 function VoiceScreen({route}){
-    const { isCalling, groupId,recipientId, isGroup,callerId, participants = [], callerImage, callerName } = route.params;
+    // const { , ,, isGroup,callerId, ,  } = route.params;
+    const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, isCalling, groupId, recipientId, participants = [], callerImage, callerName } = route.params;
     const navigation = useNavigation();
     const [callAccepted, setCallAccepted] = useState(false);
     const socket = socketInstance.getSocket();
 
-    let source;
+    
+    let source, caller_image;
     if(callerImage){
       const baseUrl = `${mainURL}/files/`;
       const imageUrl= callerImage;
@@ -24,15 +26,28 @@ function VoiceScreen({route}){
       source = {uri: baseUrl + filename}
     }
 
+    if(callerInfo && callerInfo.image){
+      const baseUrl = `${mainURL}/files/`;
+      const imageUrl= callerInfo.image;
+      const normalizedPath = imageUrl.replace(/\\/g, "/"); 
+      const filename=normalizedPath.split("/").pop();
+      caller_image = {uri: baseUrl + filename}
+    }
     useEffect(()=>{
-        socket.on("voice_call_approved", (data) => {
-            setCallAccepted(true);
-            navigation.replace("VoiceCallScreen", {
-              channelId: data.channelId,
-              isHost: !isCalling, 
-            });
+      const handleCallApproved = (data) => {
+        if (!callAccepted) {
+          setCallAccepted(true);
+          navigation.replace("VoiceCallScreen", {
+            callerId: data.callerId,
+            calleeId: data.calleeId,
+            isCaller: data.isCaller,
+            callerInfo: data.callerInfo,
+            calleeInfo: data.calleeInfo,
           });
+        }
+      }
 
+        socket.on("voice_call_approved", handleCallApproved);
         socket.on("group_voice_call_approved", (data) => {
             setCallAccepted(true);
             navigation.replace("VoiceCallScreen", {
@@ -45,7 +60,6 @@ function VoiceScreen({route}){
         });
 
           socket.on("group_voice_call_declined", (data) => {
-            console.log("Decline event received: ", data);
             Alert.alert(
               "Call Ended", data.message,
               [
@@ -56,12 +70,24 @@ function VoiceScreen({route}){
               ]
             );
           });
-        socket.on("voice_call_declined", () => {
+
+        // const handleCallEnded = () => {
+        //   Alert.alert("Call Ended", "The other user has left the call.");
+        //   navigation.goBack();
+        // };
+          const handleCallDeclined = () => {
             Alert.alert("Call Declined");
             navigation.goBack();
-        });
-        
-    },[])
+          };
+    
+          socket.off("voice_call_declined").on("voice_call_declined", handleCallDeclined);
+         
+          return () => {
+            socket.off("voice_call_declined", handleCallDeclined);
+            // socket.off("call_ended", handleCallEnded);
+            socket.off("voice_call_approved", handleCallApproved);
+          };
+    },[callAccepted, navigation])
 
     const acceptCall = () => {
       if(isGroup){
@@ -72,12 +98,17 @@ function VoiceScreen({route}){
           isGroup: true,
         });
       }else{
-        socket.emit("voice_call_accepted", { callerId, recipientId });
-    
-        navigation.replace("VoiceCallScreen", {
-          channelId: callerId, 
-          isHost: false, 
-        });
+        if (!callAccepted) {
+          setCallAccepted(true);
+          socket.emit("voice_call_accepted", { callerId, calleeId });
+          navigation.replace("VoiceCallScreen", {
+            callerId: callerId, 
+            calleeId: calleeId,
+            isCaller: false,
+            callerInfo: callerInfo,
+            calleeInfo: calleeInfo,
+          });
+        }
       }
         
     };
@@ -87,73 +118,102 @@ function VoiceScreen({route}){
           socket.emit("decline_group_voice_call", { callerId, groupId });
           navigation.goBack();
         }else{
-          console.log("one to one call")
           socket.emit("decline_voice_call", { callerId });
           navigation.goBack();
         }
     };
 
+    const renderDialComponent = () =>{
+      return(
+        <Box flex={1} flexDirection="column" width={"full"} padding={5} background={"white"}>
+          <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>
+              <Box maxW="96" rounded="full">
+                <MaterialCommunityIcons name="account" size={100} color="gray" />
+              </Box>
+              <Text>Waiting for to connect...</Text>
+          </Box>
+          <Box flex={1} justifyContent="flex-end" padding={10}>
+              <Box flexDirection={"row"} justifyContent={"center"}>
+                  <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId, groupId)}/>
+              </Box>
+          </Box>
+        </Box>
+      )
+    }
+
+    const renderDialGroupComponent = () =>{
+      return(
+        <Box flex={1} flexDirection="column" width={"full"} padding={5} background={"white"}>
+          <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>
+              <Box maxW="96" rounded="full">
+                <MaterialCommunityIcons name="account-group" size={100} color="gray" />
+              </Box>
+              <Text>Waiting for participants to connect...</Text>
+          </Box>
+          <Box flex={1} justifyContent="flex-end" padding={10}>
+              <Box flexDirection={"row"} justifyContent={"center"}>
+                  <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId, groupId)}/>
+              </Box>
+          </Box>
+        </Box>
+      )
+    }
+
+    const renderReceiverComponent = () =>{
+      return(
+        <Box flex={1} flexDirection="column" width={"full"} padding={5} background={"white"}>
+          <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>
+              <Box maxW="96" rounded="full">
+                  {caller_image ? (
+                      <Avatar size="2xl" source={caller_image} />
+                  ) : (
+                      <Ionicons name="person-circle-outline" size={100} color="gray" />
+                  )}
+              </Box>
+              <Text style={{color:"black"}}>{callerInfo?.user_name}</Text>
+              <Text>Calling you...</Text>
+          </Box>
+          <Box flex={1} justifyContent="flex-end" padding={10}>
+              <Box flexDirection={"row"} justifyContent={"space-between"}>
+                  <CustomButton iconName={"call-outline"} bgColor="green.700" onPress={acceptCall}/>
+                  <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId)}/>
+              </Box>
+          </Box>
+        </Box>
+      )
+    }
+
+    const renderReceiverGroupComponent = () =>{
+      return(
+        <Box flex={1} flexDirection="column" width={"full"} padding={5} background={"white"}>
+          <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>
+              <Box maxW="96" rounded="full">
+                  {source ? (
+                      <Avatar size="2xl" source={source} />
+                  ) : (
+                      <Ionicons name="person-circle-outline" size={100} color="gray" />
+                  )}
+              </Box>
+              <Text style={{color:"black"}}>{callerName}</Text>
+              <Text>Initing you to a group voice call...</Text>
+          </Box>
+          <Box flex={1} justifyContent="flex-end" padding={10}>
+              <Box flexDirection={"row"} justifyContent={"space-between"}>
+                  <CustomButton iconName={"call-outline"} bgColor="green.700" onPress={acceptCall}/>
+                  <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId)}/>
+              </Box>
+          </Box>
+        </Box>
+      )
+    }
+
     return(
         <View style={{flex:1}}>
-              {isCalling ? (
-                <Box flex={1} flexDirection="column" width={"full"} padding={5} background={"white"}>
-                <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>
-                    <Box maxW="96" rounded="full">
-                      <MaterialCommunityIcons name="account-group" size={100} color="gray" />
-                    </Box>
-                    <Text>Waiting for participants to connect...</Text>
-                </Box>
-                <Box flex={1} justifyContent="flex-end" padding={10}>
-                    <Box flexDirection={"row"} justifyContent={"center"}>
-                        <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId, groupId)}/>
-                    </Box>
-                </Box>
-              </Box>
-              
-              ) : (
-                <>
-                {!isGroup ? 
-                <Box flex={1} flexDirection="column" width={"full"} padding={5} background={"white"}>
-                  <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>
-                      <Box maxW="96" rounded="full">
-                          {source ? (
-                              <Avatar size="2xl" source={source} />
-                          ) : (
-                              <Ionicons name="person-circle-outline" size={100} color="gray" />
-                          )}
-                      </Box>
-                      <Text style={{color:"black"}}>{callerName}</Text>
-                      <Text>Calling you...</Text>
-                  </Box>
-                  <Box flex={1} justifyContent="flex-end" padding={10}>
-                      <Box flexDirection={"row"} justifyContent={"space-between"}>
-                          <CustomButton iconName={"call-outline"} bgColor="green.700" onPress={acceptCall}/>
-                          <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId)}/>
-                      </Box>
-                  </Box>
-                </Box>
-                  : 
-                  <Box flex={1} flexDirection="column" width={"full"} padding={5} background={"white"}>
-                    <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>
-                        <Box maxW="96" rounded="full">
-                            {source ? (
-                                <Avatar size="2xl" source={source} />
-                            ) : (
-                                <Ionicons name="person-circle-outline" size={100} color="gray" />
-                            )}
-                        </Box>
-                        <Text style={{color:"black"}}>{callerName}</Text>
-                        <Text>Initing you to a group voice call...</Text>
-                    </Box>
-                    <Box flex={1} justifyContent="flex-end" padding={10}>
-                        <Box flexDirection={"row"} justifyContent={"space-between"}>
-                            <CustomButton iconName={"call-outline"} bgColor="green.700" onPress={acceptCall}/>
-                            <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId)}/>
-                        </Box>
-                    </Box>
-                  </Box>} 
-                </>
-              )}
+          {isCaller && !isGroup && renderDialComponent()}
+          {isCaller && isGroup && renderDialGroupComponent()}
+
+          {!isCaller && !isGroup && renderReceiverComponent()}
+          {!isCaller && isGroup && renderReceiverGroupComponent()}
         </View>
     )
 }

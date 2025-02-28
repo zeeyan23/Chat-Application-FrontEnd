@@ -295,11 +295,13 @@ const MessageSrceen = () => {
 
     //Voice Call
     socket.on("incoming_voice_call", (data) => {
-      if (data.recipientId === userId) {
+      if (data.calleeId === userId) {
         navigation.navigate("VoiceScreen", {
           callerId: data.callerId,
-          callerName: data.callerName,
-          callerImage: data.callerImage,
+          calleeId: data.calleeId,
+          isCaller: data.isCaller,
+          callerInfo: data.callerInfo,
+          calleeInfo: data.calleeInfo,
         });
       }
     });
@@ -557,13 +559,13 @@ const MessageSrceen = () => {
   function voiceCallHandle(){
     socket.emit("voice_calling", {
       callerId: userId,
-      recipientId: recipentId,
-      callerName: userName,
-      callerImage: userImage,
+      calleeId: recipentId,
+      isCaller: false
     });
     navigation.navigate("VoiceScreen", {
-      isCalling: true,
-      recipientId: recipentId,
+      callerId: userId,
+      calleeId: recipentId,
+      isCaller: true
     });
   }
 

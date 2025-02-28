@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Image, ScrollView } from "react-native";
+import { Alert, Image, ScrollView } from "react-native";
 import { PermissionsAndroid, Platform, SafeAreaView, StyleSheet, TouchableOpacity, View } from "react-native";
 import {
     createAgoraRtcEngine,
@@ -14,12 +14,13 @@ import CustomButton from "../components/CustomButton";
 import socketInstance from "../Utils/socket";
 
 const appId = 'b1b769d4b203413881261d9f64b00d47';
-const token = '007eJxTYODdcKu3ySDi/uod64TPpP2KD5KRz15fGLSX8VLb70/z115VYEgyTDI3s0wxSTIyMDYxNLawMDQyM0yxTDMzSTIwSDExj/61P70hkJFhtuByVkYGCATxuRjK8jOTU+OTE3NyGBgAgMojGw==';
+const token = '007eJxTYBD+5Gu713bvVo49k+s1b9Q/ceEuCzx44uaCf6orOpuWlTorMCQZJpmbWaaYJBkZGJsYGltYGBqZGaZYppmZJBkYpJiYC/YeTG8IZGQweb6BkZEBAkF8Loay/Mzk1PjkxJwcBgYANKwiEQ==';
 const channelName = 'voice_call';
 const uid = 0;
 
 function VoiceCallScreen({ route, navigation }){
-    const { channelId, isHost, isGroup, participants = [], callerName, callerImage } = route.params;
+    // const { channelId, recipientId,isHost, isGroup,  } = route.params;
+    const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, participants = [], } = route.params;
     const agoraEngineRef = useRef(null);
     const [isJoined, setIsJoined] = useState(false);
     const [remoteUid, setRemoteUid] = useState(0);
@@ -37,6 +38,33 @@ function VoiceCallScreen({ route, navigation }){
         init();
         return cleanupAgoraEngine;
     }, []);
+
+    // Helper function to normalize image paths
+    const getImageUri = (imagePath) => {
+        if (!imagePath) return null; // Return null if no image path
+        const baseUrl = `${mainURL}/files/`;
+        const normalizedPath = imagePath.replace(/\\/g, "/");
+        const filename = normalizedPath.split("/").pop();
+        return { uri: baseUrl + filename };
+    };
+  
+  // Safely extract images
+  const caller_image = getImageUri(callerInfo?.image);
+  const callee_image = getImageUri(calleeInfo?.image);
+  
+    useEffect(() => {
+        const handleCallEnded = () => {
+            Alert.alert("Call Ended");
+            navigation.goBack();
+        };
+    
+        socket.on("call_ended", handleCallEnded);
+    
+        return () => {
+            socket.off("call_ended", handleCallEnded);
+        };
+    }, []);
+    
 
     const setupEventHandler = () => {
         eventHandler.current = {
@@ -62,7 +90,6 @@ function VoiceCallScreen({ route, navigation }){
             if (Platform.OS === 'android') await getPermission();
             agoraEngineRef.current = createAgoraRtcEngine();
             await agoraEngineRef.current.initialize({ appId });
-    
         } catch (e) {
             console.error(e);
         }
@@ -70,7 +97,8 @@ function VoiceCallScreen({ route, navigation }){
 
     const joinChannel = async () => {
         if (isJoined) return;
-
+        agoraEngineRef.current?.enableAudio();
+        agoraEngineRef.current?.muteLocalAudioStream(false);
         try {
                 agoraEngineRef.current?.joinChannel(token, channelName, uid, {
                     channelProfile: ChannelProfileType.ChannelProfileCommunication,
@@ -89,7 +117,7 @@ function VoiceCallScreen({ route, navigation }){
             setRemoteUid(0);
             setIsJoined(false);
             setMessage('Left the channel');
-            socket.emit("decline_group_voice_call", { callerId });
+            socket.emit("leave_voice_call", { calleeId: calleeId, callerId: callerId });
             navigation.goBack();
         } catch (e) {
             console.log(e);
@@ -137,26 +165,43 @@ function VoiceCallScreen({ route, navigation }){
         />
       );
 
-    //   const renderCallerInfo = () => (
-    //     <VStack alignItems="center" space={2} my={3}>
-    //       <Center size={24} rounded="full" overflow="hidden" bg="gray.700" shadow={4}>
-    //         {callerImage ? (
-    //           <Image source={getImageSource(callerImage)} style={{ width: 96, height: 96, borderRadius: 48 }} />
-    //         ) : (
-    //           <Ionicons name="person-circle" size={96} color="gray" />
-    //         )}
-    //       </Center>
-    //       <Text color="white" fontSize="md" bold>{callerName || "Unknown User"}</Text>
-    //     </VStack>
-    //   );
+      const renderCallerInfo = () => (
+        <VStack alignItems="center" space={2} my={3}>
+            <Center size={24} rounded="full" overflow="hidden" bg="gray.700" shadow={4}>
+                {caller_image ? (
+                <Image source={caller_image} style={{ width: 96, height: 96, borderRadius: 48 }} />
+                ) : (
+                <Ionicons name="person-circle" size={96} color="gray" />
+                )}
+            </Center>
+            <Text color="white" fontSize="md" bold>
+                {callerInfo?.user_name || "Unknown Caller"}
+            </Text>
+        </VStack>
+      );
       
+      const renderCalleeInfo = () => (
+        <VStack alignItems="center" space={2} my={3}>
+            <Center size={24} rounded="full" overflow="hidden" bg="gray.700" shadow={4}>
+                {callee_image ? (
+                <Image source={callee_image} style={{ width: 96, height: 96, borderRadius: 48 }} />
+                ) : (
+                <Ionicons name="person-circle" size={96} color="gray" />
+                )}
+            </Center>
+            <Text color="white" fontSize="md" bold>
+                {calleeInfo?.user_name || "Unknown Callee"}
+            </Text>
+        </VStack>
+      );
 
     return(
         <>
             <SafeAreaView style={styles.container}>
                   
             {isGroup && renderParticipants()}
-            {/* {!isGroup && renderCallerInfo()} */}
+            {!isGroup && !isCaller && renderCallerInfo()}
+            {!isGroup && isCaller && renderCalleeInfo()}
 
                 {/* Floating Leave Button */}
                 {/* <TouchableOpacity onPress={leaveChannel} style={styles.leaveButton}>
