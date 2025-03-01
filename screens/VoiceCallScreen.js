@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Alert, Image, ScrollView } from "react-native";
 import { PermissionsAndroid, Platform, SafeAreaView, StyleSheet, TouchableOpacity, View } from "react-native";
 import {
@@ -12,6 +12,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Box, Center, Flex, Row, VStack, Wrap,Text, FlatList } from "native-base";
 import CustomButton from "../components/CustomButton";
 import socketInstance from "../Utils/socket";
+import { UserType } from "../Context/UserContext";
 
 const appId = 'b1b769d4b203413881261d9f64b00d47';
 const token = '007eJxTYBD+5Gu713bvVo49k+s1b9Q/ceEuCzx44uaCf6orOpuWlTorMCQZJpmbWaaYJBkZGJsYGltYGBqZGaZYppmZJBkYpJiYC/YeTG8IZGQweb6BkZEBAkF8Loay/Mzk1PjkxJwcBgYANKwiEQ==';
@@ -28,6 +29,7 @@ function VoiceCallScreen({ route, navigation }){
     const eventHandler = useRef(null);
     const baseUrl = `${mainURL}/files/`;
     const socket = socketInstance.getSocket();
+    const {userId, setUserId} = useContext(UserType);
 
     useEffect(() => {
         const init = async () => {
@@ -55,7 +57,12 @@ function VoiceCallScreen({ route, navigation }){
     useEffect(() => {
         const handleCallEnded = () => {
             Alert.alert("Call Ended");
-            navigation.goBack();
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            } else {
+                navigation.navigate("Chats"); // Fallback if no screen to go back to
+            }
+    
         };
     
         socket.on("call_ended", handleCallEnded);
@@ -65,7 +72,16 @@ function VoiceCallScreen({ route, navigation }){
         };
     }, []);
     
+    useEffect(() => {
+        return () => {
+          if (userId) {
+            socketInstance.joinRoom(userId);
+            console.log(`🔄 Rejoined room after call: ${userId}`);
+          }
+        };
+      }, []);
 
+      
     const setupEventHandler = () => {
         eventHandler.current = {
             onJoinChannelSuccess: () => {

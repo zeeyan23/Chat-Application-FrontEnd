@@ -1,6 +1,7 @@
 // socket.js
 import { io } from "socket.io-client";
 import { mainURL } from "./urls";
+import { navigationRef } from "../App";
 
 const SOCKET_URL = mainURL;
 
@@ -36,6 +37,21 @@ class SocketService {
   setupListeners() {
     this.socket.on("connect", () => {
       console.log("✅ Socket connected:", this.socket.id);
+    });
+
+    this.socket.on("incoming_voice_call", (data) => {
+      console.log("📲 Incoming Voice Call:", data);
+  
+      // Ensure we navigate only if the user is the recipient
+      // if (data.calleeId === this.recipentId) {
+        navigationRef.navigate("VoiceScreen", {
+          callerId: data.callerId,
+          calleeId: data.calleeId,
+          isCaller: false,
+          callerInfo: data.callerInfo,
+          calleeInfo: data.calleeInfo,
+        });
+      // }
     });
 
     this.socket.on("disconnect", (reason) => {

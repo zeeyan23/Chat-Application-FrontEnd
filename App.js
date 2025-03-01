@@ -32,6 +32,7 @@ import VideoScreen from './screens/VideoScreen';
 import VideoCallScreen from './screens/VideoCallScreen';
 import VoiceScreen from './screens/VoiceScreen';
 import VoiceCallScreen from './screens/VoiceCallScreen';
+import socketInstance from "./Utils/socket";
 
 export const navigationRef = createNavigationContainerRef();
 const firebaseConfig = {
@@ -107,6 +108,15 @@ export default function App() {
   
   function Navigation() {
     const { isAuthenticated, isNewUser } = useContext(AuthContext);
+    const {userId, setUserId} = useContext(UserType);
+
+    useEffect(() => {
+      if (isAuthenticated && userId) {
+        socketInstance.joinRoom(userId);  // Ensure user joins their room
+        console.log(`✅ Joined socket room: ${userId}`);
+      }
+    }, [isAuthenticated, userId]);
+
     
     useEffect(() => {
       if (isAuthenticated && navigationRef.isReady()) {

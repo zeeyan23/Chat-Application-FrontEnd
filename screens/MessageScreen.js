@@ -294,17 +294,17 @@ const MessageSrceen = () => {
     });
 
     //Voice Call
-    socket.on("incoming_voice_call", (data) => {
-      if (data.calleeId === userId) {
-        navigation.navigate("VoiceScreen", {
-          callerId: data.callerId,
-          calleeId: data.calleeId,
-          isCaller: data.isCaller,
-          callerInfo: data.callerInfo,
-          calleeInfo: data.calleeInfo,
-        });
-      }
-    });
+    // socket.on("incoming_voice_call", (data) => {
+    //   if (data.calleeId === userId) {
+    //     navigation.navigate("VoiceScreen", {
+    //       callerId: data.callerId,
+    //       calleeId: data.calleeId,
+    //       isCaller: data.isCaller,
+    //       callerInfo: data.callerInfo,
+    //       calleeInfo: data.calleeInfo,
+    //     });
+    //   }
+    // });
 
     socket.on("incoming_group_voice_call", (data) => {
       if (data.groupId === groupId) {
