@@ -44,6 +44,10 @@ class SocketService {
   
       // Ensure we navigate only if the user is the recipient
       // if (data.calleeId === this.recipentId) {
+        this.socket.emit("send_call_notification", {
+          calleeId: data.calleeId,
+          callerInfo: data.callerInfo,
+        });
         navigationRef.navigate("VoiceScreen", {
           callerId: data.callerId,
           calleeId: data.calleeId,

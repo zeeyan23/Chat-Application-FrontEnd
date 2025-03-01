@@ -130,6 +130,22 @@ export default function App() {
       }
     }, [isAuthenticated, isNewUser]);
 
+    useEffect(() => {
+      const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+        const { screen, callerId, calleeId, isCaller, isGroup } = response.notification.request.content.data;
+        if (screen === "VoiceScreen" && navigationRef.isReady()) {
+          navigationRef.navigate("VoiceScreen", {
+            callerId,
+            calleeId,
+            isCaller,
+            isGroup,
+          });
+        }
+      });
+  
+      // Cleanup on unmount
+      return () => subscription.remove();
+    }, []);
     
     return (
       <NavigationContainer ref={navigationRef}>

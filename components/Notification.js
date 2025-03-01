@@ -13,7 +13,6 @@ const NotificationHandler = () => {
 
     const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const { data } = response.notification.request.content;
-      
 
       if (data.senderId) {
         navigation.navigate("MessageScreen", {
