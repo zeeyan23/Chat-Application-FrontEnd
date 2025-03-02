@@ -214,15 +214,9 @@ function VoiceCallScreen({ route, navigation }){
     return(
         <>
             <SafeAreaView style={styles.container}>
-                  
-            {isGroup && renderParticipants()}
-            {!isGroup && !isCaller && renderCallerInfo()}
-            {!isGroup && isCaller && renderCalleeInfo()}
-
-                {/* Floating Leave Button */}
-                {/* <TouchableOpacity onPress={leaveChannel} style={styles.leaveButton}>
-                    <Text style={styles.leaveButtonText}>Leave Call</Text>
-                </TouchableOpacity> */}
+                {isGroup && renderParticipants()}
+                {!isGroup && !isCaller && renderCallerInfo()}
+                {!isGroup && isCaller && renderCalleeInfo()}
                 <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={leaveChannel}/>
             </SafeAreaView>
         </>

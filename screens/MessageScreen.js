@@ -279,15 +279,15 @@ const MessageSrceen = () => {
     });
 
     //Video Call
-    socket.on("incoming_video_call", (data) => {
-      if (data.recipientId === userId) {
-        navigation.navigate("VideoScreen", {
-          callerId: data.callerId,
-          callerName: data.callerName,
-          callerImage: data.callerImage,
-        });
-      }
-    });
+    // socket.on("incoming_video_call", (data) => {
+    //   if (data.recipientId === userId) {
+    //     navigation.navigate("VideoScreen", {
+    //       callerId: data.callerId,
+    //       callerName: data.callerName,
+    //       callerImage: data.callerImage,
+    //     });
+    //   }
+    // });
 
     socket.on("video_call_declined", () => {
       Alert.alert("Call Declined", "The recipient declined the call.");
@@ -363,13 +363,13 @@ const MessageSrceen = () => {
     return () => {
 
       socket.off("newMessage");
-      socket.off("incoming_video_call");
+      
       socket.off("video_call_declined");
       socket.off("messages_deleted_for_me");
       socket.off("messages_deleted_for_both");
       socket.off("imageViewedUpdate");
       socket.off("videoViewedUpdate");
-      socket.off("incoming_voice_call");
+      // socket.off("incoming_voice_call");
       socket.off("incoming_group_voice_call");
       socket.off("voice_call_declined");
       // socket.off("userOnline");
@@ -542,7 +542,7 @@ const MessageSrceen = () => {
                 <Ionicons name="videocam" size={24} color="black" onPress={videoCallHandler} />
               </> : <>
                 <Ionicons name="call-sharp" size={24} color="black" onPress={() => groupVoiceCallHandle(userId, groupId)}/>
-                <Ionicons name="videocam" size={24} color="black"/></>
+                <Ionicons name="videocam" size={24} color="black" onPress={groupVideoCallHandle}/></>
             }
             <Menu trigger={triggerProps => {
                 return <Pressable accessibilityLabel="More options menu" {...triggerProps} >
@@ -581,17 +581,21 @@ const MessageSrceen = () => {
     });
   }
 
+  function groupVideoCallHandle(userId, groupId){
+    
+  }
+
   function videoCallHandler(){
     socket.emit("video_calling", {
       callerId: userId,
-      recipientId: recipentId,
-      callerName: userName,
-      callerImage: userImage,
+      calleeId: recipentId,
+      isCaller: false
     });
 
     navigation.navigate("VideoScreen", {
-      isCalling: true,
-      recipientId: recipentId,
+      callerId: userId,
+      calleeId: recipentId,
+      isCaller: true
     });
   }
 
