@@ -69,6 +69,19 @@ class SocketService {
       // }
     });
 
+    this.socket.on("incoming_group_video_call", (data) => {
+      navigationRef.navigate("VideoScreen", {
+        isGroup: true,
+        isCaller: false,
+        groupId: data.groupId,
+        participants: data.participants,
+        callerId: data.callerId,
+        callerName: data.callerName,
+        callerImage: data.callerImage,
+      });
+    // }
+  });
+
     this.socket.on("disconnect", (reason) => {
       console.warn("⚠️ Socket disconnected:", reason);
       if (reason !== "io client disconnect") {

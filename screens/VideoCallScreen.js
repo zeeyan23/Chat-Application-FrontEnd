@@ -34,10 +34,10 @@ const channelName = 'video_call';
 const localUid = 0;
 
 const VideoCallScreen = ({ route, navigation }) => {
-    const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, participants = [], } = route.params;
+    const { callerId, calleeId, isCaller,isGroup, participants = [] } = route.params;
     const agoraEngineRef = useRef(null);
     const [isJoined, setIsJoined] = useState(false);
-    const [remoteUid, setRemoteUid] = useState(0);
+    const [remoteUids, setRemoteUids] = useState([]);
     const [message, setMessage] = useState('');
     const eventHandler = useRef(null);
     const baseUrl = `${mainURL}/files/`;
@@ -54,16 +54,6 @@ const VideoCallScreen = ({ route, navigation }) => {
         return cleanupAgoraEngine;
     }, []);
 
-    const getImageUri = (imagePath) => {
-        if (!imagePath) return null; // Return null if no image path
-        const baseUrl = `${mainURL}/files/`;
-        const normalizedPath = imagePath.replace(/\\/g, "/");
-        const filename = normalizedPath.split("/").pop();
-        return { uri: baseUrl + filename };
-    };
-
-    const caller_image = getImageUri(callerInfo?.image);
-    const callee_image = getImageUri(calleeInfo?.image);
 
     useEffect(() => {
         const handleCallEnded = () => {
@@ -101,12 +91,12 @@ const VideoCallScreen = ({ route, navigation }) => {
             },
             onUserJoined: (_connection, uid) => {
                 setMessage(`Remote user ${uid} joined`);
-                setRemoteUid(uid);
+                setRemoteUids(prevUids => [...new Set([...prevUids, uid])]);
                 agoraEngineRef.current?.muteRemoteVideoStream(uid, false);
             },
             onUserOffline: (_connection, uid) => {
                 setMessage(`Remote user ${uid} left the channel`);
-                setRemoteUid(0);
+                setRemoteUids(prevUids => prevUids.filter(id => id !== uid));
             },
         };
         agoraEngineRef.current?.registerEventHandler(eventHandler.current);
@@ -135,9 +125,10 @@ const VideoCallScreen = ({ route, navigation }) => {
         agoraEngineRef.current?.startPreview();
         try {
             agoraEngineRef.current?.joinChannel(token, channelName, 0, {
-                channelProfile: ChannelProfileType.ChannelProfileCommunication,
+                channelProfile: isGroup ? ChannelProfileType.ChannelProfileLiveBroadcasting : ChannelProfileType.ChannelProfileCommunication,
                 //clientRoleType: isHost ? ClientRoleType.ClientRoleBroadcaster : ClientRoleType.ClientRoleAudience,
-                clientRoleType: isCaller ? ClientRoleType.ClientRoleBroadcaster : ClientRoleType.ClientRoleBroadcaster, // Ensure both are broadcasters
+                //clientRoleType: isCaller ? ClientRoleType.ClientRoleBroadcaster : ClientRoleType.ClientRoleBroadcaster, // Ensure both are broadcasters
+                clientRoleType: ClientRoleType.ClientRoleBroadcaster,
                 publishMicrophoneTrack: true,
                 publishCameraTrack: true,
                 autoSubscribeAudio: true,
@@ -151,7 +142,7 @@ const VideoCallScreen = ({ route, navigation }) => {
     const leaveChannel = () => {
         try {
             agoraEngineRef.current?.leaveChannel();
-            setRemoteUid(0);
+            setRemoteUids([]);
             setIsJoined(false);
             setMessage('Left the channel');
             socket.emit("leave_video_call", { calleeId: calleeId, callerId: callerId });
@@ -168,92 +159,40 @@ const VideoCallScreen = ({ route, navigation }) => {
         };
     };
 
-    const getImageSource = (userImage) => {
-        if (!userImage) {
-          return null;
-        }
-        const normalizedPath = userImage.replace(/\\/g, "/");
-        const filename = normalizedPath.split("/").pop();
-        return { uri: `${baseUrl}${filename}` };
-    };
-
-    const renderParticipants = () => (
-        <FlatList
-            data={participants}
-            numColumns={2}
-            keyExtractor={(item) => item.id}
-            columnWrapperStyle={{ justifyContent: "space-between", marginHorizontal: 16 }}
-            contentContainerStyle={{ paddingVertical: 20 }}
-            renderItem={({ item }) => (
-            <VStack alignItems="center" space={2} my={3} mx={10}>
-                <Center size={24} rounded="full" overflow="hidden" bg="gray.700" shadow={4}>
-                {item.userImage ? (
-                    <Image source={getImageSource(item.userImage)} style={{ width: 96, height: 96, borderRadius: 48 }} />
-                ) : (
-                    <Ionicons name="person-circle" size={96} color="gray" />
-                )}
-                </Center>
-                <Text color="white" fontSize="md" bold>
-                {item.userName || "Unknown User"}
-                </Text>
-            </VStack>
-            )}
-        />
-      );
-
-      const renderCallerInfo = () => (
-        <VStack alignItems="center" space={2} my={3}>
-            <Center size={24} rounded="full" overflow="hidden" bg="gray.700" shadow={4}>
-                {caller_image ? (
-                <Image source={caller_image} style={{ width: 96, height: 96, borderRadius: 48 }} />
-                ) : (
-                <Ionicons name="person-circle" size={96} color="gray" />
-                )}
-            </Center>
-            <Text color="white" fontSize="md" bold>
-                {callerInfo?.user_name || "Unknown Caller"}
-            </Text>
-        </VStack>
-      );
-      
-      const renderCalleeInfo = () => (
-        <VStack alignItems="center" space={2} my={3}>
-            <Center size={24} rounded="full" overflow="hidden" bg="gray.700" shadow={4}>
-                {callee_image ? (
-                <Image source={callee_image} style={{ width: 96, height: 96, borderRadius: 48 }} />
-                ) : (
-                <Ionicons name="person-circle" size={96} color="gray" />
-                )}
-            </Center>
-            <Text color="white" fontSize="md" bold>
-                {calleeInfo?.user_name || "Unknown Callee"}
-            </Text>
-        </VStack>
-      );
-
-
     return (
         <SafeAreaView style={styles.container}>
-            {/* Remote User Camera (Full Screen) */}
-            {isJoined &&  (
-                <>
-                <RtcSurfaceView
-                    canvas={{ uid: remoteUid, sourceType: VideoSourceType.VideoSourceRemote }}
-                    style={styles.remoteVideo}
-                />
-                <View style={styles.localVideoContainer}>
-                    <RtcSurfaceView
-                        canvas={{ uid: 0, sourceType: VideoSourceType.VideoSourceCamera }}
-                        style={styles.localVideo}
-                    />
+            {isJoined && (
+                <View style={styles.videoContainer}>
+                    {isGroup ? (
+                        <FlatList
+                            data={remoteUids}
+                            keyExtractor={(uid) => uid.toString()}
+                            renderItem={({ item: uid }) => (
+                                <RtcSurfaceView
+                                    canvas={{ uid, sourceType: VideoSourceType.VideoSourceRemote }}
+                                    style={styles.remoteVideoBox}
+                                />
+                            )}
+                            numColumns={2}
+                        />
+                    ) : (
+                        remoteUids.map(uid => (
+                            <RtcSurfaceView
+                                key={uid}
+                                canvas={{ uid, sourceType: VideoSourceType.VideoSourceRemote }}
+                                style={styles.fullScreenVideo}
+                            />
+                        ))
+                    )}
+                    <View style={styles.localVideoContainer}>
+                        <RtcSurfaceView
+                            canvas={{ uid: localUid, sourceType: VideoSourceType.VideoSourceCamera }}
+                            style={styles.localVideo}
+                        />
+                    </View>
                 </View>
-                </>
-                
             )}
 
-           
-
-            {/* Floating Leave Button */}
             <TouchableOpacity onPress={leaveChannel} style={styles.leaveButton}>
                 <Text style={styles.leaveButtonText}>Leave Call</Text>
             </TouchableOpacity>
@@ -265,17 +204,21 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
-        justifyContent: 'center',
-        alignItems: 'center',
     },
-    remoteVideo: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
+    videoContainer: {
+        flex: 1,
+    },
+    remoteVideoBox: {
+        width: '48%',
+        aspectRatio: 1,
+        margin: 2,
+    },
+    fullScreenVideo: {
+        flex: 1,
     },
     localVideoContainer: {
         position: 'absolute',
-        top: 20,
+        bottom: 20,
         right: 20,
         width: 100,
         height: 150,
@@ -291,6 +234,7 @@ const styles = StyleSheet.create({
     leaveButton: {
         position: 'absolute',
         bottom: 30,
+        alignSelf: 'center',
         backgroundColor: 'red',
         paddingVertical: 10,
         paddingHorizontal: 20,
@@ -300,19 +244,8 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
-    },
-    message: {
-        position: 'absolute',
-        top: 10,
-        backgroundColor: '#000',
-        color: '#fff',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 5,
-        opacity: 0.8,
-    },
+    }
 });
-
 
 const getPermission = async () => {
     if (Platform.OS === 'android') {

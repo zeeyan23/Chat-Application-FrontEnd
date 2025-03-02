@@ -31,6 +31,8 @@ function VoiceCallScreen({ route, navigation }){
     const socket = socketInstance.getSocket();
     const {userId, setUserId} = useContext(UserType);
 
+    console.log("voice screen")
+
     useEffect(() => {
         const init = async () => {
             await setupVideoSDKEngine();

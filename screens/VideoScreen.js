@@ -9,7 +9,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import CustomButton from "../components/CustomButton";
 
 const VideoScreen = ({ route }) => {
-  const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, isCalling, groupId, recipientId, participants = [], callerImage, callerName } = route.params;
+  const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, groupId, recipientId, participants = [], callerImage, callerName } = route.params;
   const navigation = useNavigation();
   const [callAccepted, setCallAccepted] = useState(false);
   const socket = socketInstance.getSocket();
@@ -52,6 +52,30 @@ const VideoScreen = ({ route }) => {
       };
 
       socket.off("video_call_declined").on("video_call_declined", handleCallDeclined);
+
+      socket.on("group_video_call_approved", (data) => {
+        setCallAccepted(true);
+        navigation.replace("VideoCallScreen", {
+          channelId: data.channelId,
+          participants: data.participants,
+          isCaller: !isCaller,
+          isGroup: true,
+          callerId: callerId
+        });
+    });
+
+      socket.on("group_video_call_declined", (data) => {
+        Alert.alert(
+          "Call Ended", data.message,
+          [
+            {
+              text: "OK",
+              onPress: () => navigation.goBack(), 
+            },
+          ]
+        );
+      });
+
       return () => {
         socket.off("video_call_approved");
         socket.off("video_call_declined");
@@ -60,10 +84,10 @@ const VideoScreen = ({ route }) => {
 
   const acceptCall = () => {
     if(isGroup){
-      socket.emit("group_voice_call_accepted", { groupId, callerId, recipientId, participants: [...participants, recipientId], });
-      navigation.replace("VoiceCallScreen", {
+      socket.emit("group_video_call_accepted", { groupId, callerId, recipientId, participants: [...participants, recipientId], });
+      navigation.replace("VideoCallScreen", {
         channelId: groupId,
-        isHost: false,
+        isCaller: false,
         isGroup: true,
       });
     }else{
@@ -83,7 +107,7 @@ const VideoScreen = ({ route }) => {
 
   const declineCall = () => {
     if(isGroup){
-      socket.emit("decline_group_voice_call", { callerId, groupId });
+      socket.emit("decline_group_video_call", { callerId, groupId });
       navigation.goBack();
     }else{
       socket.emit("decline_video_call", { callerId });
@@ -163,7 +187,7 @@ const VideoScreen = ({ route }) => {
                 )}
             </Box>
             <Text style={{color:"black"}}>{callerName}</Text>
-            <Text>Initing you to a group voice call...</Text>
+            <Text>Initing you to a group video call...</Text>
         </Box>
         <Box flex={1} justifyContent="flex-end" padding={10}>
             <Box flexDirection={"row"} justifyContent={"space-between"}>

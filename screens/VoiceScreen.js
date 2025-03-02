@@ -16,7 +16,7 @@ function VoiceScreen({route}){
     const [callAccepted, setCallAccepted] = useState(false);
     const socket = socketInstance.getSocket();
 
-    
+    console.log("VoiceScreen")
     let source, caller_image;
     if(callerImage){
       const baseUrl = `${mainURL}/files/`;

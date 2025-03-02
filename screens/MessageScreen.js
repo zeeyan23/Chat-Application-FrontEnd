@@ -542,7 +542,7 @@ const MessageSrceen = () => {
                 <Ionicons name="videocam" size={24} color="black" onPress={videoCallHandler} />
               </> : <>
                 <Ionicons name="call-sharp" size={24} color="black" onPress={() => groupVoiceCallHandle(userId, groupId)}/>
-                <Ionicons name="videocam" size={24} color="black" onPress={groupVideoCallHandle}/></>
+                <Ionicons name="videocam" size={24} color="black" onPress={()=> groupVideoCallHandle(userId, groupId)}/></>
             }
             <Menu trigger={triggerProps => {
                 return <Pressable accessibilityLabel="More options menu" {...triggerProps} >
@@ -582,7 +582,15 @@ const MessageSrceen = () => {
   }
 
   function groupVideoCallHandle(userId, groupId){
-    
+    socket.emit("group_video_calling", {
+      callerId: userId,
+      groupId,
+    });
+    navigation.navigate("VideoScreen", {
+      isGroup: true,
+      groupId,
+      isCaller: true,
+    });
   }
 
   function videoCallHandler(){
