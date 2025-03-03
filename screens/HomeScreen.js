@@ -34,7 +34,7 @@ function HomeScreen(){
             headerTitle:"",
             headerLeft:()=>(
                 <Box paddingLeft={4}>
-                    <Text fontWeight={"bold"} fontSize={20}>Explore Connections</Text>
+                    <Text fontWeight={"bold"} fontSize={20} color={"white"}>Explore Connections</Text>
                 </Box>
             ),
         })
@@ -171,7 +171,7 @@ function HomeScreen(){
                         <HStack space={[2, 3]} justifyContent="space-between">
                             {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
                             <VStack alignSelf={"center"}>
-                                <Text fontSize="lg" color="black" style={{fontWeight:"bold"}}>{item.user_name}</Text>
+                                <Text fontSize="lg" color="white" style={{fontWeight:"bold"}}>{item.user_name}</Text>
                             </VStack>
                             <Spacer />
                             <Box alignSelf={"center"}>
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal:4,
-        backgroundColor:"white"
+        backgroundColor:"black"
     }
 })
 export default HomeScreen;

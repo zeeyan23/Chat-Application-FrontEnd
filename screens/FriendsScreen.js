@@ -71,7 +71,7 @@ function FriendsScreen(){
     }
     
     return(
-        <Box flex={1} backgroundColor={"white"}>
+        <Box flex={1} backgroundColor={"black"}>
             <FlatList data={friendRequestsData} renderItem={({item}) => {
                 const baseUrl = `${mainURL}/files/`;
                 const imageUrl = item.image;

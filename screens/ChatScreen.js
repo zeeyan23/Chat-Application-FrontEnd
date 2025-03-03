@@ -226,69 +226,43 @@ function ChatScreen(){
         // };
       }, [socket]);
       
-    return(
-        <>
-          {/* {isLoading ? (
-              <Box alignItems="center" mt={5}>
-                <Spinner size="lg" color="blue.500" />
-                <Text color="gray.500" fontSize="md" mt={2}>
-                  Loading chats...
-                </Text>
-              </Box>) : friendsWithLastMessage?.length > 0 ? (
-                <ScrollView background={"white"}> 
-                  <Pressable>
-                    {friendsWithLastMessage?.map((item, index)=>(
-                          <UserChat key={index} item={item} selectedChats={selectedChats} setSelectedChats={setSelectedChats} onPinUpdate={fetchUser} onChatUpdate={fetchUser}/>
-                      ))}
-                  </Pressable>
-                </ScrollView>
-              ) : (
-                <Box alignItems="center" mt={5}>
-                          No chats available.
-                          <Text color="gray.500" fontSize="md">
-                            <Pressable onPress={() => navigation.navigate("Home")}>
-                              <Text color="blue.500" fontSize="md" fontWeight="bold">
-                                Start by adding friends!
-                              </Text>
-                            </Pressable>
-                          </Text>
-                        </Box>
-              )} */}
-          {friendsWithLastMessage?.length > 0 && 
-                <ScrollView background={"white"}> 
-                  <Pressable>
-                    {friendsWithLastMessage?.map((item, index)=>(
-                          <UserChat key={index} item={item} selectedChats={selectedChats} setSelectedChats={setSelectedChats} onPinUpdate={fetchUser} onChatUpdate={fetchUser}/>
-                      ))}
-                  </Pressable>
-                </ScrollView>}
-          <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5}>
-            <Stagger visible={isOpen} initial={{ opacity: 0, scale: 0, translateY: 34 }} 
-              animate={{ translateY: 0, scale: 1, opacity: 1, 
-              transition: { type: "spring", mass: 0.8, stagger: { offset: 30, reverse: true } } }} 
-              exit={{ translateY: 34, scale: 0.5, opacity: 0, transition: { duration: 100, 
-              stagger: { offset: 30, reverse: true } } }}>
+  return(
+    <Box flex={1} backgroundColor={'black'}>
+      {friendsWithLastMessage?.length > 0 && 
+        <ScrollView> 
+          <Pressable>
+          {friendsWithLastMessage?.map((item, index)=>(
+            <UserChat key={index} item={item} selectedChats={selectedChats} setSelectedChats={setSelectedChats} onPinUpdate={fetchUser} onChatUpdate={fetchUser}/>
+          ))}
+          </Pressable>
+        </ScrollView>}
+        <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5}>
+          <Stagger visible={isOpen} initial={{ opacity: 0, scale: 0, translateY: 34 }} 
+          animate={{ translateY: 0, scale: 1, opacity: 1, 
+          transition: { type: "spring", mass: 0.8, stagger: { offset: 30, reverse: true } } }} 
+          exit={{ translateY: 34, scale: 0.5, opacity: 0, transition: { duration: 100, 
+          stagger: { offset: 30, reverse: true } } }}>
 
-              <IconButton mb="4" variant="solid" bg="blue.500" colorScheme="indigo" 
-                  borderRadius="md" icon={<Icon as={Ionicons} size="6" name="people-sharp" 
-                  _dark={{ color: "warmGray.50" }} color="warmGray.50" />} onPress={()=>navigation.navigate("FriendRequests")}/>
-                    
-              <IconButton mb="4" variant="solid" bg="violet.600" colorScheme="yellow" 
-                  borderRadius="md" icon={<Icon as={MaterialCommunityIcons} _dark={{ color: "warmGray.50" }} 
-                  size="6" name="account-group" color="warmGray.50" />} onPress={()=>navigation.navigate("AddFriendsToGroup")}/>
+          <IconButton mb="4" variant="solid" bg="blue.500" colorScheme="indigo" 
+            borderRadius="md" icon={<Icon as={Ionicons} size="6" name="people-sharp" 
+            _dark={{ color: "warmGray.50" }} color="warmGray.50" />} onPress={()=>navigation.navigate("FriendRequests")}/>
 
-              <IconButton mb="4" variant="solid" bg="amber.500" colorScheme="yellow" 
-                  borderRadius="md" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 
-                  size="6" name="person-add" color="warmGray.50" />} onPress={()=>navigation.navigate("Home")}/>
-                    
-            </Stagger>
-          </Box>
-          <HStack position={"absolute"} alignSelf={"flex-end"} bottom={10} right={5}>
-            <IconButton variant="solid" borderRadius="md" size="lg" onPress={onToggle} bg="green.700"
-              icon={<Icon as={MaterialCommunityIcons} size="6" name="chat-plus" color="warmGray.50" _dark={{ color: "warmGray.50" }} />} />
-          </HStack>
-        </>
-    )
+          <IconButton mb="4" variant="solid" bg="violet.600" colorScheme="yellow" 
+            borderRadius="md" icon={<Icon as={MaterialCommunityIcons} _dark={{ color: "warmGray.50" }} 
+            size="6" name="account-group" color="warmGray.50" />} onPress={()=>navigation.navigate("AddFriendsToGroup")}/>
+
+          <IconButton mb="4" variant="solid" bg="amber.500" colorScheme="yellow" 
+            borderRadius="md" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 
+            size="6" name="person-add" color="warmGray.50" />} onPress={()=>navigation.navigate("Home")}/>
+
+          </Stagger>
+        </Box>
+        <HStack position={"absolute"} alignSelf={"flex-end"} bottom={10} right={5}>
+          <IconButton variant="solid" borderRadius="md" size="lg" onPress={onToggle} bg="green.700"
+          icon={<Icon as={MaterialCommunityIcons} size="6" name="chat-plus" color="warmGray.50" _dark={{ color: "warmGray.50" }} />} />
+        </HStack>
+    </Box>
+  )
 }
 
 export default ChatScreen;

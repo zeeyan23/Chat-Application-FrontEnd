@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Button, FlatList, Image, Pressable, Text, View } from "react-native";
+import { FlatList, Image, Pressable, Text, View } from "react-native";
 import { mainURL } from "../Utils/urls";
 import axios from "axios";
 import { useContext } from "react";
 import { UserType } from "../Context/UserContext";
-import { Avatar } from "native-base";
+import { Avatar, Button, Fab, Icon, IconButton } from "native-base";
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 function ForwardMessagesScreen({ route, navigation }){
@@ -62,7 +62,7 @@ function ForwardMessagesScreen({ route, navigation }){
 
       const friendsData = friends[0]?.friendsList || [];
     return(
-        <View style={{ flex: 1, padding: 10 }}>
+        <View style={{ flex: 1, padding: 10, backgroundColor:"black" }}>
             <FlatList
                 data={friendsData}
                 keyExtractor={(item) => item._id}
@@ -82,7 +82,7 @@ function ForwardMessagesScreen({ route, navigation }){
                         flexDirection: 'row',
                         alignItems: 'center',
                         marginVertical: 5,
-                        backgroundColor: selectedFriends.includes(item._id) ? '#d3f3fd' : '#fff',
+                        backgroundColor: selectedFriends.includes(item._id) ? 'white' : '#D1D1D1',
                         padding: 10,
                         borderRadius: 10,
                         }}
@@ -106,11 +106,7 @@ function ForwardMessagesScreen({ route, navigation }){
                             <Text style={{ marginHorizontal: 5 }}>{item.user_name}</Text>
                         )}
                         />
-                        <Button
-                        title="Send"
-                        onPress={handleForwardMessage}
-                        disabled={selectedFriends.length === 0}
-                        />
+                        <IconButton icon={<Icon as={Ionicons} name="arrow-redo" color={"white"}/>} backgroundColor={"#21AB00"} onPress={handleForwardMessage} disabled={selectedFriends.length === 0} />
                     </View>
         </View>
     );

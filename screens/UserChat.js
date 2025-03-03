@@ -67,7 +67,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
       headerTitle:"",
       headerLeft:()=>(
           <Box paddingLeft={4}>
-              <Text fontWeight={"bold"} fontSize={16}>Chat App</Text>
+              <Text fontWeight={"bold"} fontSize={16} color={"white"}>Chat App</Text>
           </Box>
       ),
       headerRight: () =>
@@ -81,11 +81,11 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
                   padding: 5,
                 },
               ]}>
-                <MaterialCommunityIcons name="pin" size={24} color="black" />
+                <MaterialCommunityIcons name="pin" size={24} color="white" />
               </Pressable>
             ) : (
               <Pressable onPress={() => unPinChats(selectedChats)}>
-                <MaterialCommunityIcons name="pin-off" size={24} color="black" style={({ pressed }) => [
+                <MaterialCommunityIcons name="pin-off" size={24} color="white" style={({ pressed }) => [
                 {
                   backgroundColor: pressed ? '#e0e0e0' : 'transparent',
                   borderRadius: 8,
@@ -95,7 +95,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
               </Pressable>
             )}
               <Pressable onPress={() => setIsDeleteChat(true)} >
-                <MaterialCommunityIcons name="trash-can" size={24} color="black" style={({ pressed }) => [
+                <MaterialCommunityIcons name="trash-can" size={24} color="white" style={({ pressed }) => [
                 {
                   backgroundColor: pressed ? '#e0e0e0' : 'transparent',
                   borderRadius: 8,
@@ -108,7 +108,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
         <Box w="90%" alignItems="flex-end" paddingRight={4}>
             <Menu w="190" trigger={triggerProps => {
             return <Pressable accessibilityLabel="More options menu" {...triggerProps}>
-            <Entypo name="dots-three-vertical" size={20} color="black" />
+            <Entypo name="dots-three-vertical" size={20} color="white" />
           </Pressable>;
             }}>
                 <Menu.Item onPress={() => navigation.navigate('StarredMessageScreen')}>Starred Messages</Menu.Item>
@@ -226,7 +226,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
     setSelectedChats([]);
   }
   return (
-    <Box flex={1} backgroundColor="white">
+    <Box flex={1}>
       <Pressable
         onPress={()=>handlePress(item)} onLongPress={()=> handleSelectedChat(item)}>
         {({ isHovered, isFocused, isPressed }) => (
@@ -239,13 +239,13 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
             py="2"
             bg={isPressed ? "coolGray.200" : isHovered ? "coolGray.200" : "coolGray.100"}
             style={{
-              backgroundColor: selectedChats.includes(item._id) ? 'lightgray' : 'white', 
+              backgroundColor: selectedChats.includes(item._id) ? 'lightgray' : 'black', 
             }}
           >
             <HStack space={[2, 3]} justifyContent="space-between">
               {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
               <VStack>
-                <Text fontSize="md" color="black" style={{ fontWeight: "bold" }}>{item.type === 'friend' ? item.user_name : item.groupName}</Text>
+                <Text fontSize="md" color="white" style={{ fontWeight: "bold" }}>{item.type === 'friend' ? item.user_name : item.groupName}</Text>
                 {item.lastMessage ? <Text 
                   style={{ marginTop: 3, color: "gray", fontWeight: "500" }} 
                   numberOfLines={1} 
@@ -280,7 +280,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
               </VStack>
               <Spacer />
               <Box justifyContent={"center"} alignItems={"center"}>
-              <Text>
+              <Text color={"white"}>
                 {item.lastMessage ? formatTime(item.lastMessage?.timeStamp) : ""}
               </Text>
               {item.isPinned && <MaterialCommunityIcons name="pin" size={20} color="grey" />}

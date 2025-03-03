@@ -51,21 +51,7 @@ import useBackHandler from "../components/CustomBackHandler";
 import {ImageBackground} from 'react-native';
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 import MessageDeleteDialog from "../components/MessagesDeleteDialog";
-import {
-  createAgoraRtcEngine,
-  ChannelProfileType,
-  ClientRoleType,
-  RtcSurfaceView,
-} from 'react-native-agora';
-import DialComponent from "../components/DialComponent";
-import ReceiverComponent from "../components/ReceiverComponent";
-import AudioRecorderPlayer from "react-native-audio-recorder-player";
 import socketInstance from "../Utils/socket";
-
-const appId = 'b1b769d4b203413881261d9f64b00d47';
-const token = '007eJxTYFh6c4Hf7O/lmj3XHpo8Ppe6cN7zf1ISEYIeShv3HWCvffpcgSHJMMnczDLFJMnIwNjE0NjCwtDIzDDFMs3MJMnAIMXE/FnW3vSGQEYGs7+zWBkZIBDE52Ioy89MTo1PTszJYWAAANhqJBc=';
-const channelName = 'voice_call';
-const uid = 0;
 
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
@@ -116,11 +102,8 @@ const MessageSrceen = () => {
   const [isRecordingInProgress, setIsRecordingInProgress] = useState(false); 
 
   const agoraEngineRef = useRef(null); 
-  const [isJoined, setIsJoined] = useState(false);
-  const [isHost, setIsHost] = useState(true);
   const eventHandler = useRef(null); 
   const [dial , setDial]=useState(false);
-  const [callStatus, setCallStatus] = useState("Waiting...");
   const [incomingCall, setIncomingCall] = useState(null);
 
   const [status, setStatus] = useState({
@@ -129,14 +112,10 @@ const MessageSrceen = () => {
   });
   useBackHandler('Home');
 
-  const [callStartTime, setCallStartTime] = useState(null);
-  const [callDuration, setCallDuration] = useState(0);
-  const intervalRef = useRef(null);
-  const [isVideoCalling, setIsVideoCalling]=useState(null);
-
   const recordingRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState(null);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  let animationRef = useRef(null);
   const [timer, setTimer] = useState(0);
   const translateX = useRef(new Animated.Value(0)).current;
   const [userStatus, setUserStatus] = useState({
@@ -269,8 +248,6 @@ const MessageSrceen = () => {
 
 
   useEffect(() => {
-
-    //Realtime-chat
     socket.emit("join", userId);
     socket.on("newMessage", (message) => {
       console.log("Received message: ", message);
@@ -278,33 +255,9 @@ const MessageSrceen = () => {
       setRefreshKey((prev) => prev + 1);
     });
 
-    //Video Call
-    // socket.on("incoming_video_call", (data) => {
-    //   if (data.recipientId === userId) {
-    //     navigation.navigate("VideoScreen", {
-    //       callerId: data.callerId,
-    //       callerName: data.callerName,
-    //       callerImage: data.callerImage,
-    //     });
-    //   }
-    // });
-
     socket.on("video_call_declined", () => {
       Alert.alert("Call Declined", "The recipient declined the call.");
     });
-
-    //Voice Call
-    // socket.on("incoming_voice_call", (data) => {
-    //   if (data.calleeId === userId) {
-    //     navigation.navigate("VoiceScreen", {
-    //       callerId: data.callerId,
-    //       calleeId: data.calleeId,
-    //       isCaller: data.isCaller,
-    //       callerInfo: data.callerInfo,
-    //       calleeInfo: data.calleeInfo,
-    //     });
-    //   }
-    // });
 
     socket.on("incoming_group_voice_call", (data) => {
       if (data.groupId === groupId) {
@@ -318,8 +271,6 @@ const MessageSrceen = () => {
         });
       }
     });
-
-  
 
     socket.on("voice_call_declined", () => {
       Alert.alert("Call Declined", "The recipient declined the call.");
@@ -369,7 +320,6 @@ const MessageSrceen = () => {
       socket.off("messages_deleted_for_both");
       socket.off("imageViewedUpdate");
       socket.off("videoViewedUpdate");
-      // socket.off("incoming_voice_call");
       socket.off("incoming_group_voice_call");
       socket.off("voice_call_declined");
       // socket.off("userOnline");
@@ -397,8 +347,6 @@ const MessageSrceen = () => {
   }, [socket, senderId, recipentId]);
   
   const handleVideoPress = async(videoUrl, item) => {
-    
-
     if(item.videoViewOnce){
       if(item.senderId._id===userId){
         toast.show({
@@ -431,8 +379,6 @@ const MessageSrceen = () => {
     }
   };
 
-  
-  //console.log(JSON.stringify(getMessage, null, 2))
   const handleImagePress = async(imageUrl, item) => {
     //console.log(item)
     if(item && item.imageViewOnce){
@@ -487,19 +433,14 @@ const MessageSrceen = () => {
     navigation.setOptions({
       headerTitle: '',
       headerLeft: () => (
-        <Box flexDirection="row" alignItems="center" style={{ paddingLeft: 10 }}>
-          <Ionicons
-            name="arrow-back-outline"
-            size={24}
-            color="black"
-            onPress={() => navigation.goBack()}
-          />
+        <Box flexDirection="row" alignItems="center">
+          <IconButton icon={<Icon as={Ionicons} name="arrow-back-outline" color={"white"}/>} size={"md"} onPress={() => navigation.goBack()} />
           {seletedMessages.length > 0 ? (
-            <Text style={{ fontWeight: '500', fontSize: 16, marginLeft: 10 }}>
+            <Text style={{ fontWeight: '500', fontSize: 16, marginLeft: 10, color:'white' }}>
               {seletedMessages.length}
             </Text>
           ) : (
-            <Box flexDirection="row" alignItems="center" marginLeft={1}>
+            <Box flexDirection="row" alignItems="center">
               {source ? <Avatar size="35px"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={35} color="gray" />}
               <Pressable width={"48"} onPress={() => {
                   viewUsersProfile(isGroupChat ? groupId : recipentId);}}>
@@ -508,8 +449,8 @@ const MessageSrceen = () => {
                 isFocused,
                 isPressed
               }) => {
-                return <Box pl={2} justifyContent={"center"} h={"full"} bg={isPressed ? "coolGray.200" : isHovered ? "coolGray.200" : "white"}>
-                      <Text style={{ fontSize: 14, fontWeight: 'bold' }}>
+                return <Box pl={2} justifyContent={"center"} h={"full"} bg={isPressed ? "#666666" : isHovered ? "#666666" : "black"}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color:'white' }}>
                         {!isGroupChat ? userName : groupName}
                       </Text>
                       {/* <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
@@ -536,21 +477,30 @@ const MessageSrceen = () => {
               seletedMessages: seletedMessages,} )} />
           </Box>
         ) : (
-          <Box w="90%" justifyContent={"space-between"} flexDirection={"row"}>
+          <Box justifyContent={"space-between"} flexDirection={"row"}  alignItems={"center"}>
             {!isGroupChat ? <>
-                <Ionicons name="call-sharp" size={24} color="black" onPress={() => voiceCallHandle(userId, recipentId)}/>
-                <Ionicons name="videocam" size={24} color="black" onPress={videoCallHandler} />
+              <Box flex={1} alignItems="center">
+                <IconButton icon={<Icon as={Ionicons} name="call-sharp" color={"white"}/>} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={() => voiceCallHandle(userId, recipentId)}  />
+              </Box>
+              <Box flex={1} alignItems="center">
+                <IconButton icon={<Icon as={Ionicons} name="videocam" color={"white"} />} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={videoCallHandler} />
+              </Box>
               </> : <>
-                <Ionicons name="call-sharp" size={24} color="black" onPress={() => groupVoiceCallHandle(userId, groupId)}/>
-                <Ionicons name="videocam" size={24} color="black" onPress={()=> groupVideoCallHandle(userId, groupId)}/></>
+                <Box flex={1} alignItems="center">
+                  <IconButton icon={<Icon as={Ionicons} name="call-sharp" color={"white"} />} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={() => groupVoiceCallHandle(userId, groupId)}  />
+                </Box>
+                <Box flex={1} alignItems="center">
+                  <IconButton icon={<Icon as={Ionicons} name="videocam" color={"white"}/>} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={()=> groupVideoCallHandle(userId, groupId)} />
+                </Box>
+              </>
             }
-            <Menu trigger={triggerProps => {
-                return <Pressable accessibilityLabel="More options menu" {...triggerProps} >
-                        <Entypo name="dots-three-vertical" size={20} color="black"   style={{marginTop:3, paddingRight:15}}/>
-                      </Pressable>}}>
-              <Menu.Item onPress={() => setIsDeleteChatOpen(true)}>Clear Chat</Menu.Item>
-            </Menu>
-
+            <Box flex={1} alignItems="flex-end">
+              <Menu trigger={triggerProps => {
+                  return  <IconButton accessibilityLabel="More options menu" {...triggerProps} icon={<Icon as={Entypo} name="dots-three-vertical" color={"white"}/>} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }}/>
+                  }}>
+                <Menu.Item onPress={() => setIsDeleteChatOpen(true)}>Clear Chat</Menu.Item>
+              </Menu>
+            </Box>
           </Box>
         ),
     });
@@ -725,10 +675,6 @@ const MessageSrceen = () => {
           }
     }
   }
-
-  const handleEmojiPress = () => {
-    setShowEmojiSelector(!showEmojiSelector);
-  };
 
   function handleInputChange (enteredValue) {
       setMessage(enteredValue);
@@ -949,15 +895,12 @@ const MessageSrceen = () => {
       }
 
       if (!message.starredBy || message.starredBy.length === 0) {
-        //const isSelected = seletedMessages.includes(message._id);
         const isSelected = seletedMessages.some((selected) => selected.messageId === message._id);
         if (isSelected) {
-          // setSelectedMessages((preMessage) => preMessage.filter((id) => id !== message._id));
           setSelectedMessages((preMessage) =>
             preMessage.filter((item) => item.messageId !== message._id)
           );
         } else {
-          //setSelectedMessages((preMessage) => [...preMessage, message._id]);
           setSelectedMessages((preMessage) => [
             ...preMessage,
             { messageId: message._id, senderId: message.senderId._id },
@@ -972,16 +915,13 @@ const MessageSrceen = () => {
       if (response) {
         
         setShowUnStar(true)
-        //const isSelected = seletedMessages.includes(message._id);
         const isSelected = seletedMessages.some((selected) => selected.messageId === message._id);
         if(isSelected){
-          //setSelectedMessages((preMessage)=> preMessage.filter((id)=> id !== message._id))
           setSelectedMessages((preMessage) =>
             preMessage.filter((item) => item.messageId !== message._id)
           );
 
         }else{
-          //setSelectedMessages((preMessage)=> [...preMessage, message._id])
           setSelectedMessages((preMessage) => [
             ...preMessage,
             { messageId: message._id, senderId: message.senderId._id },
@@ -989,15 +929,12 @@ const MessageSrceen = () => {
           
         }
       } else {
-        //const isSelected = seletedMessages.includes(message._id);
         const isSelected = seletedMessages.some((selected) => selected.messageId === message._id);
         if(isSelected){
-          //setSelectedMessages((preMessage)=> preMessage.filter((id)=> id !== message._id))
           setSelectedMessages((preMessage) =>
             preMessage.filter((item) => item.messageId !== message._id)
           );
         }else{
-          //setSelectedMessages((preMessage)=> [...preMessage, message._id])
           setSelectedMessages((preMessage) => [
             ...preMessage,
             { messageId: message._id, senderId: message.senderId._id },
@@ -1164,11 +1101,40 @@ const MessageSrceen = () => {
     setViewOnceSelected(prevState => !prevState);
   };
   
+  const startRecordingAnimation = () => {
+    if (animationRef.current) return; // Prevent multiple animations
+
+    animationRef.current = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.5, // Grow size
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1, // Shrink back
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animationRef.current.start();
+  };
+
+  const stopRecordingAnimation = () => {
+    if (animationRef.current) {
+      animationRef.current.stop();
+      animationRef.current = null;
+    }
+    scaleAnim.setValue(1); // Reset scale
+  };
+
   const voiceRecordHandle = async () => {
     if (isRecordingInProgress) return;
   
     try {
       console.log("Starting voice recording...");
+      startRecordingAnimation();
       setIsRecordingInProgress(true);
       setIsRecording(true);
   
@@ -1182,6 +1148,7 @@ const MessageSrceen = () => {
         alert("You need to enable microphone permissions to use this feature.");
         setIsRecording(false);
         setIsRecordingInProgress(false);
+        stopRecordingAnimation();
         return;
       }
   
@@ -1200,21 +1167,7 @@ const MessageSrceen = () => {
       console.error("Failed to start recording", err);
       setIsRecording(false);
     setIsRecordingInProgress(false);
-    }
-  };
-  
-
-  const getFileSize = async (fileUri) => {
-    try {
-      const fileInfo = await FileSystem.getInfoAsync(fileUri);
-      if (fileInfo.exists) {
-        console.log("File Size in Bytes:", fileInfo.size);
-        return fileInfo.size; // Size in bytes
-      } else {
-        console.log("File does not exist.");
-      }
-    } catch (err) {
-      console.error("Failed to get file size:", err);
+    stopRecordingAnimation();
     }
   };
   
@@ -1247,45 +1200,15 @@ const MessageSrceen = () => {
     }
   };
 
-// const minutes1 = Math.floor(recordingDuration / 60);
-// const seconds1 = recordingDuration % 60;
-// // Format minutes and seconds to always show 2 digits
-// const formattedMinutes = minutes1 < 10 ? `0${minutes1}` : `${minutes1}`;
-// const formattedSeconds = seconds1 < 10 ? `0${seconds1}` : `${seconds1}`;
-// Start the blinking animation for "Slide to Cancel"
-
-
-const resetRecorder = () => {
-  setIsRecording(false);
-  setRecording(null);
-  setRecordingDuration(0);
-  setIsCanceled(false);
-  Animated.spring(micPosition, {
-    toValue: 0,
-    useNativeDriver: false,
-  }).start();
-};
-
-const startTimer = () => {
-  let timer = setInterval(() => {
-    setRecordingDuration((prev) => prev + 1);
-  }, 1000);
-
-  return () => clearInterval(timer);
-};
-
-
-
 const voiceStopRecordHandle = async () => {
   if (!recordingRef.current) {
     console.log("No recording to stop.");
     return;
   }
 
-
-
   try {
     console.log("Stopping recording...");
+    stopRecordingAnimation();
     await recordingRef.current.stopAndUnloadAsync();
     const uri = recordingRef.current.getURI();
     recordingRef.current = null; // Clear reference
@@ -1309,6 +1232,7 @@ const voiceStopRecordHandle = async () => {
 const cancelRecording = async () => {
   if (recordingRef.current) {
     console.log("Recording cancelled.");
+    stopRecordingAnimation();
     await recordingRef.current.stopAndUnloadAsync();
     recordingRef.current = null;
   }
@@ -1329,6 +1253,7 @@ const panResponder = useRef(
     onPanResponderRelease: async (_, gestureState) => {
       if (gestureState.dx < -100) {
         await cancelRecording(); // Cancel if swiped left
+        
       } else {
         await voiceStopRecordHandle(); // Stop otherwise
       }
@@ -1340,7 +1265,6 @@ const panResponder = useRef(
     },
   })
 ).current;
-
 
 const bckimage = require('../assets/test.png');
 
@@ -1434,7 +1358,6 @@ const renderMediaStatus = ({
   );
 };
 
-
 const renderReplyMessage = (replyMessage, handleReplyPress, userId) => {
   if (!replyMessage) return null;
 
@@ -1509,13 +1432,341 @@ const renderReplyMessage = (replyMessage, handleReplyPress, userId) => {
   }
 };
 
+const renderMessage = useCallback((item, index) => {
+  switch (item.messageType) {
+    case 'video':
+      return renderVideoMessage(item, index);
+    case 'audio':
+      return renderAudioMessage(item, index);
+    case 'image':
+      return renderImageMessage(item, index);
+    case 'text':
+      return renderTextMessage(item, index);
+    default:
+      return renderDocFileMessage(item, index);
+  }
+}, [handlePress, handleSelectedMessage, seletedMessages, mainURL]);
+
+const renderTextMessage = useCallback((item, index) => {
+  const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
+
+  const profileImageUrl = item?.senderId?.image;
+  const normalizedProfileImagePath = profileImageUrl ? profileImageUrl.replace(/\\/g, '/') : '';
+  const profileImageFilename = normalizedProfileImagePath.split('/').pop();
+    
+  const profileImageSource =  item.senderId.image ? { uri: baseUrl + profileImageFilename } : null;
+
+  const currentDate = formatDate(item.timeStamp);
+  const previousDate = index < getMessage.length - 1 ? formatDate(getMessage[index + 1].timeStamp) : null;
+  const showDateSeparator = currentDate !== previousDate;
+    return(
+      <View key={item._id} style={[
+        isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
+      ]}>
+        {showDateSeparator ? ( <Text style={styles.dateSeparator}> {currentDate} </Text> ) : null}
+        <Pressable style={[ item?.senderId?._id ===userId ? styles.rightChatBox : styles.leftChatBox,
+            highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+            highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }]} 
+            onLongPress={()=> handleSelectedMessage(item)} onPress={() => isSelectionMode && handleSelectedMessage(item)}>
+          {renderReplyMessage(item.replyMessage, handleReplyPress, userId)}
+          <Box flexDirection={"row"} alignItems="center">
+            {isGroupChat && (
+              <Box flexDirection={"row"} paddingBottom={2} paddingRight={1}>
+                {!item.replyMessage ? (
+                  profileImageSource ? (
+                    <Avatar size="xs" source={profileImageSource} />
+                  ) : (
+                    <Ionicons name="person-circle-outline" size={25} color="grey" />
+                  )
+                ) : null}
+              </Box>
+            )}
+
+            {/* Wrap message and timestamp in a row */}
+            <Box flexDirection="row" alignItems="center" flexWrap="wrap">
+              <Text paddingRight={5}>{item?.message}</Text>
+              <Text
+                style={[
+                  styles.infoText,
+                  { color: item?.senderId?._id === userId ? "black" : "black", marginLeft:"auto" } ,
+                ]}
+              >
+                {formatTime(item.timeStamp)}
+                {item?.starredBy[0] === userId && (
+                  <Entypo name="star" size={10} color="#828282" />
+                )}
+              </Text>
+            </Box>
+          </Box>
+
+        </Pressable>
+      </View>
+    )
+},[seletedMessages, handlePress, handleSelectedMessage, mainURL]);
+
+const renderVideoMessage = useCallback((item, index) => {
+  const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
+  const baseUrl = `${mainURL}/files/`;
+  const videoUrl= item.videoUrl;
+  const normalizedPath = videoUrl.replace(/\\/g, "/"); 
+  const filename=normalizedPath.split("/").pop();
+  const source = {uri: baseUrl + filename}
+
+  const currentDate = formatDate(item.timeStamp);
+              const previousDate = index < getMessage.length - 1 ? formatDate(getMessage[index + 1].timeStamp) : null;
+              const showDateSeparator = currentDate !== previousDate;
+  return (
+    <View key={index} style={[
+      isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
+  ]}>
+    {showDateSeparator ? ( <Text style={styles.dateSeparator}> {currentDate} </Text> ) : null}
+        <Pressable key={index} style={[ item?.senderId?._id ===userId ? styles.rightChatBox : styles.leftChatBox, 
+          highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+          highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+        ]} onPress={() => handlePress(source,item)}  onLongPress={()=> handleSelectedMessage(item)}>
+          
+              {item.videoViewOnce ? (
+                renderMediaStatus({
+                  viewed: item.videoViewed,
+                  type: 'video',
+                  timeStamp: item.timeStamp,
+                  senderId: item?.senderId?._id,
+                  userId,
+                  starredBy: item?.starredBy,
+                  formatTime,
+                  duration: item.duration,
+                  formatDuration,
+                })
+            ) : (
+              <>
+              <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"}>{item.videoName}</Text>
+              <Box flexDirection={"row"} justifyContent={"space-between"}>
+                <Text style={[styles.infoText, { color: "black" }]}>
+                  {formatDuration(item.duration)}
+                </Text>
+
+                <Box flexDirection="row" alignItems="center">
+                  <Text style={[styles.infoText, { color: "black" }]}>
+                    {formatTime(item.timeStamp)}
+                  </Text>
+                  {item?.starredBy[0] === userId && (
+                    <Entypo
+                      name="star"
+                      size={14}
+                      color="#828282"
+                      style={{
+                        marginLeft: 2, // Adjust spacing as needed
+                      }}
+                    />
+                  )}
+                </Box>
+              </Box>
+
+            </>
+            )}
+    </Pressable>
+    </View>
+  );
+},[seletedMessages, handlePress, handleSelectedMessage, mainURL]);
+
+const renderDocFileMessage = useCallback((item, index)=> {
+  const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
+
+  const currentDate = formatDate(item.timeStamp);
+  const previousDate = index < getMessage.length - 1 ? formatDate(getMessage[index + 1].timeStamp) : null;
+  const showDateSeparator = currentDate !== previousDate;
+  return (
+    <View key={index} style={[
+      isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
+  ]}>
+    {showDateSeparator ? ( <Text style={styles.dateSeparator}> {currentDate} </Text> ) : null}
+    
+        <Pressable
+
+          key={index}
+          style={[ item?.senderId?._id ===userId ? styles.rightChatBox : styles.leftChatBox, 
+            highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+            highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+          ]}
+          onLongPress={() => handleSelectedMessage(item)} onPress={() => handlePress(null,item)}
+        >
+          <Box padding={2} borderRadius={7} flexDirection={"row"} flexWrap="wrap" alignItems="flex-start" background={"#D4D4D4"}>
+            <MaterialCommunityIcons
+                name={getIconName(item.messageType)}
+                size={35}
+                color="#007A33"
+                style={{ marginRight: 10 }}
+              />
+            <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"} numberOfLines={2}
+              style={{
+                flexShrink: 1,
+                flexWrap: 'wrap',
+                maxWidth: '100%', 
+              }} >{item.fileName}</Text>
+          </Box>
+
+          <Box flexDirection={"row"} justifyContent={"space-between"}>
+          <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{item.messageType.toUpperCase()}</Text>
+
+          <Box flexDirection="row" alignItems="center">
+            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{formatTime(item.timeStamp)}</Text>
+            {item?.starredBy[0] === userId && (
+              <Entypo
+                name="star"
+                size={14}
+                color="#828282"
+                style={{
+                  marginLeft: 2, // Adjust spacing as needed
+                }}
+              />
+            )}
+          </Box>
+        </Box>
+
+        </Pressable>
+    </View>
+  );
+},[seletedMessages, handlePress, handleSelectedMessage, mainURL]);
+
+const renderAudioMessage = useCallback((item, index) => {
+  const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
+  const baseUrl = `${mainURL}/files/`;
+  const audioUrl= item.audioUrl;
+  const normalizedPath = audioUrl.replace(/\\/g, "/"); 
+  const filename=normalizedPath.split("/").pop();
+  const source = {uri: baseUrl + filename}
+
+  const profileImageUrl = item?.senderId?.image;
+  const normalizedProfileImagePath = profileImageUrl ? profileImageUrl.replace(/\\/g, '/') : '';
+  const profileImageFilename = normalizedProfileImagePath.split('/').pop();
+
+  const profileImageSource =  item.senderId.image ? { uri: baseUrl + profileImageFilename } : null;
+
+  const currentDate = formatDate(item.timeStamp);
+              const previousDate = index < getMessage.length - 1 ? formatDate(getMessage[index + 1].timeStamp) : null;
+              const showDateSeparator = currentDate !== previousDate;
+
+  return(
+    <View key={index} style={[
+      isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
+    ]}>
+        {showDateSeparator ? ( <Text style={styles.dateSeparator}> {currentDate} </Text> ) : null}
+        <Pressable
+          
+          key={index}
+          style={[ item?.senderId?._id ===userId ? styles.rightChatBox : styles.leftChatBox,
+            highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+            highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+          ]} onLongPress={() => handleSelectedMessage(item)} onPress={() => isSelectionMode && handleSelectedMessage(item)}>
+          <Box
+            width={"56"}
+            borderRadius="lg"
+            alignSelf={item?.senderId?._id === userId ? "flex-end" : "flex-start"}
+            p={2}
+          >
+            <AudioSlider audio={source} />
+            <HStack space={2} alignItems="center">
+              <Box flex={1}>
+                
+              </Box>
+            </HStack>
+            <HStack justifyContent="space-between" alignItems="center" >
+              {/* Duration */}
+              <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>
+                {formatDuration(item.duration)}
+              </Text>
+
+              {/* Timestamp + Star Icon */}
+              <HStack alignItems="center" space={1}>
+                <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>
+                  {formatTime(item.created_date)}
+                </Text>
+
+                {item?.starredBy[0] === userId && (
+                  <Entypo name="star" size={14} color="#828282" />
+                )}
+              </HStack>
+            </HStack>
+          </Box>
+        </Pressable>
+    </View>
+  )
+},[seletedMessages, handlePress, handleSelectedMessage, mainURL]);
+
+const renderImageMessage = useCallback((item, index) => {
+  const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
+  const baseUrl = `${mainURL}/files/`;
+  const imageUrl= item.imageUrl;
+  const normalizedPath = imageUrl.replace(/\\/g, "/"); 
+  const filename=normalizedPath.split("/").pop();
+  const source = {uri: baseUrl + filename}
+  const currentDate = formatDate(item.timeStamp);
+              const previousDate = index < getMessage.length - 1 ? formatDate(getMessage[index + 1].timeStamp) : null;
+              const showDateSeparator = currentDate !== previousDate;
+  return(
+    <View key={index} style={[
+      isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
+  ]}>
+    {showDateSeparator ? ( <Text style={styles.dateSeparator}> {currentDate} </Text> ) : null}
+    <Pressable key={index} style={[ item?.senderId?._id ===userId ? styles.rightChatBox : styles.leftChatBox,
+      highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+      highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
+    ]} onLongPress={()=> handleSelectedMessage(item)}  onPress={() => {handlePress(source, item)}} >
+
+        {item.imageViewOnce ? (
+
+          renderMediaStatus({viewed :item.imageViewed,
+          type:"image",
+          timeStamp:item.timeStamp,
+          senderId:item?.senderId?._id,
+          userId:userId,
+          starredBy:item?.starredBy,
+          formatTime})
+        ) : (
+          <>
+          <Image
+            source={source}
+            style={{ width: 200, height: 200, borderRadius: 7 }}
+            onError={(error) => console.log("Image Load Error:", error)}
+          />
+          <Box
+          flexDirection="row"
+          justifyContent="flex-end"
+          paddingRight={2}
+          alignItems="center" style={{
+            position: 'absolute',
+            bottom: 10, 
+            right: 10, 
+          }} >
+          <Text
+            style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "white" }]}
+          >
+            {formatTime(item.timeStamp)}
+          </Text>
+          {item?.starredBy[0] === userId && (
+            <Entypo
+              name="star"
+              size={14}
+              color="white"
+              style={{
+                marginLeft: 10,
+              }}
+            />
+          )}
+        </Box>
+          </>
+        )}
+  </Pressable>
+  </View>
+  )
+},[seletedMessages, handlePress, handleSelectedMessage, mainURL]);
 
 return (
   <SafeAreaProvider>
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <ImageBackground source={bckimage} resizeMode="cover" style={styles.image}>
         <KeyboardAvoidingView style={{ flex: 1}}>
-        <FlatList
+          <FlatList
             data={getMessage}
             ref={flatListRef}
             key={refreshKey}
@@ -1524,675 +1775,190 @@ return (
             initialNumToRender={10} 
             maxToRenderPerBatch={15}
             getItemLayout={(item, index) => ({
-              length: 120, // Replace 60 with the fixed height of each item
+              length: 120,
               offset: 120 * index,
               index,
             })}
-            renderItem={({ item, index }) => {
-              const currentDate = formatDate(item.timeStamp);
-              const previousDate = index < getMessage.length - 1 ? formatDate(getMessage[index + 1].timeStamp) : null;
-              const showDateSeparator = currentDate !== previousDate;
-              if(item.messageType === 'text'){
-                const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
+            renderItem={({ item, index }) => renderMessage(item, index)} />
+          {isSending && (
+            <HStack space={2} justifyContent="flex-end" paddingRight={5}>
+              <Spinner accessibilityLabel="Loading posts" />
+              <Heading color="primary.500" fontSize="md">
+                Loading
+              </Heading>
+            </HStack>
+          )}
 
-                const baseUrl = `${mainURL}/files/`;
-                const imageUrl= item.replyMessage?.imageUrl;
-                const normalizedPath = imageUrl?.replace(/\\/g, "/"); 
-                const filename=normalizedPath?.split("/").pop();
-                const source = {uri: baseUrl + filename}
-                
-                const profileImageUrl = item?.senderId?.image;
-                const normalizedProfileImagePath = profileImageUrl ? profileImageUrl.replace(/\\/g, '/') : '';
-                const profileImageFilename = normalizedProfileImagePath.split('/').pop();
-    
-                const profileImageSource =  item.senderId.image ? { uri: baseUrl + profileImageFilename } : null;
-                  return(
-                    <View key={item._id} style={[
-                      isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
-                    ]}>
-                      {showDateSeparator ? (
-                        <Text
-                          style={{
-                            alignSelf: 'center',
-                            backgroundColor: '#333',
-                            color: 'white',
-                            paddingVertical:8,
-                            paddingHorizontal:25,
-                            borderRadius: 10,
-                            marginVertical: 10,
-                          }}
-                        >
-                          {currentDate}
-                        </Text>
-                      ) : null}
-                      <Pressable style={[
-                          item?.senderId?._id ===userId ? {
-                              alignSelf:'flex-end',
-                              backgroundColor:'#d8fdd2',
-                              padding:8,
-                              maxWidth:'60%',
-                              margin:10,
-                              borderRadius:7
-                          } : {
-                              alignSelf:'flex-start',
-                              backgroundColor:'white',
-                              padding:8,
-                              margin:10,
-                              maxWidth:'60%',
-                              borderRadius:7
-                          },
-                          highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                          highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                      ]} onLongPress={()=> handleSelectedMessage(item)} onPress={() => isSelectionMode && handleSelectedMessage(item)}>
-                        {renderReplyMessage(item.replyMessage, handleReplyPress, userId)}
-                        <Box flexDirection={"row"} alignItems="center">
-                          {isGroupChat && (
-                            <Box flexDirection={"row"} paddingBottom={2} paddingRight={1}>
-                              {!item.replyMessage ? (
-                                profileImageSource ? (
-                                  <Avatar size="xs" source={profileImageSource} />
-                                ) : (
-                                  <Ionicons name="person-circle-outline" size={25} color="grey" />
-                                )
-                              ) : null}
-                            </Box>
-                          )}
+          {selectedVideo && (
+            <Modal
+              visible={!!selectedVideo}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={handleCloseVideo}
+            >
+              <View style={styles.modalContainer}>
+                <Video
+                  ref={(ref) => setVideoRef(ref)} 
+                  source={selectedVideo}
+                  style={styles.video}
+                  resizeMode="contain"
+                  useNativeControls 
+                  shouldPlay 
+                />
+                <Entypo name="cross" size={24} color="#666" onPress={handleCloseVideo} style={styles.closeButton}/>
+              </View>
+            </Modal>
+          )}
 
-                          {/* Wrap message and timestamp in a row */}
-                          <Box flexDirection="row" alignItems="center" flexWrap="wrap">
-                            <Text paddingRight={5}>{item?.message}</Text>
-                            <Text
-                              style={[
-                                styles.infoText,
-                                { color: item?.senderId?._id === userId ? "black" : "black", marginLeft:"auto" } ,
-                              ]}
-                            >
-                              {formatTime(item.timeStamp)}
-                              {item?.starredBy[0] === userId && (
-                                <Entypo name="star" size={10} color="#828282" />
-                              )}
-                            </Text>
-                          </Box>
-                        </Box>
+          {selectedImage && (
+            <Modal
+              visible={!!selectedImage}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={handleCloseImage}>
+              <View style={styles.modalContainer}>
+                <Image ref={(ref) => setImageRef(ref)}  source={selectedImage} style={styles.fullScreenImage} onError={(error) => console.log("Image Load Error:", error)}/>
+              </View>
+            </Modal>
+          )}
 
-                      </Pressable>
-                    </View>
-                  )
-              }
-    
-              if(item.messageType === "image"){
-                
-                const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
-                const baseUrl = `${mainURL}/files/`;
-                const imageUrl= item.imageUrl;
-                const normalizedPath = imageUrl.replace(/\\/g, "/"); 
-                const filename=normalizedPath.split("/").pop();
-                const source = {uri: baseUrl + filename}
-    
-                return(
-                  <View key={index} style={[
-                    isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
-                ]}>
-                  {showDateSeparator && (
-                        <Text
-                          style={{
-                            alignSelf: 'center',
-                            backgroundColor: '#333',
-                            color: 'white',
-                            padding: 5,
-                            borderRadius: 10,
-                            marginVertical: 10,
-                          }}
-                        >
-                          {currentDate}
-                        </Text>
-                    )}
-                  <Pressable key={index} style={[
-                    item?.senderId?._id ===userId ? {
-                        alignSelf:'flex-end',
-                        backgroundColor:'#d8fdd2',
-                        maxWidth:'60%',
-                        margin:10,
-                        borderRadius:7
-                    } : {
-                        alignSelf:'flex-start',
-                        backgroundColor:'white',
-                        margin:10,
-                        maxWidth:'60%',
-                        borderRadius:7
-                    },highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                    highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                  ]} onLongPress={()=> handleSelectedMessage(item)}  onPress={() => {handlePress(source, item)}} >
-                    
-                      {item.imageViewOnce ? (
-                        
-                        renderMediaStatus({viewed :item.imageViewed,
-                        type:"image",
-                        timeStamp:item.timeStamp,
-                        senderId:item?.senderId?._id,
-                        userId:userId,
-                        starredBy:item?.starredBy,
-                        formatTime})
-                      ) : (
-                        <>
-                        <Image
-                          source={source}
-                          style={{ width: 200, height: 200, borderRadius: 7 }}
-                          onError={(error) => console.log("Image Load Error:", error)}
+          <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 10}}>
+            <View style={{ flex: 1, justifyContent: "flex-end" }}>
+              {replyMessage && <ReplyMessageView />}
+              <View style={{ flexDirection: "row", alignItems: "center", padding: 10 }}>
+                {isRecording && (
+                  <Box style={styles.messageInputBox} justifyContent={"center"}>
+                    <Text style={styles.swipeText}>Swipe left to cancel...</Text>
+                  </Box>
+                  
+                )}
+                <>
+                  {!isRecording && 
+                    <TextInput
+                      value={
+                        selectedFile
+                          ? selectedFile.fileName || (messageType === "image" ? "Image" : "Video")
+                          : replyMessage || message 
+                      }
+                      onChangeText={handleInputChange}
+                      style={styles.messageInputBox}
+                      multiline={true}
+                      placeholder="Type Your message..."
+                      editable={!selectedFile} /> 
+                  }
+
+                  { !selectedFile &&
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      {!isTyping && (
+                        <IconButton
+                          icon={<Icon as={Entypo} name="camera" />}
+                          borderRadius="full"
+                          _icon={{ size: "lg" }}
+                          onPress={handleImage}
                         />
-                        <Box
-                        flexDirection="row"
-                        justifyContent="flex-end"
-                        paddingRight={2}
-                        alignItems="center" style={{
-                          position: 'absolute',
-                          bottom: 10, 
-                          right: 10, 
-                        }} >
-                        <Text
-                          style={[styles.infoText,{ color: item?.senderId?._id === userId ? "white" : "white" }]}
-                        >
-                          {formatTime(item.timeStamp)}
-                        </Text>
-                        {item?.starredBy[0] === userId && (
-                          <Entypo
-                            name="star"
-                            size={14}
-                            color="white"
-                            style={{
-                              marginLeft: 10,
-                            }}
-                          />
-                        )}
-                      </Box>
-                        </>
-                        
                       )}
-    
-                      
-                </Pressable>
-                </View>
-                )
-              }
-    
-              if (item.messageType === 'video') {
-                const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
-                const baseUrl = `${mainURL}/files/`;
-                const videoUrl= item.videoUrl;
-                const normalizedPath = videoUrl.replace(/\\/g, "/"); 
-                const filename=normalizedPath.split("/").pop();
-                const source = {uri: baseUrl + filename}
-                return (
-                  <View key={index} style={[
-                    isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
-                ]}>
-                  {showDateSeparator && (
-                        <Text
-                          style={{
-                            alignSelf: 'center',
-                            backgroundColor: '#333',
-                            color: 'white',
-                            padding: 5,
-                            borderRadius: 10,
-                            marginVertical: 10,
-                          }}
-                        >
-                          {currentDate}
-                        </Text>
-                      )}
-                      <Pressable key={index} style={[
-                          item?.senderId?._id ===userId ? {
-                              alignSelf:'flex-end',
-                              backgroundColor:'#d8fdd2',
-                              padding:8,
-                              maxWidth:'60%',
-                              margin:10,
-                              borderRadius:7
-                          } : {
-                              alignSelf:'flex-start',
-                              backgroundColor:'white',
-                              padding:8,
-                              margin:10,
-                              maxWidth:'60%',
-                              borderRadius:7
-                          }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                          highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                      ]} onPress={() => handlePress(source,item)}  onLongPress={()=> handleSelectedMessage(item)}>
-                        
-                            {item.videoViewOnce ? (
-                              renderMediaStatus({
-                                viewed: item.videoViewed,
-                                type: 'video',
-                                timeStamp: item.timeStamp,
-                                senderId: item?.senderId?._id,
-                                userId,
-                                starredBy: item?.starredBy,
-                                formatTime,
-                                duration: item.duration,
-                                formatDuration,
-                              })
-                          ) : (
-                            <>
-                            <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"}>{item.videoName}</Text>
-                            <Box flexDirection={"row"} justifyContent={"space-between"}>
-                              <Text style={[styles.infoText, { color: "black" }]}>
-                                {formatDuration(item.duration)}
-                              </Text>
-
-                              <Box flexDirection="row" alignItems="center">
-                                <Text style={[styles.infoText, { color: "black" }]}>
-                                  {formatTime(item.timeStamp)}
-                                </Text>
-                                {item?.starredBy[0] === userId && (
-                                  <Entypo
-                                    name="star"
-                                    size={14}
-                                    color="#828282"
-                                    style={{
-                                      marginLeft: 2, // Adjust spacing as needed
-                                    }}
-                                  />
-                                )}
-                              </Box>
-                            </Box>
-
-                          </>
-                          )}
-                          
-                          
-                  </Pressable>
-                  </View>
-                );}
-    
-                if (item.messageType === "pdf" || item.messageType === "docx" || item.messageType === "xlsx" || item.messageType === "zip" || item.messageType === "pptx") {
-                  const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
-                  //console.log("isselected", isSelected)
-                  const baseUrl = `${mainURL}/files/`;
-                  const documentUrl= item.documentUrl;
-                  const normalizedPath = documentUrl.replace(/\\/g, "/"); 
-                  const filename=normalizedPath.split("/").pop();
-                  const source = {uri: baseUrl + filename}
-                  return (
-                    <View key={index} style={[
-                      isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
-                  ]}>
-                    {showDateSeparator && (
-                          <Text
-                            style={{
-                              alignSelf: 'center',
-                              backgroundColor: '#333',
-                              color: 'white',
-                              padding: 5,
-                              borderRadius: 10,
-                              marginVertical: 10,
-                            }}
-                          >
-                            {currentDate}
-                          </Text>
-                        )}
-    
-                        <Pressable
-                          
-                          key={index}
-                          style={[
-                              item?.senderId?._id ===userId ? {
-                                  alignSelf:'flex-end',
-                                  backgroundColor:'#d8fdd2',
-                                  padding:8,
-                                  maxWidth:'60%',
-                                  margin:10,
-                                  borderRadius:7
-                              } : {
-                                  alignSelf:'flex-start',
-                                  backgroundColor:'white',
-                                  padding:8,
-                                  margin:10,
-                                  maxWidth:'60%',
-                                  borderRadius:7
-                              }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                              highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                          ]}
-                          onLongPress={() => handleSelectedMessage(item)} onPress={() => handlePress(null,item)}
-                        >
-                          <Box padding={2} borderRadius={7} flexDirection={"row"} flexWrap="wrap" alignItems="flex-start" background={"#D4D4D4"}>
-                            <MaterialCommunityIcons
-                                name={getIconName(item.messageType)}
-                                size={35}
-                                color="#007A33"
-                                style={{ marginRight: 10 }}
-                              />
-                            <Text fontWeight={"medium"} fontSize={"md"} color={"#0082BA"} numberOfLines={2}
-                              style={{
-                                flexShrink: 1,
-                                flexWrap: 'wrap',
-                                maxWidth: '100%', 
-                              }} >{item.fileName}</Text>
-                          </Box>
-
-                          <Box flexDirection={"row"} justifyContent={"space-between"}>
-                          <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{item.messageType.toUpperCase()}</Text>
-
-                          <Box flexDirection="row" alignItems="center">
-                            <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>{formatTime(item.timeStamp)}</Text>
-                            {item?.starredBy[0] === userId && (
-                              <Entypo
-                                name="star"
-                                size={14}
-                                color="#828282"
-                                style={{
-                                  marginLeft: 2, // Adjust spacing as needed
-                                }}
-                              />
-                            )}
-                          </Box>
-                        </Box>
-
-                        </Pressable>
+                      <IconButton
+                        icon={<Icon as={Entypo} name="attachment" />}
+                        borderRadius="full"
+                        _icon={{ size: "lg" }}
+                        onPress={handleDocument}
+                      />
                     </View>
-                  );
-                }
-                if(item.messageType==="audio"){
-                  const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
-                  const baseUrl = `${mainURL}/files/`;
-                  const audioUrl= item.audioUrl;
-                  const normalizedPath = audioUrl.replace(/\\/g, "/"); 
-                  const filename=normalizedPath.split("/").pop();
-                  const source = {uri: baseUrl + filename}
-    
-                  const profileImageUrl = item?.senderId?.image;
-                const normalizedProfileImagePath = profileImageUrl ? profileImageUrl.replace(/\\/g, '/') : '';
-                const profileImageFilename = normalizedProfileImagePath.split('/').pop();
-    
-                const profileImageSource =  item.senderId.image ? { uri: baseUrl + profileImageFilename } : null;
-                
-                  return(
-                    <View key={index} style={[
-                      isSelected && { backgroundColor: "#AFFF92", padding: 1, borderRadius: 10, opacity:0.7 },
-                    ]}>
-                        {showDateSeparator && (
-                          <Text style={{alignSelf: 'center',backgroundColor: '#333',color: 'white',padding: 5, borderRadius: 10, marginVertical: 10,}}>
-                            {currentDate}
-                          </Text>
-                        )}
-                        <Pressable
-                          
-                          key={index}
-                          style={[
-                              item?.senderId?._id ===userId ? {
-                                  alignSelf:'flex-end',
-                                  backgroundColor:'#d8fdd2',
-                                  padding:8,
-                                  maxWidth:'60%',
-                                  margin:10,
-                                  borderRadius:7
-                              } : {
-                                  alignSelf:'flex-start',
-                                  backgroundColor:'white',
-                                  padding:8,
-                                  margin:10,
-                                  maxWidth:'60%',
-                                  borderRadius:7
-                              }, highlightedMessageId === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                              highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }, 
-                          ]} onLongPress={() => handleSelectedMessage(item)} onPress={() => isSelectionMode && handleSelectedMessage(item)}>
-                          <Box
-                            width={"56"}
-                            borderRadius="lg"
-                            alignSelf={item?.senderId?._id === userId ? "flex-end" : "flex-start"}
-                            p={2}
-                          >
-                            <AudioSlider audio={source} />
-                            <HStack space={2} alignItems="center">
-                              {/* <Box>
-                                {!item.replyMessage && (
-                                  profileImageSource ? (
-                                    <Avatar size="md" source={profileImageSource} alignSelf="center" />
-                                  ) : (
-                                    <Ionicons name="person-circle-outline" size={25} color="grey" />
-                                  )
-                                )}
-                              </Box> */}
-                              <Box flex={1}>
-                                
-                              </Box>
-                            </HStack>
-                            <HStack justifyContent="space-between" alignItems="center" >
-                              {/* Duration */}
-                              <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>
-                                {formatDuration(item.duration)}
-                              </Text>
+                  }
 
-                              {/* Timestamp + Star Icon */}
-                              <HStack alignItems="center" space={1}>
-                                <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>
-                                  {formatTime(item.created_date)}
-                                </Text>
+                  {selectedFile ? (
+                    <>
+                      <IconButton
+                        icon={<Icon as={MaterialCommunityIcons} name={viewOnceSelected ? 'numeric-1-circle' : 'numeric-1-circle-outline'} />}
+                        borderRadius="full"
+                        _icon={{ size: "lg" }}
+                        onPress={handleViewOnceClick}
+                      />
+                      <IconButton
+                        icon={<Icon as={Ionicons} name="send-outline" />}
+                        borderRadius="full"
+                        _icon={{ size: "lg" }}
+                        onPress={handleSendFileMessage}
+                      />
+                    </> ) : isTyping ? (
+                      <IconButton
+                        icon={<Icon as={Ionicons} name="send-outline" />}
+                        borderRadius="full"
+                        _icon={{ size: "lg" }}
+                        onPress={() => sendMessage("text")} /> ) : (
 
-                                {item?.starredBy[0] === userId && (
-                                  <Entypo name="star" size={14} color="#828282" />
-                                )}
-                              </HStack>
-                            </HStack>
-                          </Box>
+                      <Animated.View
+                        style={{
+                          transform: [{ translateX }, { scale: scaleAnim }],
+                          backgroundColor: isRecording ? '#4CAF50' : '#4CAF50',
+                          borderRadius: 50,
+                          padding: 1,
+                        }} {...panResponder.panHandlers}>
+                        <Ionicons name="mic" size={26} color="white" style={{padding:8}}/>
+                        {/* <IconButton
+                          icon={<Icon as={Ionicons} name="mic" />}
+                          borderRadius="full"
+                          _icon={{ size: "lg", color:'white' }}
+                        /> */}
+                      </Animated.View> 
+                  )}
+                </>
+              </View>
+            </View>  
+          </View>
 
-                            
-                        </Pressable>
-                    </View>
-                  )
-                }
-            
-            }} />
-            {isSending && (
-                  <HStack space={2} justifyContent="flex-end" paddingRight={5}>
-                    <Spinner accessibilityLabel="Loading posts" />
-                    <Heading color="primary.500" fontSize="md">
-                      Loading
-                    </Heading>
-                  </HStack>
-              )}
-      
-              {/* Error Message */}
-              {errorMessage && (
-                <View style={{ alignItems: "center", marginTop: 10 }}>
-                  <Text style={{ fontSize: 16, color: "red" }}>{errorMessage}</Text>
-                </View>
-              )}
-              {selectedVideo && (
-                <Modal
-                  visible={!!selectedVideo}
-                  transparent={true}
-                  animationType="slide"
-                  onRequestClose={handleCloseVideo}
-                >
-                  <View style={styles.modalContainer}>
-                    <Video
-                      ref={(ref) => setVideoRef(ref)} 
-                      source={selectedVideo}
-                      style={styles.video}
-                      resizeMode="contain"
-                      useNativeControls 
-                      shouldPlay 
-                    />
-                    <Entypo name="cross" size={24} color="#666" onPress={handleCloseVideo} style={styles.closeButton}/>
-                  </View>
-                </Modal>
-              )}
-
-            {selectedImage && (
-                <Modal
-                  visible={!!selectedImage}
-                  transparent={true}
-                  animationType="slide"
-                  onRequestClose={handleCloseImage}
-                >
-                  <View style={styles.modalContainer}>
-                    
-                    <Image ref={(ref) => setImageRef(ref)}  source={selectedImage} style={styles.fullScreenImage} onError={(error) => console.log("Image Load Error:", error)}/>
-                  </View>
-                </Modal>
-            )}
-        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 10}}>
-          <View style={{ flex: 1, justifyContent: "flex-end" }}>
-            {replyMessage && <ReplyMessageView />}
-            <View style={{ flexDirection: "row", alignItems: "center", padding: 10 }}>
-            {isRecording && (
-  <>
-    <Text style={styles.timerText}>Recording: {timer}s</Text>
-    <Text style={styles.swipeText}>Swipe left to cancel</Text>
-  </>
-)}
-                          <>
-                          {!isRecording && <TextInput
-                            value={
-                              selectedFile
-                                ? selectedFile.fileName || (messageType === "image" ? "Image" : "Video")
-                                : replyMessage || message 
-                            }
-                            onChangeText={handleInputChange}
-                            style={{
-                              flex: 1,
-                              height: 40,
-                              borderRadius: 20,
-                              paddingHorizontal: 10,
-                              backgroundColor:'white'
-                            }}
-                            placeholder="Type Your message..."
-                            editable={!selectedFile} 
-                          />}
-                            { !selectedFile &&
-                              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                {!isTyping && (
-                                  <IconButton
-                                    icon={<Icon as={Entypo} name="camera" />}
-                                    borderRadius="full"
-                                    _icon={{ size: "lg" }}
-                                    onPress={handleImage}
-                                  />
-                                )}
-                                <IconButton
-                                  icon={<Icon as={Entypo} name="attachment" />}
-                                  borderRadius="full"
-                                  _icon={{ size: "lg" }}
-                                  onPress={handleDocument}
-                                />
-                                
-                              </View>
-                            }
-                          {selectedFile ? (
-                            <>
-                            <IconButton
-                              icon={<Icon as={MaterialCommunityIcons} name={viewOnceSelected ? 'numeric-1-circle' : 'numeric-1-circle-outline'} />}
-                              borderRadius="full"
-                              _icon={{ size: "lg" }}
-                              onPress={handleViewOnceClick}
-                            />
-                            <IconButton
-                              icon={<Icon as={Ionicons} name="send-outline" />}
-                              borderRadius="full"
-                              _icon={{ size: "lg" }}
-                              onPress={handleSendFileMessage}
-                            />
-                            </>
-                            
-                          ) : isTyping ? (
-                            <IconButton
-                              icon={<Icon as={Ionicons} name="send-outline" />}
-                              borderRadius="full"
-                              _icon={{ size: "lg" }}
-                              onPress={() => sendMessage("text")}
-                            />
-                          ) : (
-                            // <Animated.View
-                            //   style={{
-                            //     transform: [{ translateX }],backgroundColor: isRecording ? '#FF6347' : '#4CAF50', borderRadius: 50, padding: 20  // Apply animated movement
-                            //   }}
-                            //   {...panResponder.panHandlers}>
-                            // <IconButton
-                            //   icon={<Icon as={MaterialCommunityIcons} name="microphone" color={"white"}/>}
-                            //   borderRadius="full"
-                            //   background={"green.800"}
-                            //   _icon={{ size: "lg", color: "green" }}
-                            //   _pressed={{
-                            //     transform: [{ scale: 1.5 }],
-                            //   }}
-                              
-                            // />
-                            // </Animated.View>
-                            <Animated.View
-  style={{
-    transform: [{ translateX }],
-    backgroundColor: isRecording ? '#FF6347' : '#4CAF50',
-    borderRadius: 50,
-    padding: 20,
-  }}
-  {...panResponder.panHandlers}
->
-  <Ionicons name="mic" size={32} color="white" />
-</Animated.View>
-                          )}
-                        </>
-             
-              
-            </View>
-
-          </View>  
-        </View>
-
-        {showEmojiSelector && (
-          <EmojiSelector
-            onEmojiSelected={(emoji) => {
-              setMessage((prevMessage) => prevMessage + emoji);
-            }}
-            style={{ height: 250 }}
+          {showEmojiSelector && (
+            <EmojiSelector
+              onEmojiSelected={(emoji) => {
+                setMessage((prevMessage) => prevMessage + emoji);
+              }}
+              style={{ height: 250 }}
+            />
+          )}
+          <MessageDeleteDialog
+            isOpen={isDeleteMessagesOpen}
+            onClose={() => setIsDeleteMessagesOpen(false)}
+            header="Delete Messages"
+            body= {
+              seletedMessages.every((message) => message.senderId === userId)
+                ? "Do you want to delete the messages just for yourself or for everyone?"
+                : "Do you want to delete the message?"
+            }
+            confirmText={
+              seletedMessages.every((message) => message.senderId === userId)
+                ? "Delete for everyone"
+                : "Delete for me"
+            }
+            extraActionText={
+              seletedMessages.every((message) => message.senderId === userId)
+                ? "Delete for me"
+                : ""
+            }
+            onConfirm={
+              seletedMessages.every((message) => message.senderId === userId)
+                ? handleDeleteConfirm
+                : handleDeleteForMe
+            }
+            onExtraAction={
+              seletedMessages.every((message) => message.senderId === userId)
+                ? handleDeleteForMe
+                : undefined
+            }
           />
-        )}
-        <MessageDeleteDialog
-          isOpen={isDeleteMessagesOpen}
-          onClose={() => setIsDeleteMessagesOpen(false)}
-          header="Delete Messages"
-          body= {
-            seletedMessages.every((message) => message.senderId === userId)
-              ? "Do you want to delete the messages just for yourself or for everyone?"
-              : "Do you want to delete the message?"
-          }
-          confirmText={
-            seletedMessages.every((message) => message.senderId === userId)
-              ? "Delete for everyone"
-              : "Delete for me"
-          }
-          extraActionText={
-            seletedMessages.every((message) => message.senderId === userId)
-              ? "Delete for me"
-              : ""
-          }
-          onConfirm={
-            seletedMessages.every((message) => message.senderId === userId)
-              ? handleDeleteConfirm
-              : handleDeleteForMe
-          }
-          onExtraAction={
-            seletedMessages.every((message) => message.senderId === userId)
-              ? handleDeleteForMe
-              : undefined
-          }
-        />
-
-        {/* Second ConfirmationDialog */}
-        <ConfirmationDialog
-          isOpen={isDeleteChatOpen} 
-          onClose={() => setIsDeleteChatOpen(false)}
-          onConfirm={handleClearChatConfirm}
-          header="Delete Customer"
-          body="Are you sure you want to delete this chat? This action cannot be undone."
-          confirmText="Delete"
-          cancelText="Cancel"
-        />
-      </KeyboardAvoidingView>
+          <ConfirmationDialog
+            isOpen={isDeleteChatOpen} 
+            onClose={() => setIsDeleteChatOpen(false)}
+            onConfirm={handleClearChatConfirm}
+            header="Delete Customer"
+            body="Are you sure you want to delete this chat? This action cannot be undone."
+            confirmText="Delete"
+            cancelText="Cancel"
+          />
+        </KeyboardAvoidingView>
       </ImageBackground>
     </SafeAreaView>
   </SafeAreaProvider>
-);
-}
+);}
 
 export default MessageSrceen;
 
@@ -2291,6 +2057,42 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: "#2E7800",
     padding: 5,
+  },
+  rightChatBox:{
+    alignSelf:'flex-end',
+    backgroundColor:'#d8fdd2',
+    padding:8,
+    maxWidth:'60%',
+    margin:10,
+    borderRadius:7
+  },
+  leftChatBox:{
+    alignSelf:'flex-start',
+    backgroundColor:'white',
+    padding:8,
+    margin:10,
+    maxWidth:'60%',
+    borderRadius:7
+  },
+  dateSeparator:{
+    alignSelf: 'center',
+    backgroundColor: '#333',
+    color: 'white',
+    paddingVertical:8,
+    paddingHorizontal:25,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  messageInputBox:{
+    flex: 1,
+    height: 40,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    backgroundColor:'white',
+    minHeight: 40,
+    maxHeight: 120,
+  },
+  swipeText:{
+    color:"grey"
   }
 });
-

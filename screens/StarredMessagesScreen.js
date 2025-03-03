@@ -119,7 +119,7 @@ function StarredMessagesScreen({navigation}){
     
       //console.log(JSON.stringify(starredMessages, null, 2))
     return(
-        <Box flex={1} background={"white"}>
+        <Box flex={1} background={"black"}>
             <FlatList
                 data={starredMessages}
                 renderItem={({ item }) => {
@@ -158,13 +158,13 @@ function StarredMessagesScreen({navigation}){
                 <Box pl={["4", "4"]} pr={["4", "5"]} py="5">
                     <HStack justifyContent="space-between" alignItems="center" width="100%">
                     <VStack flexDirection="row" space={1}>
-                        <Text _dark={{ color: "warmGray.50" }} color="coolGray.800" bold>
+                        <Text _dark={{ color: "warmGray.50" }} color="white" bold>
                             {item.senderId._id === item.starredBy[0]._id
                             ? `${item.senderId.user_name} `
                             : `${item.senderId.user_name} `}
                         </Text>
-                        <Entypo name="arrow-bold-right" style={{ top: 5 }} size={15} color="black" />
-                        <Text _dark={{ color: "warmGray.50" }} color="coolGray.800" bold>
+                        <Entypo name="arrow-bold-right" style={{ top: 5 }} size={15} color="white" />
+                        <Text _dark={{ color: "warmGray.50" }} color="white" bold>
                             {item.senderId._id === item.starredBy[0]._id
                             ? `${item.recepientId.user_name}`
                             : `${item.starredBy[0].user_name}`}

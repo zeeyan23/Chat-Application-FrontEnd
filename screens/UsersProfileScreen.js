@@ -113,12 +113,12 @@ function UsersProfileScreen() {
 
   //console.log(JSON.stringify(chatUserInfo, null, 2))
   return (
-    <Box flex={1} padding={5}  background="white" safeArea width={"full"}>
+    <Box flex={1} padding={5}  background="black" safeArea width={"full"}>
       <Box flexDirection="row" width={"full"}>
         <Ionicons
           name="arrow-back-outline"
           size={24}
-          color="black"
+          color="white"
           onPress={() => navigation.goBack()}
         />
       </Box>
@@ -160,8 +160,8 @@ function UsersProfileScreen() {
                 <>
                   <HStack alignItems="center" pb={5}>
                     <VStack>
-                      <Text color={"trueGray.600"}>User name</Text>
-                      <Text fontSize={"md"} bold>
+                      <Text color={"coolGray.400"}>User name</Text>
+                      <Text fontSize={"md"} bold color={"white"}>
                           {chatUserInfo.user_name}
                       </Text>
                     </VStack>
@@ -169,8 +169,8 @@ function UsersProfileScreen() {
                   </HStack>
                   <HStack alignItems="center">
                     <VStack>
-                      <Text color={"trueGray.600"}>Email address</Text>
-                      <Text fontSize={"md"} bold>
+                      <Text color={"coolGray.400"}>Email address</Text>
+                      <Text fontSize={"md"} bold color={"white"}>
                           {chatUserInfo.email}
                       </Text>
                     </VStack>
@@ -182,15 +182,15 @@ function UsersProfileScreen() {
                     {chatUserInfo.groupName}
                 </Text>}
                 {isGroupChat && <Flex direction="row" justifyContent="center" w="full" h="58" p="4">
-                    <Text color="trueGray.700" fontSize="md">
+                    <Text color="trueGray.200" fontSize="md">
                     Group
                     </Text>
                     <Divider bg="emerald.500" thickness="2" mx="2" orientation="vertical" />
-                    <Text color="trueGray.700" fontSize="md">
+                    <Text color="trueGray.200" fontSize="md">
                     {formattedData.length} Members
                     </Text>
                     <Divider bg="emerald.500" thickness="2" mx="2" orientation="vertical" />
-                    <Text color="trueGray.700" fontSize="md">
+                    <Text color="trueGray.200" fontSize="md">
                     {moment(chatUserInfo.created_date).format('DD/MM/YYYY')}
                     </Text>
                 </Flex>}
@@ -199,7 +199,7 @@ function UsersProfileScreen() {
       )}
         {isGroupChat && 
         <>
-          <Text color="trueGray.700" fontSize="sm">
+          <Text color="trueGray.200" fontSize="sm">
             {formattedData.length} members
           </Text>
           <FlatList
@@ -219,7 +219,7 @@ function UsersProfileScreen() {
                 <Box
                   borderBottomWidth="1"
                   _dark={{ borderColor: "muted.50" }}
-                  borderColor="muted.800"
+                  borderColor="white"
                   pl={["0", "4"]}
                   pr={["0", "5"]}
                   py="2"
@@ -227,7 +227,7 @@ function UsersProfileScreen() {
                 >
                   <HStack space={[2, 3]} alignItems="center">
                     {source ? <Avatar size="md"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
-                    <Text _dark={{ color: "warmGray.50" }} color="coolGray.800" bold>
+                    <Text _dark={{ color: "warmGray.50" }} color="white" bold>
                       {item.user_name}
                     </Text>
                     <Spacer />

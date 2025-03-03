@@ -70,21 +70,45 @@ export default function App() {
   const AuthenticatedComponents = ({isNewUser})=>{
     return(
       <Stack.Navigator initialRouteName={isNewUser ? "Home" : "Chats"}>
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Chats" component={ChatScreen} options={{ headerShown: true }} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: 'black' },
+          headerTintColor: 'white', animation: 'fade',presentation: 'transparentModal'
+        }}/>
+        <Stack.Screen name="Chats" component={ChatScreen} options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: 'black' },
+          headerTintColor: 'white', animation: 'fade',presentation: 'transparentModal'
+        }}/>
         <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}}/>
-        <Stack.Screen name="Register" component={RegisterScreen} options={{headerShown: false}}/>
+        {/* <Stack.Screen name="Register" component={RegisterScreen} options={{headerShown: false}}/> */}
         
         <Stack.Screen name="FriendRequests" component={FriendsScreen} options={{
           title: 'Friend Requests',
+          headerStyle: { backgroundColor: 'black' },
+          headerTintColor: 'white', animation: 'fade',presentation: 'transparentModal'
         }}/>
         
-        <Stack.Screen name="MessageScreen" component={MessageScreen}  options={{ headerShown: true }}/>
-        <Stack.Screen name="MessageForwardScreen" component={ForwardMessagesScreen}  options={{ headerShown: true }}/>
-        <Stack.Screen name="StarredMessageScreen" component={StarredMessagesScreen}  options={{ headerShown: true }}/>
-        <Stack.Screen name="AddFriendsToGroup" component={AddFriendsToGroup}  options={{ headerShown: true }}/>
-        <Stack.Screen name="UsersProfileScreen" component={UsersProfileScreen}  options={{ headerShown: false }}/>
-        <Stack.Screen name="Settings" component={UserSettings}/>
+        <Stack.Screen name="MessageScreen" component={MessageScreen}  options={{ headerShown: true,
+          headerStyle: { backgroundColor: 'black' }, animation: 'fade',presentation: 'transparentModal',headerTintColor: 'white', }}/>
+        <Stack.Screen name="MessageForwardScreen" component={ForwardMessagesScreen}  options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: 'black' },
+          headerTintColor: 'white',
+          animation: 'fade',presentation: 'transparentModal'
+        }}/>
+        <Stack.Screen name="StarredMessageScreen" component={StarredMessagesScreen}  options={{ headerShown: true, 
+          headerStyle: { backgroundColor: 'black' }, animation: 'fade',presentation: 'transparentModal',
+          headerTintColor: 'white', }}/>
+        <Stack.Screen name="AddFriendsToGroup" component={AddFriendsToGroup}  options={{ headerShown: true ,
+          headerStyle: { backgroundColor: 'black' }, animation: 'fade',presentation: 'transparentModal',
+          headerTintColor: 'white',}}/>
+        <Stack.Screen name="UsersProfileScreen" component={UsersProfileScreen}  options={{ headerShown: false,  animation: 'fade',presentation: 'transparentModal' }}/>
+        <Stack.Screen name="Settings" component={UserSettings} options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: 'black' }, animation: 'fade',presentation: 'transparentModal',
+          headerTintColor: 'white',
+        }}/>
         <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{headerShown: false}}/>
         <Stack.Screen name="CallScreen" component={CallScreen}/>
         <Stack.Screen name="VideoScreen" component={VideoScreen} options={{headerShown: false}}/>
@@ -159,7 +183,7 @@ export default function App() {
     <AuthProvider>
       <UserContext>
         <NativeBaseProvider>
-          {/* <StatusBar backgroundColor="#242424" barStyle="light-content" /> */}
+          <StatusBar backgroundColor="#242424" barStyle="light-content" />
           <Navigation />
         </NativeBaseProvider>
       </UserContext>

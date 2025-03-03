@@ -19,7 +19,7 @@ function AddFriendsToGroup(){
 
     useLayoutEffect(()=>{
         navigation.setOptions({
-            headerTitle: () => <Text fontSize={"md"} fontWeight={"bold"}> Add Friends to Group</Text>,
+            headerTitle: () => <Text fontSize={"md"} fontWeight={"bold"} color={"white"}> Add Friends to Group</Text>,
         })
     },[])
     const fetchUser = async () => {
@@ -95,9 +95,9 @@ function AddFriendsToGroup(){
     }
     return(
         <>
-            <Box flex={1} background={"white"}>
+            <Box flex={1} background={"black"}>
                 <Box padding={2}>
-                    {seletedFriends.length > 0 && <Text fontSize="md" fontWeight={"semibold"} mb={3}>Selected Friends</Text>}
+                    {seletedFriends.length > 0 && <Text fontSize="md" fontWeight={"semibold"} mb={3} color={"white"}>Selected Friends</Text>}
                     <FlatList
                         data={myfriends.friends?.flatMap((friend) => friend.friendsList).filter((friend) => seletedFriends.includes(friend._id))}
                         keyExtractor={(item) => item._id}
@@ -121,13 +121,13 @@ function AddFriendsToGroup(){
                                 justifyContent="center"
                             >
                                 {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
-                                <Text>{item.user_name}</Text>
+                                <Text color={"white"}>{item.user_name}</Text>
                             </Box>
                             )}}/>
                     {seletedFriends.length > 0 && <Divider bg="gray.300" thickness="1" orientation="horizontal" />}
                 </Box>
                 <Box padding={2}>
-                    <Text fontSize="md" fontWeight={"semibold"}>All Friends List</Text>
+                    <Text fontSize="md" fontWeight={"semibold"} color={"white"}>All Friends List</Text>
                     <FlatList 
                         data={myfriends.friends?.flatMap(friend => friend.friendsList)}
                         keyExtractor={(item) => item._id}
@@ -148,7 +148,7 @@ function AddFriendsToGroup(){
                                     {source ? <Image style={{ width: 40, height: 40, borderRadius: 20, marginRight: 10 }}  source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
                                         {seletedFriends.includes(item._id) && <Checkbox colorScheme="green" position={"absolute"}  right={0} borderRadius={"full"} 
                                             isChecked={seletedFriends.includes(item._id)} onChange={() => addToGroupMemeberList(item)}></Checkbox>}
-                                    <Text>{item.user_name}</Text>
+                                    <Text color={"white"}>{item.user_name}</Text>
                                 </Pressable>
                             )
                         
@@ -156,10 +156,10 @@ function AddFriendsToGroup(){
                     />
                 </Box>
             </Box>
-            <Box bg={"white"} padding={3}> 
+            <Box bg={"black"} padding={3}> 
                 <FormControl bottom={2} isInvalid={error}>
                     <FormControl.Label fontSize="md" fontWeight={"semibold"}>{error ? "Please enter group name" : "Group Name"}</FormControl.Label>
-                    <Input width={"75%"} rounded="sm" fontSize="xs" ref={initialFocusRef} onChangeText={onInputChange}/>
+                    <Input width={"75%"} rounded="sm" fontSize="xs" ref={initialFocusRef} onChangeText={onInputChange} color={"white"}/>
                 </FormControl>
                 <Fab renderInPortal={false} shadow={5} size="sm" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 
                     size="4" name="checkmark" color="warmGray.50"  onPress={createGroupHandle} /> } />    

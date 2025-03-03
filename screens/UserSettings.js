@@ -144,7 +144,7 @@ function UserSettings(){
     }
     return(
         <>
-            <Box flex={1} flexDirection="column" width={"full"} padding={5}  background="white" >
+            <Box flex={1} flexDirection="column" width={"full"} padding={5}  background="black" >
               <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>
                 <Pressable onPress={handleImage}>
                       {({ isHovered, isFocused, isPressed }) => {
@@ -166,11 +166,11 @@ function UserSettings(){
                       setEditType("user_name"); 
                       setInputValue(user.user_name); 
                       onOpen();
-                    }}>
+                    }} paddingY={2}>
                         {({ isHovered, isFocused, isPressed }) => {
-                            return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'white'} p="3" rounded="8" style={{
+                            return <Box maxW="96" bg={isPressed ? 'coolGray.100' : isHovered ? 'coolGray.100' : 'coolGray.200'} p="2" rounded="8" style={{
                                 transform: [{ scale: isPressed ? 0.96 : 1}]}}>
-                                <Text fontSize="2xl" fontWeight="semibold" style={styles.superscript}>
+                                <Text fontSize="2xl" fontWeight="semibold">
                                     {user.user_name} <Entypo name="pencil" size={18} color="green" />
                                 </Text>
                             </Box>
@@ -180,9 +180,9 @@ function UserSettings(){
             <Pressable onPress={() => {
               setEditType("email"); 
               setInputValue(user.email); 
-              onOpen();}}>
+              onOpen();}} paddingY={2}>
                 {({ isHovered, isFocused, isPressed }) => {
-                    return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'white'} p="3" rounded="8" style={{
+                    return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'coolGray.200'} p="3" rounded="8" style={{
                         transform: [{ scale: isPressed ? 0.96 : 1}]}}>
                         <HStack alignItems="center">
                             <VStack>
@@ -203,7 +203,7 @@ function UserSettings(){
               setInputValue(user.password); 
               onOpen();}}>
                 {({ isHovered, isFocused, isPressed }) => {
-                    return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'white'} p="3" rounded="8" style={{
+                    return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'coolGray.200'} p="3" rounded="8" style={{
                         transform: [{ scale: isPressed ? 0.96 : 1}]}}>
                         <HStack alignItems="center">
                             <VStack>

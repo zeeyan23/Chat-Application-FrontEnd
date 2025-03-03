@@ -248,7 +248,7 @@ function LoginScreen(){
                 <Button mt="2" colorScheme="indigo" onPress={SignInHandler}>
                     Sign in
                 </Button>
-                <HStack mt="6" justifyContent="center">
+                {/* <HStack mt="6" justifyContent="center">
                     <Text fontSize="sm" color="coolGray.600" _dark={{
                     color: "warmGray.200"
                 }}>
@@ -261,7 +261,7 @@ function LoginScreen(){
                 }} onPress={handleSignUpClick}>
                     Sign Up
                     </Link>
-                </HStack>
+                </HStack> */}
                 </VStack>
             </Box>
         </Center>
