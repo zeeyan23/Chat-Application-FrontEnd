@@ -1,16 +1,16 @@
 import { useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import socketInstance from "../Utils/socket";
-import { Alert, TouchableOpacity } from "react-native";
+import { Alert, SafeAreaView, StyleSheet, TouchableOpacity } from "react-native";
 import { Avatar, Box, View } from "native-base";
 import { Text } from "react-native";
 import { ScrollView } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { mainURL } from "../Utils/urls";
 import CustomButton from "../components/CustomButton";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 function VoiceScreen({route}){
-    // const { , ,, isGroup,callerId, ,  } = route.params;
     const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, isCalling, groupId, recipientId, participants = [], callerImage, callerName } = route.params;
     const navigation = useNavigation();
     const [callAccepted, setCallAccepted] = useState(false);
@@ -61,7 +61,7 @@ function VoiceScreen({route}){
 
           socket.on("group_voice_call_declined", (data) => {
             Alert.alert(
-              "Call Ended", data.message,
+              "Call Ended",
               [
                 {
                   text: "OK",
@@ -113,12 +113,12 @@ function VoiceScreen({route}){
         
     };
       
-    const declineCall = (callerId, groupId) => {
+    const declineCall = (calleeId, groupId) => {
         if(isGroup){
           socket.emit("decline_group_voice_call", { callerId, groupId });
           navigation.goBack();
         }else{
-          socket.emit("decline_voice_call", { callerId });
+          socket.emit("decline_voice_call", { calleeId });
           navigation.goBack();
         }
     };
@@ -134,7 +134,7 @@ function VoiceScreen({route}){
           </Box>
           <Box flex={1} justifyContent="flex-end" padding={10}>
               <Box flexDirection={"row"} justifyContent={"center"}>
-                  <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId, groupId)}/>
+                  <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={() => declineCall(calleeId, isGroup && groupId)}/>
               </Box>
           </Box>
         </Box>
@@ -208,14 +208,22 @@ function VoiceScreen({route}){
     }
 
     return(
-        <View style={{flex:1}}>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.container} edges={['left', 'right']}>
           {isCaller && !isGroup && renderDialComponent()}
           {isCaller && isGroup && renderDialGroupComponent()}
 
           {!isCaller && !isGroup && renderReceiverComponent()}
           {!isCaller && isGroup && renderReceiverGroupComponent()}
-        </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
     )
 }
 
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1
+  },
+})
 export default VoiceScreen;

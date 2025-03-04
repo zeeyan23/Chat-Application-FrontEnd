@@ -41,9 +41,6 @@ class SocketService {
 
     this.socket.on("incoming_voice_call", (data) => {
       console.log("📲 Incoming Voice Call:", data);
-  
-      // Ensure we navigate only if the user is the recipient
-      // if (data.calleeId === this.recipentId) {
         this.socket.emit("send_call_notification", {
           calleeId: data.calleeId,
           callerInfo: data.callerInfo,
@@ -56,6 +53,16 @@ class SocketService {
           calleeInfo: data.calleeInfo,
         });
       // }
+    });
+    this.socket.on("incoming_group_voice_call", (data) => {
+      navigationRef.navigate("VoiceScreen", {
+        isGroup: true,
+        groupId: data.groupId,
+        participants: data.participants,
+        callerId: data.callerId,
+        callerName: data.callerName,
+        callerImage: data.callerImage,
+      });
     });
 
     this.socket.on("incoming_video_call", (data) => {

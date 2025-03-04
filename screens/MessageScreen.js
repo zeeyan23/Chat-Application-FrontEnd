@@ -132,49 +132,6 @@ const MessageSrceen = () => {
     }
   }, [dial, incomingCall]);
 
-  // const updateUserStatus = (userId, isOnline, lastOnlineTime = null) => {
-  //   if (userId === recipentId) {
-
-  //     setUserStatus((prevStatus) => {
-  //       // Preserve existing lastOnlineTime if new one is null
-  //       const updatedStatus = {
-  //         isOnline,
-  //         lastOnlineTime: lastOnlineTime || prevStatus.lastOnlineTime,
-  //       };
-  //       console.log("🔄 Updating status:", updatedStatus);
-  //       return updatedStatus;
-  //     });
-  //   }
-  // };
-  
-
-  // const fetchUserStatus = async () => {
-  //   try {
-  //     const { data } = await axios.get(`${mainURL}/user/status/${recipentId}`);
-  //     console.log("📊 Fetched user status:", data);
-  
-  //     // Update using accurate API data
-  //     updateUserStatus(recipentId, data.isOnline, data.lastOnlineTime);
-  //   } catch (error) {
-  //     console.error("Error fetching status:", error);
-  //   }
-  // };
-  
-  // useEffect(() => {
-  //   fetchUserStatus();
-  // }, [recipentId]);
-
-
-  // const formatLastSeen = (dateString) => {
-  //   if (!dateString) return "Last seen recently";
-  //   const date = new Date(dateString);
-  //   return new Intl.DateTimeFormat("en-US", {
-  //     dateStyle: "medium",
-  //     timeStyle: "short",
-  //   }).format(date);
-  // };
-
-
   useEffect(() => {
     return () => {
       sound?.unloadAsync();
@@ -228,8 +185,6 @@ const MessageSrceen = () => {
     fetchMessages();
   }, []);
 
-  //console.log(JSON.stringify(getMessage, null, 2))
-
   const updateImageViewed = (messageId) => {
     setGetMessage((prevMessages) =>
       prevMessages.map((msg) =>
@@ -246,7 +201,6 @@ const MessageSrceen = () => {
     );
   };
 
-
   useEffect(() => {
     socket.emit("join", userId);
     socket.on("newMessage", (message) => {
@@ -257,19 +211,6 @@ const MessageSrceen = () => {
 
     socket.on("video_call_declined", () => {
       Alert.alert("Call Declined", "The recipient declined the call.");
-    });
-
-    socket.on("incoming_group_voice_call", (data) => {
-      if (data.groupId === groupId) {
-        navigation.navigate("VoiceScreen", {
-          isGroup: true,
-          groupId: data.groupId,
-          participants: data.participants,
-          callerId: data.callerId,
-          callerName: data.callerName,
-          callerImage: data.callerImage,
-        });
-      }
     });
 
     socket.on("voice_call_declined", () => {
@@ -296,21 +237,6 @@ const MessageSrceen = () => {
       updateVideoViewed(messageId._id);
     });
 
-    // //User online status
-    // socket.on("userOnline", ({ userId }) => {
-    //   console.log("user online", userId)
-    //   updateUserStatus(userId, true);
-    // });
-  
-    // socket.on("userOffline", ({ userId, lastOnlineTime }) => {
-    //   console.log("User offline event:", userId, lastOnlineTime); // Debug log
-    //   updateUserStatus(userId, false, lastOnlineTime);
-    // });
-    // socket.on("connect", () => {
-    //   socket.emit("joinRoom", userId);
-    //   socket.emit("joinRoom", groupId);
-    // });
-
     return () => {
 
       socket.off("newMessage");
@@ -320,12 +246,7 @@ const MessageSrceen = () => {
       socket.off("messages_deleted_for_both");
       socket.off("imageViewedUpdate");
       socket.off("videoViewedUpdate");
-      socket.off("incoming_group_voice_call");
       socket.off("voice_call_declined");
-      // socket.off("userOnline");
-      // socket.off("userOffline");
-      //socket.disconnect();
-    
     };
   }, [userId, recipentId,socket, groupId]);
 
@@ -340,7 +261,6 @@ const MessageSrceen = () => {
             }
           });
       }
-
       return () => {
           socket.off("update_user_status");
       };
@@ -380,7 +300,6 @@ const MessageSrceen = () => {
   };
 
   const handleImagePress = async(imageUrl, item) => {
-    //console.log(item)
     if(item && item.imageViewOnce){
       if(item.senderId._id===userId){
         toast.show({
@@ -411,7 +330,6 @@ const MessageSrceen = () => {
     }else{
       setSelectedImage(imageUrl);
     }
-    
   };
 
   const handleCloseVideo = async () => {
@@ -453,11 +371,6 @@ const MessageSrceen = () => {
                       <Text style={{ fontSize: 14, fontWeight: 'bold', color:'white' }}>
                         {!isGroupChat ? userName : groupName}
                       </Text>
-                      {/* <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
-                      {userStatus.isOnline
-    ? "Online"
-    : `Last seen: ${formatLastSeen(userStatus.lastOnlineTime)}`}
-                      </Text> */}
                     </Box>;
               }}
               </Pressable>
@@ -567,7 +480,6 @@ const MessageSrceen = () => {
     setIsDeleteChatOpen(false); 
   };
 
-  
   const handleClearChat = async ()=>{
     const formData ={
       userId: userId,
@@ -592,7 +504,6 @@ const MessageSrceen = () => {
     }
   }
   const handleReplyMessage = async (messageIds) => {
-    //console.log(messageIds)
     if (messageIds.length === 1) {
       const selectedMessage = getMessage.find(
         (item) => item._id.toString() === messageIds[0].messageId
@@ -641,7 +552,6 @@ const MessageSrceen = () => {
     setIsDeleteMessagesOpen(false);
   };
 
-  
   const deleteMessageForBoth = async(messageObjects)=>{
     const messageIds = messageObjects.map(msg => msg.messageId);
     const formData = { messages: messageIds, userId: userId, recipentId: recipentId };  
@@ -682,7 +592,6 @@ const MessageSrceen = () => {
   };
   
   const sendMessage= async(messageType, fileUri, duration, fileName, replyMessageId = replyMessage?._id) =>{
-
     setIsSending(true); 
     setErrorMessage(""); 
       try {
@@ -697,7 +606,6 @@ const MessageSrceen = () => {
           if (replyMessageId) {
             formData.append("replyMessage", replyMessageId);
           }
-          
           
           if (messageType === "image" || messageType === "video") {
             formData.append("messageType", messageType);
@@ -736,7 +644,6 @@ const MessageSrceen = () => {
             });
           }
           else {
-              // Default to text if no file type is provided
               formData.append("messageType", "text");
               formData.append("message", message.trim());
           }
@@ -824,7 +731,6 @@ const MessageSrceen = () => {
       if(!result.canceled){
           const asset = result.assets[0];
           const isVideo = asset.type === 'video';
-
           setMessageType(isVideo ? 'video' : 'image');
           setSelectedFile({
             uri: asset.uri,
@@ -847,7 +753,6 @@ const MessageSrceen = () => {
     }
   };
   
-
   const checkMessageInDB = async (id, userId) => {
     try {
       const response = await axios.get(`${mainURL}/get-starred-message/${id}/${userId}`);
@@ -1096,7 +1001,6 @@ const MessageSrceen = () => {
       : text;
   };
 
-
   const handleViewOnceClick = () => {
     setViewOnceSelected(prevState => !prevState);
   };
@@ -1185,7 +1089,6 @@ const MessageSrceen = () => {
     }
   };
 
-
   const handleReplyPress = (messageId) => {
     const index = getMessage.findIndex((message) => message._id === messageId);
 
@@ -1228,7 +1131,6 @@ const voiceStopRecordHandle = async () => {
   }
 };
 
-
 const cancelRecording = async () => {
   if (recordingRef.current) {
     console.log("Recording cancelled.");
@@ -1239,7 +1141,6 @@ const cancelRecording = async () => {
   setIsRecording(false);
   setIsRecordingInProgress(false);
 };
-
 
 const panResponder = useRef(
   PanResponder.create({
@@ -1447,13 +1348,12 @@ const renderMessage = useCallback((item, index) => {
   }
 }, [handlePress, handleSelectedMessage, seletedMessages, mainURL]);
 
-const renderTextMessage = useCallback((item, index) => {
+  const renderTextMessage = useCallback((item, index) => {
   const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
-
   const profileImageUrl = item?.senderId?.image;
   const normalizedProfileImagePath = profileImageUrl ? profileImageUrl.replace(/\\/g, '/') : '';
   const profileImageFilename = normalizedProfileImagePath.split('/').pop();
-    
+
   const profileImageSource =  item.senderId.image ? { uri: baseUrl + profileImageFilename } : null;
 
   const currentDate = formatDate(item.timeStamp);
@@ -1481,8 +1381,6 @@ const renderTextMessage = useCallback((item, index) => {
                 ) : null}
               </Box>
             )}
-
-            {/* Wrap message and timestamp in a row */}
             <Box flexDirection="row" alignItems="center" flexWrap="wrap">
               <Text paddingRight={5}>{item?.message}</Text>
               <Text
@@ -1571,7 +1469,6 @@ const renderVideoMessage = useCallback((item, index) => {
 
 const renderDocFileMessage = useCallback((item, index)=> {
   const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
-
   const currentDate = formatDate(item.timeStamp);
   const previousDate = index < getMessage.length - 1 ? formatDate(getMessage[index + 1].timeStamp) : null;
   const showDateSeparator = currentDate !== previousDate;
@@ -1671,17 +1568,13 @@ const renderAudioMessage = useCallback((item, index) => {
               </Box>
             </HStack>
             <HStack justifyContent="space-between" alignItems="center" >
-              {/* Duration */}
               <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>
                 {formatDuration(item.duration)}
               </Text>
-
-              {/* Timestamp + Star Icon */}
               <HStack alignItems="center" space={1}>
                 <Text style={[styles.infoText,{ color: item?.senderId?._id === userId ? "black" : "black" }]}>
                   {formatTime(item.created_date)}
                 </Text>
-
                 {item?.starredBy[0] === userId && (
                   <Entypo name="star" size={14} color="#828282" />
                 )}
@@ -1895,11 +1788,6 @@ return (
                           padding: 1,
                         }} {...panResponder.panHandlers}>
                         <Ionicons name="mic" size={26} color="white" style={{padding:8}}/>
-                        {/* <IconButton
-                          icon={<Icon as={Ionicons} name="mic" />}
-                          borderRadius="full"
-                          _icon={{ size: "lg", color:'white' }}
-                        /> */}
                       </Animated.View> 
                   )}
                 </>
@@ -1997,7 +1885,6 @@ const styles = StyleSheet.create({
     textAlign:'right',
     fontWeight: 'bold',
     color: 'white',
-    //marginLeft: 10,
   },
   modalContainer: {
     flex: 1,

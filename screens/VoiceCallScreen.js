@@ -9,7 +9,7 @@ import {
   } from 'react-native-agora';
 import { mainURL } from "../Utils/urls";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { Box, Center, Flex, Row, VStack, Wrap,Text, FlatList } from "native-base";
+import { Box, Center, Flex, Row, VStack, Wrap,Text, FlatList, Button, Icon } from "native-base";
 import CustomButton from "../components/CustomButton";
 import socketInstance from "../Utils/socket";
 import { UserType } from "../Context/UserContext";
@@ -21,11 +21,12 @@ const uid = 0;
 
 function VoiceCallScreen({ route, navigation }){
     // const { channelId, recipientId,isHost, isGroup,  } = route.params;
-    const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, participants = [], } = route.params;
+    const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup,  participants: initialParticipants = [], } = route.params;
     const agoraEngineRef = useRef(null);
     const [isJoined, setIsJoined] = useState(false);
     const [remoteUid, setRemoteUid] = useState(0);
     const [message, setMessage] = useState('');
+    const [participants, setParticipants] = useState(initialParticipants);
     const eventHandler = useRef(null);
     const baseUrl = `${mainURL}/files/`;
     const socket = socketInstance.getSocket();
@@ -98,6 +99,8 @@ function VoiceCallScreen({ route, navigation }){
             onUserOffline: (_connection, uid) => {
                 setMessage(`Remote user ${uid} left the channel`);
                 setRemoteUid(0);
+                setParticipants((prevParticipants) => prevParticipants.filter((p) => p.id !== uid));
+            
             },
         };
         agoraEngineRef.current?.registerEventHandler(eventHandler.current);
@@ -215,12 +218,22 @@ function VoiceCallScreen({ route, navigation }){
 
     return(
         <>
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
+            {/* Caller/Callee Info at the Top */}
+                <Box  top={10} left={0} right={0}>
+                    {!isGroup && !isCaller && renderCallerInfo()}
+                    {!isGroup && isCaller && renderCalleeInfo()}
+                </Box>
+
+                {/* Participants (If Group) */}
                 {isGroup && renderParticipants()}
-                {!isGroup && !isCaller && renderCallerInfo()}
-                {!isGroup && isCaller && renderCalleeInfo()}
-                <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={leaveChannel}/>
+
+                {/* Button at the Bottom */}
+                <Box position="absolute" bottom={10} left={0} right={0} alignItems="center">
+                    <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={leaveChannel}/>
+                </Box>
             </SafeAreaView>
+
         </>
     )
 }

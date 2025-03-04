@@ -110,11 +110,11 @@ export default function App() {
           headerTintColor: 'white',
         }}/>
         <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{headerShown: false}}/>
-        <Stack.Screen name="CallScreen" component={CallScreen}/>
-        <Stack.Screen name="VideoScreen" component={VideoScreen} options={{headerShown: false}}/>
-        <Stack.Screen name="VideoCallScreen" component={VideoCallScreen} options={{headerShown: false}}/>
-        <Stack.Screen name="VoiceScreen" component={VoiceScreen} options={{headerShown: false}}/>
-        <Stack.Screen name="VoiceCallScreen" component={VoiceCallScreen} options={{headerShown: false}}/>
+        <Stack.Screen name="CallScreen" component={CallScreen} options={{animation: 'fade',presentation: 'transparentModal',}}/>
+        <Stack.Screen name="VideoScreen" component={VideoScreen} options={{headerShown: false, animation: 'fade',presentation: 'transparentModal',}}/>
+        <Stack.Screen name="VideoCallScreen" component={VideoCallScreen} options={{headerShown: false, animation: 'fade',presentation: 'transparentModal',}}/>
+        <Stack.Screen name="VoiceScreen" component={VoiceScreen} options={{headerShown: false, animation: 'fade',presentation: 'transparentModal',}}/>
+        <Stack.Screen name="VoiceCallScreen" component={VoiceCallScreen} options={{headerShown: false, animation: 'fade',presentation: 'transparentModal',}}/>
       </Stack.Navigator>
 
     )
@@ -183,7 +183,7 @@ export default function App() {
     <AuthProvider>
       <UserContext>
         <NativeBaseProvider>
-          <StatusBar backgroundColor="#242424" barStyle="light-content" />
+          <StatusBar style="light" hidden={false} />
           <Navigation />
         </NativeBaseProvider>
       </UserContext>

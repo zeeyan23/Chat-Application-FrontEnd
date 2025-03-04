@@ -25,11 +25,12 @@ import {
 } from 'react-native-agora';
 import { mainURL } from '../Utils/urls';
 import { UserType } from '../Context/UserContext';
-import { Center, FlatList, VStack } from 'native-base';
+import { Box, Center, FlatList, VStack } from 'native-base';
 import { Ionicons } from '@expo/vector-icons';
+import CustomButton from '../components/CustomButton';
 
 const appId = '77de8ca3881e4be1a07052447ee4cb51';
-const token = '007eJxTYEjnUe5+62d3+nTN/zOVrQvrAhYneXE843A5fkAlQbbi4mQFBnPzlFSL5ERjCwvDVJOkVMNEA3MDUyMTE/PUVJPkJFNDlbeH0xsCGRmYA8xZGRkgEMTnYijLTEnNj09OzMlhYAAA+Z0g/w==';
+const token = '007eJxTYPjQYa3Fe3TRFc3NgoJvd0s2G0pk8YYoJNu+v3qgMeasupkCg7l5SqpFcqKxhYVhqklSqmGigbmBqZGJiXlqqklykqmhVfOx9IZARobA/eEsjAwQCOJzMZRlpqTmxycn5uQwMAAAc+If3w==';
 const channelName = 'video_call';
 const localUid = 0;
 
@@ -43,6 +44,7 @@ const VideoCallScreen = ({ route, navigation }) => {
     const baseUrl = `${mainURL}/files/`;
     const socket = socketInstance.getSocket();
     const {userId, setUserId} = useContext(UserType);
+    const [remoteUsers, setRemoteUsers] = useState([]);
 
     useEffect(() => {
         const init = async () => {
@@ -54,6 +56,7 @@ const VideoCallScreen = ({ route, navigation }) => {
         return cleanupAgoraEngine;
     }, []);
 
+    
 
     useEffect(() => {
         const handleCallEnded = () => {
@@ -88,14 +91,17 @@ const VideoCallScreen = ({ route, navigation }) => {
                 setMessage(`Successfully joined channel: ${channelName}`);
                 setupLocalVideo();
                 setIsJoined(true);
+                //restartCamera();
             },
             onUserJoined: (_connection, uid) => {
                 setMessage(`Remote user ${uid} joined`);
+                setRemoteUsers(prev => [...prev, uid]);
                 setRemoteUids(prevUids => [...new Set([...prevUids, uid])]);
                 agoraEngineRef.current?.muteRemoteVideoStream(uid, false);
             },
             onUserOffline: (_connection, uid) => {
                 setMessage(`Remote user ${uid} left the channel`);
+                setRemoteUsers(prev => prev.filter(id => id !== uid));
                 setRemoteUids(prevUids => prevUids.filter(id => id !== uid));
             },
         };
@@ -104,30 +110,62 @@ const VideoCallScreen = ({ route, navigation }) => {
 
     const setupVideoSDKEngine = async () => {
         try {
-            if (Platform.OS === 'android') await getPermission();
-            agoraEngineRef.current = createAgoraRtcEngine();
-            await agoraEngineRef.current.initialize({ appId });
-            agoraEngineRef.current?.enableDualStreamMode(false);
+            const hasPermissions = await getPermission();
+            if (!hasPermissions) {
+                Alert.alert('Permissions Required', 'Camera and Microphone permissions are needed.');
+                return;
+            }
+            if (!agoraEngineRef.current) {
+                agoraEngineRef.current = createAgoraRtcEngine();
+                await agoraEngineRef.current.initialize({ appId });
+                agoraEngineRef.current.enableVideo();
+                agoraEngineRef.current.enableDualStreamMode(false);
+                agoraEngineRef.current.enableLocalVideo(true); 
+                console.log('✅ Agora Engine Initialized');
+            }
 
         } catch (e) {
             console.error(e);
         }
     };
 
-    const setupLocalVideo = () => {
-        agoraEngineRef.current?.enableVideo();
-        agoraEngineRef.current?.startPreview();
+    const restartCamera = async () => {
+        try {
+            if (agoraEngineRef.current) {
+                console.log('🔄 Restarting local camera...');
+                await agoraEngineRef.current.enableLocalVideo(false);
+                await new Promise((resolve) => setTimeout(resolve, 1000)); // Small delay to reset
+                await agoraEngineRef.current.enableLocalVideo(true);
+                await agoraEngineRef.current.startPreview();
+            }
+        } catch (e) {
+            console.error('❌ Error restarting camera:', e);
+        }
     };
+
+    
+    const setupLocalVideo = async() => {
+        try {
+            if (agoraEngineRef.current) {
+                console.log('📷 Enabling local video');
+                await agoraEngineRef.current.enableLocalVideo(true);
+                await agoraEngineRef.current.enableVideo();
+                await agoraEngineRef.current.startPreview();
+                agoraEngineRef.current.muteLocalVideoStream(false);  // Ensure video is not muted
+            }
+        } catch (e) {
+            console.error('❌ Error setting up local video:', e);
+        }
+    };
+    
 
     const joinChannel = async () => {
         if (isJoined) return;
         agoraEngineRef.current?.enableVideo();
         agoraEngineRef.current?.startPreview();
         try {
-            agoraEngineRef.current?.joinChannel(token, channelName, 0, {
+            agoraEngineRef.current?.joinChannel(token, channelName, localUid, {
                 channelProfile: isGroup ? ChannelProfileType.ChannelProfileLiveBroadcasting : ChannelProfileType.ChannelProfileCommunication,
-                //clientRoleType: isHost ? ClientRoleType.ClientRoleBroadcaster : ClientRoleType.ClientRoleAudience,
-                //clientRoleType: isCaller ? ClientRoleType.ClientRoleBroadcaster : ClientRoleType.ClientRoleBroadcaster, // Ensure both are broadcasters
                 clientRoleType: ClientRoleType.ClientRoleBroadcaster,
                 publishMicrophoneTrack: true,
                 publishCameraTrack: true,
@@ -159,12 +197,25 @@ const VideoCallScreen = ({ route, navigation }) => {
         };
     };
 
+    const renderParticipant = (uid) => {
+        return (
+            <Box style={styles.participantContainer} key={uid}>
+                <RtcSurfaceView
+                    canvas={{ localUid, sourceType: VideoSourceType.VideoSourceRemote }}
+                    style={styles.remoteVideo}
+                />
+            </Box>
+        );
+    };
+
+
     return (
         <SafeAreaView style={styles.container}>
-            {isJoined && (
-                <View style={styles.videoContainer}>
-                    {isGroup ? (
-                        <FlatList
+        <Box style={styles.videoContainer}>
+            {isGroup ? (
+                // Grid layout for group participants
+                <>
+                <FlatList
                             data={remoteUids}
                             keyExtractor={(uid) => uid.toString()}
                             renderItem={({ item: uid }) => (
@@ -175,28 +226,38 @@ const VideoCallScreen = ({ route, navigation }) => {
                             )}
                             numColumns={2}
                         />
+                        <RtcSurfaceView
+                        key={localUid}
+                        canvas={{ localUid, sourceType: VideoSourceType.VideoSourceRemote }}
+                        style={styles.fullScreenVideo}
+                    /></>
+            ) : (
+                // Full screen for one-to-one
+                <Box style={styles.oneToOneContainer}>
+                    {remoteUids.length > 0 ? (
+                        renderParticipant(remoteUids[0])
                     ) : (
-                        remoteUids.map(uid => (
-                            <RtcSurfaceView
-                                key={uid}
-                                canvas={{ uid, sourceType: VideoSourceType.VideoSourceRemote }}
-                                style={styles.fullScreenVideo}
-                            />
-                        ))
+                        <Text style={styles.waitingText}>Waiting for participant...</Text>
                     )}
-                    <View style={styles.localVideoContainer}>
+
+                    <Box style={styles.localVideoContainerOneToOne}>
                         <RtcSurfaceView
                             canvas={{ uid: localUid, sourceType: VideoSourceType.VideoSourceCamera }}
-                            style={styles.localVideo}
+                            style={styles.localVideoSmall}
                         />
-                    </View>
-                </View>
+                        <Text style={styles.userName}>You</Text>
+                    </Box>
+                </Box>
             )}
+        </Box>
 
-            <TouchableOpacity onPress={leaveChannel} style={styles.leaveButton}>
-                <Text style={styles.leaveButtonText}>Leave Call</Text>
+        {/* Control Buttons */}
+        <Box style={styles.controls}>
+            <TouchableOpacity onPress={leaveChannel} style={styles.endCallButton}>
+                <Text style={styles.buttonText}>End Call</Text>
             </TouchableOpacity>
-        </SafeAreaView>
+        </Box>
+    </SafeAreaView>
     );
 };
 
@@ -207,53 +268,104 @@ const styles = StyleSheet.create({
     },
     videoContainer: {
         flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    oneToOneContainer: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    localVideoContainerOneToOne: {
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        width: 120,
+        height: 160,
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    localVideoSmall: {
+        width: '100%',
+        height: '100%',
+    },
+    localVideoContainer: {
+        width: '50%',
+        aspectRatio: 9 / 16,
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    localVideo: {
+        width: '100%',
+        height: '100%',
+    },
+    remoteVideo: {
+        flex: 1,
+        aspectRatio: 9 / 16,
+        margin: 4,
+        borderRadius: 12,
+    },
+    participantContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    controls: {
+        position: 'absolute',
+        bottom: 40,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    endCallButton: {
+        backgroundColor: 'red',
+        padding: 16,
+        borderRadius: 30,
+    },
+    buttonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    userName: {
+        position: 'absolute',
+        bottom: 8,
+        left: 8,
+        color: 'white',
+        fontSize: 14,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    waitingText: {
+        color: 'white',
+        textAlign: 'center',
+        fontSize: 18,
     },
     remoteVideoBox: {
         width: '48%',
         aspectRatio: 1,
         margin: 2,
     },
-    fullScreenVideo: {
-        flex: 1,
-    },
-    localVideoContainer: {
-        position: 'absolute',
-        bottom: 20,
-        right: 20,
-        width: 100,
-        height: 150,
-        borderRadius: 10,
-        overflow: 'hidden',
-        borderWidth: 2,
-        borderColor: '#fff',
-    },
-    localVideo: {
-        width: '100%',
-        height: '100%',
-    },
-    leaveButton: {
-        position: 'absolute',
-        bottom: 30,
-        alignSelf: 'center',
-        backgroundColor: 'red',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 25,
-    },
-    leaveButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-    }
 });
 
 const getPermission = async () => {
     if (Platform.OS === 'android') {
-        await PermissionsAndroid.requestMultiple([
+        const permissions = await PermissionsAndroid.requestMultiple([
             PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
             PermissionsAndroid.PERMISSIONS.CAMERA,
         ]);
+        const granted =
+            permissions[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED &&
+            permissions[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED;
+
+        if (!granted) {
+            Alert.alert('Permissions Error', 'Camera and Microphone permissions are required.');
+        }
+        return granted;
     }
+    return true; // iOS handles permissions differently
 };
+
 
 export default VideoCallScreen;

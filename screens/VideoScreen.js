@@ -77,8 +77,9 @@ const VideoScreen = ({ route }) => {
       });
 
       return () => {
+        socket.off("video_call_declined", handleCallDeclined);
         socket.off("video_call_approved");
-        socket.off("video_call_declined");
+      
       };
   }, [callAccepted, navigation]);
 
@@ -105,12 +106,12 @@ const VideoScreen = ({ route }) => {
     }
   };
 
-  const declineCall = () => {
+  const declineCall = (calleeId, groupId) => {
     if(isGroup){
       socket.emit("decline_group_video_call", { callerId, groupId });
       navigation.goBack();
     }else{
-      socket.emit("decline_video_call", { callerId });
+      socket.emit("decline_video_call", { calleeId });
       navigation.goBack();
     }
   };
@@ -126,7 +127,7 @@ const VideoScreen = ({ route }) => {
         </Box>
         <Box flex={1} justifyContent="flex-end" padding={10}>
             <Box flexDirection={"row"} justifyContent={"center"}>
-                <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId, groupId)}/>
+                <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={() => declineCall(calleeId, isGroup && groupId)}/>
             </Box>
         </Box>
       </Box>
