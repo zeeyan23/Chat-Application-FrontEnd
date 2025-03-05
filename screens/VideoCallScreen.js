@@ -215,6 +215,7 @@ const VideoCallScreen = ({ route, navigation }) => {
             {isGroup ? (
                 // Grid layout for group participants
                 <>
+                <Box>
                 <FlatList
                             data={remoteUids}
                             keyExtractor={(uid) => uid.toString()}
@@ -226,11 +227,15 @@ const VideoCallScreen = ({ route, navigation }) => {
                             )}
                             numColumns={2}
                         />
+                        {remoteUids.map(uid => (
                         <RtcSurfaceView
-                        key={localUid}
-                        canvas={{ localUid, sourceType: VideoSourceType.VideoSourceRemote }}
+                        key={uid}
+                        canvas={{ localUid: localUid, sourceType: VideoSourceType.VideoSourceCamera }}
                         style={styles.fullScreenVideo}
-                    /></>
+                    />))}
+                </Box>
+                    
+                    </>
             ) : (
                 // Full screen for one-to-one
                 <Box style={styles.oneToOneContainer}>
@@ -343,9 +348,16 @@ const styles = StyleSheet.create({
         fontSize: 18,
     },
     remoteVideoBox: {
-        width: '48%',
+        width: '50%',
         aspectRatio: 1,
         margin: 2,
+        top:50
+    },
+    fullScreenVideo: {
+        width: '90%',
+        aspectRatio: 1,
+        margin: 2,
+        bottom:50,
     },
 });
 

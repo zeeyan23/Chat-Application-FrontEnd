@@ -33,6 +33,7 @@ import VideoCallScreen from './screens/VideoCallScreen';
 import VoiceScreen from './screens/VoiceScreen';
 import VoiceCallScreen from './screens/VoiceCallScreen';
 import socketInstance from "./Utils/socket";
+import CustomSplashScreen from './screens/CustomSplashScreen';
 
 export const navigationRef = createNavigationContainerRef();
 const firebaseConfig = {
@@ -52,6 +53,8 @@ const auth = initializeAuth(app, {
 });
 
 export default function App() {
+
+  const [isSplashFinished, setIsSplashFinished] = useState(false);
 
   useEffect(() => {
     async function getPermission() {
@@ -171,6 +174,10 @@ export default function App() {
       return () => subscription.remove();
     }, []);
     
+    if (!isSplashFinished) {
+      return <CustomSplashScreen onFinish={() => setIsSplashFinished(true)} />;
+    }
+
     return (
       <NavigationContainer ref={navigationRef}>
         {isAuthenticated ? <AuthenticatedComponents isNewUser={isNewUser}/> : <AuthStack/>}

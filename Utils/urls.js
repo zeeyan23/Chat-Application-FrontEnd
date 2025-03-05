@@ -1,1 +1,1 @@
-export const mainURL = "http://192.168.105.79:3000";
+export const mainURL = "http://inifinityos.pro";
