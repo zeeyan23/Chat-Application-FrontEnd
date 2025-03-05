@@ -148,7 +148,7 @@ function LoginScreen(){
             signIn();
             setTimeout(() => {
                 if (navigationRef.isReady()) {
-                    if(response.data.hasValidFriends || response.data.hasValidGroups){
+                    if(response.data.hasValidFriends === true || response.data.hasValidGroups === true){
                         navigation.navigate('Chats');
                     }else {
                         navigation.navigate('Home');

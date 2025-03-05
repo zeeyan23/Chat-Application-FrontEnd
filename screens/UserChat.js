@@ -244,7 +244,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
           >
             <HStack space={[2, 3]} justifyContent="space-between">
               {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
-              <VStack>
+              <VStack alignSelf={!item.lastMessage && "center"}>
                 <Text fontSize="md" color="white" style={{ fontWeight: "bold" }}>{item.type === 'friend' ? item.user_name : item.groupName}</Text>
                 {item.lastMessage ? <Text 
                   style={{ marginTop: 3, color: "gray", fontWeight: "500" }} 

@@ -17,7 +17,7 @@ const CustomSplashScreen = ({ onFinish }) => {
 
   return (
     <View style={styles.container}>
-      <Image source={require("../assets/icon_image.jpg")} style={styles.logo} />
+      <Image source={require("../assets/icon.png")} style={styles.logo} />
       <Text style={styles.text}>Welcome to My App</Text>
     </View>
   );

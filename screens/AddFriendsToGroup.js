@@ -153,6 +153,13 @@ function AddFriendsToGroup(){
                             )
                         
                         }}
+                        ListEmptyComponent={
+                            <Box alignItems="center" justifyContent="center" mt="10">
+                                <Text fontSize="lg" color="gray.500">
+                                    No friends to create group
+                                </Text>
+                            </Box>
+                        }
                     />
                 </Box>
             </Box>

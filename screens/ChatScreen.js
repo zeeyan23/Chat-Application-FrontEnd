@@ -228,14 +228,21 @@ function ChatScreen(){
       
   return(
     <Box flex={1} backgroundColor={'black'}>
-      {friendsWithLastMessage?.length > 0 && 
+      {friendsWithLastMessage?.length > 0 ? 
         <ScrollView> 
           <Pressable>
           {friendsWithLastMessage?.map((item, index)=>(
             <UserChat key={index} item={item} selectedChats={selectedChats} setSelectedChats={setSelectedChats} onPinUpdate={fetchUser} onChatUpdate={fetchUser}/>
           ))}
           </Pressable>
-        </ScrollView>}
+        </ScrollView> : 
+        <Box flex={1} justifyContent="center" alignItems="center" bg="black">
+          <Pressable onPress={() => navigation.navigate('Home')}>
+            <Text color="white" textAlign="center">
+              No Chats yet. <Text color="blue.400" underline>Create a new chat</Text>
+            </Text>
+          </Pressable>
+        </Box>}
         <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5}>
           <Stagger visible={isOpen} initial={{ opacity: 0, scale: 0, translateY: 34 }} 
           animate={{ translateY: 0, scale: 1, opacity: 1, 

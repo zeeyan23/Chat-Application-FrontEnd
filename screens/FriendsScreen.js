@@ -70,6 +70,7 @@ function FriendsScreen(){
         
     }
     
+    console.log(friendRequestsData)
     return(
         <Box flex={1} backgroundColor={"black"}>
             <FlatList data={friendRequestsData} renderItem={({item}) => {
@@ -86,7 +87,7 @@ function FriendsScreen(){
                         <HStack space={[2, 3]} justifyContent="space-between">
                         {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
                         <VStack alignSelf={"center"}>
-                            <Text fontSize="lg" color="black" style={{fontWeight:"bold"}}>{item.user_name}</Text>
+                            <Text fontSize="lg" color="white" style={{fontWeight:"bold"}}>{item.user_name}</Text>
                             
                         </VStack>
                         <Spacer />

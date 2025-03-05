@@ -15,9 +15,10 @@ import { jwtDecode } from "jwt-decode"
 import  {io}  from "socket.io-client";
 import {  FlatList, Heading, Avatar, VStack, Spacer,Text } from "native-base";
 import Entypo from '@expo/vector-icons/Entypo';
+import socketInstance from "../Utils/socket";
 function HomeScreen(){
 
-    const socket = useRef();
+    const socket = socketInstance.getSocket();
     const { isOpen, onToggle} = useDisclose();
     const {userId, setUserId} = useContext(UserType);
     const navigation = useNavigation();
@@ -41,25 +42,21 @@ function HomeScreen(){
     },[]);
 
     useEffect(() => {
-        socket.current = io(mainURL);
-        socket.current.on("connect", () => {
-            
-            socket.current.emit("registerUser", userId);
-          });
-        socket.current.on("friendRequestReceived", (data) => {
-            
+        socket.emit("join", userId);
+        socket.on("friendRequestReceived", (data) => {
+            console.log(data)
             setFriendRequestsReceived((prev) => [
                 ...prev,
                 { _id: data.senderId, user_name: data.senderName },
             ]);
         });
     
-        socket.current.on("friendRequestAccepted", (data) => {
+        socket.on("friendRequestAccepted", (data) => {
             setUserFriends((prev) => [...prev, data.userId]);
         });
 
         return () => {
-            socket.current.disconnect();
+            socket.disconnect();
         };
     }, [userId]);
 
