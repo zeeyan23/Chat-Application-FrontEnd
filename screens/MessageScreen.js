@@ -101,6 +101,8 @@ const MessageSrceen = () => {
   const [isDeleteChatOpen, setIsDeleteChatOpen] = useState(false);
   const [isRecordingInProgress, setIsRecordingInProgress] = useState(false); 
 
+  const [text,setText]=useState('')
+  const [test,setTest]=useState('')
   const agoraEngineRef = useRef(null); 
   const eventHandler = useRef(null); 
   const [dial , setDial]=useState(false);
@@ -239,7 +241,7 @@ const MessageSrceen = () => {
 
     return () => {
 
-      socket.off("newMessage");
+      // socket.off("newMessage");
       
       socket.off("video_call_declined");
       socket.off("messages_deleted_for_me");
@@ -593,7 +595,9 @@ const MessageSrceen = () => {
   
   const sendMessage= async(messageType, fileUri, duration, fileName, replyMessageId = replyMessage?._id) =>{
     setIsSending(true); 
-    setErrorMessage(""); 
+    setText(fileUri); 
+    setTest(messageType)
+    console.log("test")
       try {
           const formData = new FormData()
           formData.append("senderId",userId);
@@ -607,24 +611,26 @@ const MessageSrceen = () => {
             formData.append("replyMessage", replyMessageId);
           }
           
-          if (messageType === "image" || messageType === "video") {
+          if (messageType === "video") {
             formData.append("messageType", messageType);
-            
-            if(messageType === "image"){
-              formData.append("imageViewOnce", viewOnceSelected);
-            }else if(messageType === "video"){
-              formData.append("videoViewOnce", viewOnceSelected);
-            }
+            const videoUri = Platform.OS === 'android' ? fileUri : fileUri.replace('file://', '');
+            formData.append("videoViewOnce", viewOnceSelected);
+            formData.append("file", {
+              uri: videoUri,
+              name: "video.mp4",
+              type: "video/mp4",
+            });
+            formData.append("duration", duration);
+            formData.append("videoName", fileName);
+          } else if (messageType === "image") {
+            formData.append("messageType", messageType);
+            formData.append("imageViewOnce", viewOnceSelected);
             
             formData.append("file", {
                 uri: fileUri,
-                name: messageType === "image" ? "image.jpeg" : "video.mp4",
-                type: messageType === "image" ? "image/jpeg" : "video/mp4", 
+                name: "image.jpeg",
+                type: "image/jpeg"
             });
-              if (messageType === "video") {
-                  formData.append("duration", duration);
-                  formData.append("videoName", fileName);
-              }
           } else if ( messageType === "pdf" || messageType === "docx" || messageType === "xlsx" || messageType === "zip" || messageType === "pptx") {
             formData.append("messageType", messageType);
             formData.append("file", {
@@ -1681,6 +1687,8 @@ return (
               </Heading>
             </HStack>
           )}
+
+          
 
           {selectedVideo && (
             <Modal
