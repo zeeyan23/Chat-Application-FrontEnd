@@ -20,6 +20,8 @@
       }
     },
     "production": {
+      "developmentClient": false,
+      "distribution": "internal",
       "ios": {
         "resourceClass": "m1-medium"
       }

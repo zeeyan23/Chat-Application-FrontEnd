@@ -30,7 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 import CustomButton from '../components/CustomButton';
 
 const appId = '77de8ca3881e4be1a07052447ee4cb51';
-const token = '007eJxTYHh3otni1rQQAbNnK39wXm7PiP92Lum3s8uBq2qCoqfXibgpMJibp6RaJCcaW1gYppokpRomGpgbmBqZmJinppokJ5kabmg7md4QyMiQIyzJysgAgSA+F0NZZkpqfnxyYk4OAwMAdWYiTw==';
+const token = '007eJxTYPC4nPPj0x6R/S9C4362z/1nOP2N3B7+ggxxLX2pjX4i660VGMzNU1ItkhONLSwMU02SUg0TDcwNTI1MTMxTU02Sk0wNZ+8/ld4QyMhg9LqCkZEBAkF8LoayzJTU/PjkxJwcBgYAXpYilw==';
 const channelName = 'video_call';
 const localUid = 0;
 
@@ -92,6 +92,8 @@ const VideoCallScreen = ({ route, navigation }) => {
                 setupLocalVideo();
                 setIsJoined(true);
                 //restartCamera();
+                agoraEngineRef.current?.muteLocalVideoStream(false);
+                agoraEngineRef.current?.muteLocalAudioStream(false);
             },
             onUserJoined: (_connection, uid) => {
                 setMessage(`Remote user ${uid} joined`);
@@ -164,7 +166,7 @@ const VideoCallScreen = ({ route, navigation }) => {
         agoraEngineRef.current?.enableVideo();
         agoraEngineRef.current?.startPreview();
         try {
-            agoraEngineRef.current?.joinChannel(token, channelName, localUid, {
+            agoraEngineRef.current?.joinChannel(token, channelName, localUid || 0, {
                 channelProfile: isGroup ? ChannelProfileType.ChannelProfileLiveBroadcasting : ChannelProfileType.ChannelProfileCommunication,
                 clientRoleType: ClientRoleType.ClientRoleBroadcaster,
                 publishMicrophoneTrack: true,
@@ -201,7 +203,7 @@ const VideoCallScreen = ({ route, navigation }) => {
         return (
             <Box style={styles.participantContainer} key={uid}>
                 <RtcSurfaceView
-                    canvas={{ localUid, sourceType: VideoSourceType.VideoSourceRemote }}
+                    canvas={{ uid, sourceType: VideoSourceType.VideoSourceRemote }}
                     style={styles.remoteVideo}
                 />
             </Box>
@@ -245,22 +247,23 @@ const VideoCallScreen = ({ route, navigation }) => {
                         <Text style={styles.waitingText}>Waiting for participant...</Text>
                     )}
 
-                    <Box style={styles.localVideoContainerOneToOne}>
+                    {/* <Box style={styles.localVideoContainerOneToOne}>
                         <RtcSurfaceView
-                            canvas={{ uid: localUid, sourceType: VideoSourceType.VideoSourceCamera }}
+                            canvas={{ uid: 0, sourceType: VideoSourceType.VideoSourceCamera }}
                             style={styles.localVideoSmall}
                         />
                         <Text style={styles.userName}>You</Text>
-                    </Box>
+                    </Box> */}
                 </Box>
             )}
         </Box>
 
         {/* Control Buttons */}
         <Box style={styles.controls}>
-            <TouchableOpacity onPress={leaveChannel} style={styles.endCallButton}>
+            {/* <TouchableOpacity onPress={leaveChannel} style={styles.endCallButton}>
                 <Text style={styles.buttonText}>End Call</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
+            <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={leaveChannel}/>
         </Box>
     </SafeAreaView>
     );

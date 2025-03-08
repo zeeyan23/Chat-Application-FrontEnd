@@ -727,24 +727,132 @@ const MessageSrceen = () => {
         }
     };
   }, []);
-  const handleImage = async()=>{
-      let result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images', 'videos'],
-          allowsEditing: true,
-          aspect: [4, 3],
-          quality: 1,
-        });
-      if(!result.canceled){
-          const asset = result.assets[0];
-          const isVideo = asset.type === 'video';
-          setMessageType(isVideo ? 'video' : 'image');
-          setSelectedFile({
-            uri: asset.uri,
-            duration: asset.duration || null, // Only for video
-            fileName: asset.fileName || null,
-          });
+  // const handleImage = async()=>{
+  //     let result = await ImagePicker.launchImageLibraryAsync({
+  //         mediaTypes: ['images', 'videos'],
+  //         allowsEditing: true,
+  //         aspect: [4, 3],
+  //         quality: 1,
+  //       });
+  //     if(!result.canceled){
+  //         const asset = result.assets[0];
+  //         const isVideo = asset.type === 'video';
+  //         setMessageType(isVideo ? 'video' : 'image');
+  //         setSelectedFile({
+  //           uri: asset.uri,
+  //           duration: asset.duration || null, // Only for video
+  //           fileName: asset.fileName || null,
+  //         });
+  //     }
+  // }
+
+  const handleImage = async () => {
+    try {
+      // Request permissions for both camera and media library
+      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+      const mediaLibraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (cameraPermission.status !== 'granted' || mediaLibraryPermission.status !== 'granted') {
+        Alert.alert('Permission Required', 'Camera and media library access are needed.');
+        return;
       }
-  }
+
+      // Show options to the user
+      const options = ['Take Photo', 'Record Video', 'Choose from Library', 'Cancel'];
+      const handleOption = (index) => {
+        if (index === 0) openCamera('photo');
+        else if (index === 1) openCamera('video');
+        else if (index === 2) openMediaLibrary();
+      };
+
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options,
+            cancelButtonIndex: 3,
+          },
+          handleOption
+        );
+      } else {
+        const selection = await new Promise((resolve) => {
+          Alert.alert(
+            'Select an Option',
+            '',
+            [
+              { text: 'Take Photo', onPress: () => resolve(0) },
+              { text: 'Record Video', onPress: () => resolve(1) },
+              { text: 'Choose from Library', onPress: () => resolve(2) },
+              { text: 'Cancel', onPress: () => resolve(3), style: 'cancel' },
+            ],
+            { cancelable: true }
+          );
+        });
+        handleOption(selection);
+      }
+    } catch (error) {
+      console.error('Error handling media:', error);
+    }
+  };
+
+  // Open camera for photos or videos
+  const openCamera = async (mediaType) => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes:
+          mediaType === 'photo'
+            ? ImagePicker.MediaTypeOptions.Images
+            : ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        quality: 0.8, // Image/Video quality (0.0 to 1.0)
+      });
+
+      if (!result.canceled) {
+        handleSelectedMedia(result);
+      }
+    } catch (error) {
+      console.error('Error opening camera:', error);
+    }
+  };
+
+  // Open media library for photos or videos
+  const openMediaLibrary = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All, // Allow both images and videos
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        handleSelectedMedia(result);
+      }
+    } catch (error) {
+      console.error('Error opening library:', error);
+    }
+  };
+
+  // Handle the selected media (image/video)
+  const handleSelectedMedia = (result) => {
+    const asset = result.assets[0]; // Get the first asset
+    const isVideo = asset.type === 'video';
+
+    // Set message type (image/video)
+    setMessageType(isVideo ? 'video' : 'image');
+
+    // Store the media details (URI, duration, fileName)
+    setSelectedFile({
+      uri: asset.uri,
+      duration: asset.duration || null, // Only for video
+      fileName: asset.fileName || null,
+    });
+
+    console.log('Selected Media:', {
+      uri: asset.uri,
+      type: isVideo ? 'video' : 'image',
+      duration: asset.duration || null,
+      fileName: asset.fileName || null,
+    });
+  };
 
   const handleSendFileMessage = () => {
     if (selectedFile) {
@@ -1174,12 +1282,6 @@ const panResponder = useRef(
 ).current;
 
 const bckimage = require('../assets/test.png');
-
-const formatCallDuration = (seconds) => {
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-};
 
 const handlePress = (source, item) => {
   //console.log(item)

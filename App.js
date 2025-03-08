@@ -34,6 +34,7 @@ import VoiceScreen from './screens/VoiceScreen';
 import VoiceCallScreen from './screens/VoiceCallScreen';
 import socketInstance from "./Utils/socket";
 import CustomSplashScreen from './screens/CustomSplashScreen';
+import CameraScreen from './screens/CameraScreen';
 
 export const navigationRef = createNavigationContainerRef();
 const firebaseConfig = {

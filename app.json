@@ -4,11 +4,11 @@
     "slug": "chat_application",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon_image.jpg",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/icon_image.jpg",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -16,6 +16,7 @@
       [
         "expo-image-picker",
         {
+          "cameraPermission": "Allow access to your camera to take photos.",
           "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
       ],
@@ -34,7 +35,8 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         }
-      }
+      },
+      "bundleIdentifier": "com.mohammadzeeyan.chatapp"
     },
     "android": {
       "googleServicesFile": "./google-services.json",
