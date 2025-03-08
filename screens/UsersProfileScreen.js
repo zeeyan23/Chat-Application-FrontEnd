@@ -148,11 +148,11 @@ function UsersProfileScreen() {
                                   <Ionicons name="person-circle-outline" size={100} color="gray" />
                               )}
                           
-                      </Box> : <Box maxW="96" bg={'white'} borderWidth={1}  rounded="full">
+                      </Box> : <Box maxW="96" bg={'white'} borderWidth={1}  rounded="full" marginBottom={10} marginTop={10}>
                           {imageChanged || chatUserInfo.image ? (
-                                  <Avatar size="2xl" source={source} />
+                                  <Avatar size={280} source={source} />
                               ) : (
-                                  <Ionicons name="person-circle-outline" size={100} color="gray" />
+                                  <Ionicons name="person-circle-outline" size={230} color="gray" />
                               )}
                         </Box>}
                 

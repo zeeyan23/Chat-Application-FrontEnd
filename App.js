@@ -34,7 +34,6 @@ import VoiceScreen from './screens/VoiceScreen';
 import VoiceCallScreen from './screens/VoiceCallScreen';
 import socketInstance from "./Utils/socket";
 import CustomSplashScreen from './screens/CustomSplashScreen';
-import CameraScreen from './screens/CameraScreen';
 
 export const navigationRef = createNavigationContainerRef();
 const firebaseConfig = {
@@ -76,12 +75,12 @@ export default function App() {
       <Stack.Navigator initialRouteName={isNewUser ? "Home" : "Chats"}>
         <Stack.Screen name="Home" component={HomeScreen} options={{
           headerShown: true,
-          headerStyle: { backgroundColor: 'black' },
+          headerStyle: { backgroundColor: 'black',borderBottomWidth: 1, borderBottomColor: 'white' },
           headerTintColor: 'white', animation: 'fade',presentation: 'transparentModal'
         }}/>
         <Stack.Screen name="Chats" component={ChatScreen} options={{
           headerShown: true,
-          headerStyle: { backgroundColor: 'black' },
+          headerStyle: { backgroundColor: 'black',borderBottomWidth: 1, borderBottomColor: 'white' },
           headerTintColor: 'white', animation: 'fade',presentation: 'transparentModal'
         }}/>
         <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}}/>
@@ -89,28 +88,28 @@ export default function App() {
         
         <Stack.Screen name="FriendRequests" component={FriendsScreen} options={{
           title: 'Friend Requests',
-          headerStyle: { backgroundColor: 'black' },
+          headerStyle: { backgroundColor: 'black',borderBottomWidth: 1, borderBottomColor: 'white' },
           headerTintColor: 'white', animation: 'fade',presentation: 'transparentModal'
         }}/>
         
         <Stack.Screen name="MessageScreen" component={MessageScreen}  options={{ headerShown: true,
-          headerStyle: { backgroundColor: 'black' }, animation: 'fade',presentation: 'transparentModal',headerTintColor: 'white', }}/>
+          headerStyle: { backgroundColor: 'black',borderBottomWidth: 1, borderBottomColor: 'white' }, animation: 'fade',presentation: 'transparentModal',headerTintColor: 'white', }}/>
         <Stack.Screen name="MessageForwardScreen" component={ForwardMessagesScreen}  options={{
           headerShown: true,
-          headerStyle: { backgroundColor: 'black' },
+          headerStyle: { backgroundColor: 'black',borderBottomWidth: 1, borderBottomColor: 'white' },
           headerTintColor: 'white',
           animation: 'fade',presentation: 'transparentModal'
         }}/>
         <Stack.Screen name="StarredMessageScreen" component={StarredMessagesScreen}  options={{ headerShown: true, 
-          headerStyle: { backgroundColor: 'black' }, animation: 'fade',presentation: 'transparentModal',
+          headerStyle: { backgroundColor: 'black',borderBottomWidth: 1, borderBottomColor: 'white' }, animation: 'fade',presentation: 'transparentModal',
           headerTintColor: 'white', }}/>
         <Stack.Screen name="AddFriendsToGroup" component={AddFriendsToGroup}  options={{ headerShown: true ,
-          headerStyle: { backgroundColor: 'black' }, animation: 'fade',presentation: 'transparentModal',
+          headerStyle: { backgroundColor: 'black',borderBottomWidth: 1, borderBottomColor: 'white' }, animation: 'fade',presentation: 'transparentModal',
           headerTintColor: 'white',}}/>
         <Stack.Screen name="UsersProfileScreen" component={UsersProfileScreen}  options={{ headerShown: false,  animation: 'fade',presentation: 'transparentModal' }}/>
         <Stack.Screen name="Settings" component={UserSettings} options={{
           headerShown: true,
-          headerStyle: { backgroundColor: 'black' }, animation: 'fade',presentation: 'transparentModal',
+          headerStyle: { backgroundColor: 'black',borderBottomWidth: 1, borderBottomColor: 'white' }, animation: 'fade',presentation: 'transparentModal',
           headerTintColor: 'white',
         }}/>
         <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{headerShown: false}}/>
@@ -175,9 +174,22 @@ export default function App() {
       return () => subscription.remove();
     }, []);
     
+    // if (!isSplashFinished) {
+    //   return <CustomSplashScreen onFinish={() => setIsSplashFinished(true)} />;
+    // }
+
     if (!isSplashFinished) {
-      return <CustomSplashScreen onFinish={() => setIsSplashFinished(true)} />;
+      return (
+        <CustomSplashScreen
+          onFinish={() => {
+            setTimeout(() => {
+              setIsSplashFinished(true);
+            }, 3000); // 3 seconds delay
+          }}
+        />
+      );
     }
+    
 
     return (
       <NavigationContainer ref={navigationRef}>

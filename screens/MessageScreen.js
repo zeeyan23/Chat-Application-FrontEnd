@@ -52,6 +52,8 @@ import {ImageBackground} from 'react-native';
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 import MessageDeleteDialog from "../components/MessagesDeleteDialog";
 import socketInstance from "../Utils/socket";
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { useEvent } from "expo";
 
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
@@ -269,6 +271,7 @@ const MessageSrceen = () => {
   }, [socket, senderId, recipentId]);
   
   const handleVideoPress = async(videoUrl, item) => {
+    console.log(videoUrl);
     if(item.videoViewOnce){
       if(item.senderId._id===userId){
         toast.show({
@@ -369,7 +372,7 @@ const MessageSrceen = () => {
                 isFocused,
                 isPressed
               }) => {
-                return <Box pl={2} justifyContent={"center"} h={"full"} bg={isPressed ? "#666666" : isHovered ? "#666666" : "black"}>
+                return <Box pl={2} justifyContent={"center"} h={"full"} bg={isPressed ? "#666666" : isHovered ? "#666666" : "black"} borderBottomWidth={1} borderBottomColor={"white"}>
                       <Text style={{ fontSize: 14, fontWeight: 'bold', color:'white' }}>
                         {!isGroupChat ? userName : groupName}
                       </Text>
@@ -395,14 +398,14 @@ const MessageSrceen = () => {
           <Box justifyContent={"space-between"} flexDirection={"row"}  alignItems={"center"}>
             {!isGroupChat ? <>
               <Box flex={1} alignItems="center">
-                <IconButton icon={<Icon as={Ionicons} name="call-sharp" color={"white"}/>} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={() => voiceCallHandle(userId, recipentId)}  />
+                <IconButton icon={<Icon as={Ionicons} name="call-sharp" color={"white"} size={"lg"}/>}  _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={() => voiceCallHandle(userId, recipentId)}  />
               </Box>
               <Box flex={1} alignItems="center">
                 <IconButton icon={<Icon as={Ionicons} name="videocam" color={"white"} />} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={videoCallHandler} />
               </Box>
               </> : <>
                 <Box flex={1} alignItems="center">
-                  <IconButton icon={<Icon as={Ionicons} name="call-sharp" color={"white"} />} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={() => groupVoiceCallHandle(userId, groupId)}  />
+                  <IconButton icon={<Icon as={Ionicons} name="call-sharp" color={"white"} size={"lg"} />}  _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={() => groupVoiceCallHandle(userId, groupId)}  />
                 </Box>
                 <Box flex={1} alignItems="center">
                   <IconButton icon={<Icon as={Ionicons} name="videocam" color={"white"}/>} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={()=> groupVideoCallHandle(userId, groupId)} />
@@ -1762,6 +1765,13 @@ const renderImageMessage = useCallback((item, index) => {
   )
 },[seletedMessages, handlePress, handleSelectedMessage, mainURL]);
 
+const player = useVideoPlayer(selectedVideo, player => {
+  player.loop = true;
+  player.play();
+});
+
+const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
+
 return (
   <SafeAreaProvider>
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
@@ -1800,14 +1810,15 @@ return (
               onRequestClose={handleCloseVideo}
             >
               <View style={styles.modalContainer}>
-                <Video
+                {/* <Video
                   ref={(ref) => setVideoRef(ref)} 
-                  source={selectedVideo}
+                  source={{ uri: selectedVideo }}
                   style={styles.video}
                   resizeMode="contain"
                   useNativeControls 
                   shouldPlay 
-                />
+                /> */}
+                <VideoView style={styles.video} player={player} allowsFullscreen allowsPictureInPicture />
                 <Entypo name="cross" size={24} color="#666" onPress={handleCloseVideo} style={styles.closeButton}/>
               </View>
             </Modal>
@@ -1897,7 +1908,7 @@ return (
                           borderRadius: 50,
                           padding: 1,
                         }} {...panResponder.panHandlers}>
-                        <Ionicons name="mic" size={26} color="white" style={{padding:8}}/>
+                        <Ionicons name="mic" size={20} color="white" style={{padding:8}}/>
                       </Animated.View> 
                   )}
                 </>
