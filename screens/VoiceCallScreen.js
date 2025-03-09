@@ -15,7 +15,7 @@ import socketInstance from "../Utils/socket";
 import { UserType } from "../Context/UserContext";
 
 const appId = 'b1b769d4b203413881261d9f64b00d47';
-const token = '007eJxTYGiseV02hfNw6px3h5ZX/p/r+jAxsSdnkWvkF+8bZyZoNDMpMCQZJpmbWaaYJBkZGJsYGltYGBqZGaZYppmZJBkYpJiY/006md4QyMhwnEuVgREKQXwuhrL8zOTU+OTEnBwGBgCjhCLu';
+const token = '007eJxTYLgg8erRvI6j3z95TVna5zvRafaix95f9oZcfK/8/NAdkQmpCgxJhknmZpYpJklGBsYmhsYWFoZGZoYplmlmJkkGBikm5lz/T6c3BDIyaN/RYGJkgEAQn4uhLD8zOTU+OTEnh4EBAFkaJQQ=';
 const channelName = 'voice_call';
 const uid = 0;
 

@@ -42,6 +42,17 @@ function ChatScreen(){
   //   return () => backHandler.remove(); 
   // }, []);
 
+  // const clearAsyncStorage = async () => {
+  //   try {
+  //     await AsyncStorage.clear();
+  //     console.log('AsyncStorage cleared successfully!');
+  //   } catch (error) {
+  //     console.error('Error clearing AsyncStorage:', error);
+  //   }
+  // };
+  
+  // clearAsyncStorage();
+
   useFocusEffect(
     useCallback(() => {
         setIsOpen(false)

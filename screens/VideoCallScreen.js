@@ -30,7 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 import CustomButton from '../components/CustomButton';
 
 const appId = '77de8ca3881e4be1a07052447ee4cb51';
-const token = '007eJxTYPC4nPPj0x6R/S9C4362z/1nOP2N3B7+ggxxLX2pjX4i660VGMzNU1ItkhONLSwMU02SUg0TDcwNTI1MTMxTU02Sk0wNZ+8/ld4QyMhg9LqCkZEBAkF8LoayzJTU/PjkxJwcBgYAXpYilw==';
+const token = '007eJxTYLhXfT3IfmPTu6Mea/v3nolc7FB5tFp8qwPHY4dJDyu/SQYrMJibp6RaJCcaW1gYppokpRomGpgbmBqZmJinppokJ5ka/v17Or0hkJGhSd+DlZEBAkF8LoayzJTU/PjkxJwcBgYA0a0kHA==';
 const channelName = 'video_call';
 const localUid = 0;
 

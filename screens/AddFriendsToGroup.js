@@ -169,7 +169,7 @@ function AddFriendsToGroup(){
                     <Input width={"75%"} rounded="sm" fontSize="xs" ref={initialFocusRef} onChangeText={onInputChange} color={"white"}/>
                 </FormControl>
                 <Fab renderInPortal={false} shadow={5} size="sm" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 
-                    size="4" name="checkmark" color="warmGray.50"  onPress={createGroupHandle} /> } />    
+                    size="4" name="checkmark" color="warmGray.50"   /> } onPress={createGroupHandle} />    
             </Box>
         </>
         

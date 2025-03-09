@@ -174,21 +174,13 @@ export default function App() {
       return () => subscription.remove();
     }, []);
     
-    // if (!isSplashFinished) {
-    //   return <CustomSplashScreen onFinish={() => setIsSplashFinished(true)} />;
-    // }
 
     if (!isSplashFinished) {
       return (
-        <CustomSplashScreen
-          onFinish={() => {
-            setTimeout(() => {
-              setIsSplashFinished(true);
-            }, 3000); // 3 seconds delay
-          }}
-        />
+        <CustomSplashScreen onFinish={() => setIsSplashFinished(true)} />
       );
     }
+    
     
 
     return (

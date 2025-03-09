@@ -37,7 +37,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserType } from "../Context/UserContext";
 import axios from "axios";
 import { mainURL } from "../Utils/urls";
-import { Box,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable, useToast, Avatar, Divider, Flex, FlatList, Spacer } from "native-base";
+import { Box,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable, useToast, Avatar, Divider, Flex, FlatList, Spacer, useDisclose, Actionsheet, Checkbox, Button } from "native-base";
 import * as ImagePicker from "expo-image-picker"
 import { Video, Audio } from 'expo-av';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -54,6 +54,7 @@ import MessageDeleteDialog from "../components/MessagesDeleteDialog";
 import socketInstance from "../Utils/socket";
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEvent } from "expo";
+import { Path } from "react-native-svg";
 
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
@@ -102,6 +103,8 @@ const MessageSrceen = () => {
   const [isDeleteMessagesOpen, setIsDeleteMessagesOpen] = useState(false);
   const [isDeleteChatOpen, setIsDeleteChatOpen] = useState(false);
   const [isRecordingInProgress, setIsRecordingInProgress] = useState(false); 
+  const [groupChatInfo, setGroupChatInfo] = useState(null);
+  const [selectedAudience, setSelectedAudience] = useState([]);
 
   const [text,setText]=useState('')
   const [test,setTest]=useState('')
@@ -110,6 +113,7 @@ const MessageSrceen = () => {
   const [dial , setDial]=useState(false);
   const [incomingCall, setIncomingCall] = useState(null);
 
+  const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState({
     isOnline: false,
     lastOnlineTime: null
@@ -352,6 +356,18 @@ const MessageSrceen = () => {
     navigation.setParams({ headerNeedsUpdate: true });
   }, [seletedMessages]);
   
+  const onOpen = async () => {
+    try {
+      setIsOpen(true);
+      const response = await axios.get(`${mainURL}/get_group_members/${groupId}/${userId}`);
+      setGroupChatInfo(response.data);
+    } catch (error) {
+      console.error("Error fetching chat info:", error);
+    }
+  };
+
+  const onClose = () => setIsOpen(false);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: '',
@@ -398,14 +414,14 @@ const MessageSrceen = () => {
           <Box justifyContent={"space-between"} flexDirection={"row"}  alignItems={"center"}>
             {!isGroupChat ? <>
               <Box flex={1} alignItems="center">
-                <IconButton icon={<Icon as={Ionicons} name="call-sharp" color={"white"} size={"lg"}/>}  _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={() => voiceCallHandle(userId, recipentId)}  />
+                <IconButton icon={<Icon as={Ionicons} name="call-sharp" color={"white"} size={"lg"}/>}  _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={voiceCallHandle} />
               </Box>
               <Box flex={1} alignItems="center">
                 <IconButton icon={<Icon as={Ionicons} name="videocam" color={"white"} />} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={videoCallHandler} />
               </Box>
               </> : <>
                 <Box flex={1} alignItems="center">
-                  <IconButton icon={<Icon as={Ionicons} name="call-sharp" color={"white"} size={"lg"} />}  _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={() => groupVoiceCallHandle(userId, groupId)}  />
+                  <IconButton icon={<Icon as={Ionicons} name="call-sharp" color={"white"} size={"lg"} />}  _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={onOpen}  />
                 </Box>
                 <Box flex={1} alignItems="center">
                   <IconButton icon={<Icon as={Ionicons} name="videocam" color={"white"}/>} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={()=> groupVideoCallHandle(userId, groupId)} />
@@ -438,16 +454,32 @@ const MessageSrceen = () => {
   }
 
   function groupVoiceCallHandle(userId, groupId){
+    console.log("excuted")
     socket.emit("group_voice_calling", {
       callerId: userId,
       groupId,
+      selectedAudience: selectedAudience
     });
     navigation.navigate("VoiceScreen", {
       isGroup: true,
       groupId,
       isCalling: true,
+      selectedAudience: selectedAudience
     });
+    onClose();
   }
+  const toggleAudience = (id) => {
+    setSelectedAudience((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  // Handle Submit (Log selected audience IDs)
+  const handleSubmit = () => {
+    console.log("Selected Audience IDs:", selectedAudience);
+    
+  };
+
 
   function groupVideoCallHandle(userId, groupId){
     socket.emit("group_video_calling", {
@@ -1772,6 +1804,7 @@ const player = useVideoPlayer(selectedVideo, player => {
 
 const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
 
+console.log(JSON.stringify(groupChatInfo, null, 2))
 return (
   <SafeAreaProvider>
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
@@ -1963,6 +1996,75 @@ return (
             confirmText="Delete"
             cancelText="Cancel"
           />
+          <Actionsheet isOpen={isOpen} onClose={onClose} size="full">
+            <Actionsheet.Content>
+              <Box w="100%" h={60} px={4} justifyContent="center">
+                <Text fontSize="16" color="gray.500">Select audience</Text>
+              </Box>
+
+              {groupChatInfo ? (
+                <>
+                  {/* If it's a Group */}
+                  {groupChatInfo.groupMembers ? (
+                    <>
+                      <Text fontSize="18" fontWeight="bold">Group Admin</Text>
+                      {groupChatInfo.groupAdmin ? (
+                        <Checkbox
+                          value={groupChatInfo.groupAdmin._id}
+                          isChecked={selectedAudience.includes(groupChatInfo.groupAdmin._id)}
+                          onChange={() => toggleAudience(groupChatInfo.groupAdmin._id)}
+                        >
+                          {groupChatInfo.groupAdmin.user_name}
+                        </Checkbox>
+                      ) : (
+                        <Text>No Admin Assigned</Text>
+                      )}
+
+                      <Text fontSize="18" fontWeight="bold" mt={2}>Members</Text>
+                      {groupChatInfo.groupMembers.map((member) => (
+                        <Checkbox
+                          key={member._id}
+                          value={member._id}
+                          isChecked={selectedAudience.includes(member._id)}
+                          onChange={() => toggleAudience(member._id)}
+                        >
+                          {member.user_name}
+                        </Checkbox>
+                      ))}
+                    </>
+                  ) : (
+                    // If it's an Individual User
+                    <Checkbox
+                      value={groupChatInfo._id}
+                      isChecked={selectedAudience.includes(groupChatInfo._id)}
+                      onChange={() => toggleAudience(groupChatInfo._id)}
+                    >
+                      {groupChatInfo.user_name}
+                    </Checkbox>
+                  )}
+
+                  {/* Submit Button */}
+                  <Button mt={4} onPress={()=>groupVoiceCallHandle(userId, groupId)}>
+                    Submit
+                  </Button>
+                </>
+              ) : (
+                <Text>Loading...</Text>
+              )}
+
+              {/* Cancel Button */}
+              <Actionsheet.Item
+                startIcon={
+                  <Icon viewBox="0 0 24 24" size="6" fill="none">
+                    <Path d="M12.0007 10.5862L16.9507 5.63623L18.3647 7.05023L13.4147 12.0002L18.3647 16.9502L16.9507 18.3642L12.0007 13.4142L7.05072 18.3642L5.63672 16.9502L10.5867 12.0002L5.63672 7.05023L7.05072 5.63623L12.0007 10.5862Z" />
+                  </Icon>
+                }
+                onPress={onClose}
+              >
+                Cancel
+              </Actionsheet.Item>
+            </Actionsheet.Content>
+          </Actionsheet>
         </KeyboardAvoidingView>
       </ImageBackground>
     </SafeAreaView>
