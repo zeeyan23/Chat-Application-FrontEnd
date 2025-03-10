@@ -21,7 +21,7 @@ const uid = 0;
 
 function VoiceCallScreen({ route, navigation }){
     // const { channelId, recipientId,isHost, isGroup,  } = route.params;
-    const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup,  participants: initialParticipants = [], } = route.params;
+    const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup,  participants: initialParticipants = [], memberId} = route.params;
     const agoraEngineRef = useRef(null);
     const [isJoined, setIsJoined] = useState(false);
     const [remoteUid, setRemoteUid] = useState(0);
@@ -63,15 +63,25 @@ function VoiceCallScreen({ route, navigation }){
             if (navigation.canGoBack()) {
                 navigation.goBack();
             } else {
-                navigation.navigate("Chats"); // Fallback if no screen to go back to
+                navigation.navigate("Chats");
             }
     
         };
+
     
         socket.on("call_ended", handleCallEnded);
     
+        const handleGroupCallEnded = (data) => {
+            console.log("Received group_call_ended event:", data);
+            Alert.alert("Call Ended", data.message);
+            navigation.goBack();
+          };
+      
+          socket.on("group_call_ended", handleGroupCallEnded);
+          
         return () => {
             socket.off("call_ended", handleCallEnded);
+            socket.off("group_call_ended",handleGroupCallEnded);
         };
     }, []);
     
@@ -134,12 +144,29 @@ function VoiceCallScreen({ route, navigation }){
 
     const leaveChannel = () => {
         try {
-            agoraEngineRef.current?.leaveChannel();
-            setRemoteUid(0);
-            setIsJoined(false);
-            setMessage('Left the channel');
-            socket.emit("leave_voice_call", { calleeId: calleeId, callerId: callerId });
-            navigation.goBack();
+            if(isGroup){
+                if(isCaller){
+                    agoraEngineRef.current?.leaveChannel();
+                    setRemoteUid(0);
+                    setIsJoined(false);
+                    socket.emit("leave_group_voice_call", {participants:participants, userId: userId, isCaller: isCaller});
+                    console.log(userId)
+                }else{
+                    console.log(memberId)
+                    agoraEngineRef.current?.leaveChannel();
+                    setRemoteUid(0);
+                    setIsJoined(false);
+                    socket.emit("leave_group_voice_call", {participants:participants, memberId: memberId, isCaller: isCaller});
+                }
+                
+            }else{
+                agoraEngineRef.current?.leaveChannel();
+                setRemoteUid(0);
+                setIsJoined(false);
+                setMessage('Left the channel');
+                socket.emit("leave_voice_call", { calleeId: calleeId, callerId: callerId });
+                navigation.goBack();
+            }
         } catch (e) {
             console.log(e);
         }

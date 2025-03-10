@@ -11,12 +11,11 @@ import CustomButton from "../components/CustomButton";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 function VoiceScreen({route}){
-    const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, isCalling, groupId, recipientId, participants = [], callerImage, callerName } = route.params;
+    const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, isCalling, groupId, recipientId, participants = [], callerImage, callerName,userId, memberId } = route.params;
     const navigation = useNavigation();
     const [callAccepted, setCallAccepted] = useState(false);
     const socket = socketInstance.getSocket();
 
-    console.log("VoiceScreen")
     let source, caller_image;
     if(callerImage){
       const baseUrl = `${mainURL}/files/`;
@@ -50,25 +49,23 @@ function VoiceScreen({route}){
         socket.on("voice_call_approved", handleCallApproved);
         socket.on("group_voice_call_approved", (data) => {
             setCallAccepted(true);
-            console.log("data participants",data)
+            //console.log("data participants",data)
             navigation.replace("VoiceCallScreen", {
               channelId: data.channelId,
               participants: data.participants,
               isGroup: true,
-              callerId: callerId
+              callerId: callerId,
+              isCaller:true,
+              userId: userId
             });
         });
 
           socket.on("group_voice_call_declined", (data) => {
             Alert.alert(
-              "Call Ended",
-              [
-                {
-                  text: "OK",
-                  onPress: () => navigation.goBack(), 
-                },
-              ]
+              "Call Ended",data.message,
             );
+
+            navigation.goBack();
           });
 
         // const handleCallEnded = () => {
@@ -96,7 +93,9 @@ function VoiceScreen({route}){
           channelId: groupId,
           isGroup: true,
           participants : participants,
-          callerId: callerId
+          callerId: callerId,
+          isCaller: false,
+          memberId: memberId
         });
       }else{
         if (!callAccepted) {
@@ -116,8 +115,14 @@ function VoiceScreen({route}){
       
     const declineCall = (calleeId, groupId) => {
         if(isGroup){
-          socket.emit("decline_group_voice_call", { callerId, groupId });
-          navigation.goBack();
+          if(isCaller){
+            socket.emit("decline_group_voice_call", { userId : userId, participants: participants, isCaller: isCaller });
+          }else{
+            socket.emit("decline_group_voice_call", { memberId : memberId, participants: participants, isCaller: isCaller });
+          }
+          
+          // socket.emit("decline_group_voice_call", { callerId, groupId });
+          // navigation.goBack();
         }else{
           socket.emit("decline_voice_call", { calleeId });
           navigation.goBack();
@@ -153,7 +158,7 @@ function VoiceScreen({route}){
           </Box>
           <Box flex={1} justifyContent="flex-end" padding={10}>
               <Box flexDirection={"row"} justifyContent={"center"}>
-                  <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId, groupId)}/>
+                  <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall()}/>
               </Box>
           </Box>
         </Box>

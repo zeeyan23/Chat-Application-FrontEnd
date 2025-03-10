@@ -454,18 +454,19 @@ const MessageSrceen = () => {
   }
 
   function groupVoiceCallHandle(userId, groupId){
-    selectedAudience.push(userId);
+    const updatedAudience = [...selectedAudience, userId];
     socket.emit("group_voice_calling", {
       callerId: userId,
       groupId,
       isCaller: false,
-      participants: selectedAudience
+      participants: updatedAudience
     });
     navigation.navigate("VoiceScreen", {
       isGroup: true,
+      userId: userId,
       groupId,
       isCaller: true,
-      participants: selectedAudience
+      participants: updatedAudience
     });
     onClose();
   }
@@ -555,7 +556,7 @@ const MessageSrceen = () => {
   };
 
   const handleStarMessage = async (messageIds) => {
-    console.log(messageIds)
+    //console.log(messageIds)
     if (messageIds.length > 0) {
       try {
         await axios.patch(
@@ -633,7 +634,7 @@ const MessageSrceen = () => {
     setIsSending(true); 
     setText(fileUri); 
     setTest(messageType)
-    console.log("test")
+    //console.log("test")
       try {
           const formData = new FormData()
           formData.append("senderId",userId);
@@ -882,12 +883,12 @@ const MessageSrceen = () => {
       fileName: asset.fileName || null,
     });
 
-    console.log('Selected Media:', {
-      uri: asset.uri,
-      type: isVideo ? 'video' : 'image',
-      duration: asset.duration || null,
-      fileName: asset.fileName || null,
-    });
+    // console.log('Selected Media:', {
+    //   uri: asset.uri,
+    //   type: isVideo ? 'video' : 'image',
+    //   duration: asset.duration || null,
+    //   fileName: asset.fileName || null,
+    // });
   };
 
   const handleSendFileMessage = () => {
@@ -921,7 +922,7 @@ const MessageSrceen = () => {
 
   const unstarMessage = async (seletedMessages) => {
     const id = seletedMessages[0]?.messageId;
-    console.log(seletedMessages)
+    //console.log(seletedMessages)
     try {
       const response = await axios.delete(`${mainURL}/delete-starred-message/${userId}/${id}/`);
       if(response.status==200){
@@ -1805,7 +1806,7 @@ const player = useVideoPlayer(selectedVideo, player => {
 
 const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
 
-console.log(JSON.stringify(groupChatInfo, null, 2))
+//console.log(JSON.stringify(groupChatInfo, null, 2))
 return (
   <SafeAreaProvider>
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
@@ -2045,19 +2046,6 @@ return (
                             </HStack>
                           )}
                         />
-                        {/* <VStack align="stretch" spacing={3}>
-                          {groupChatInfo.groupMembers.map((member) => (
-                            <HStack key={member._id} spacing={4} alignItems="center" paddingY={2}>
-                              <Checkbox
-                                value={member._id}
-                                isChecked={selectedAudience.includes(member._id)}
-                                onChange={() => toggleAudience(member._id)}
-                              >
-                                <Text fontWeight="medium">{member.user_name}</Text>
-                              </Checkbox>
-                            </HStack>
-                          ))}
-                        </VStack> */}
                       </Box>
                     </>
                   ) : (
