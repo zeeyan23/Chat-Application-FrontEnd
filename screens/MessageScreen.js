@@ -28,7 +28,7 @@
  * SOFTWARE.
  */
 
-import { StyleSheet, View, ScrollView, KeyboardAvoidingView, TextInput, Image, Modal, Platform,Linking, Animated, PanResponder, TouchableOpacity,PermissionsAndroid, Alert} from "react-native";
+import { StyleSheet, View, ScrollView, KeyboardAvoidingView, TextInput, Image, Modal, Platform,Linking, Animated, PanResponder, TouchableOpacity,PermissionsAndroid, Alert, ActionSheetIOS} from "react-native";
 import React, { useState, useContext, useLayoutEffect, useEffect,useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
@@ -37,7 +37,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserType } from "../Context/UserContext";
 import axios from "axios";
 import { mainURL } from "../Utils/urls";
-import { Box,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable, useToast, Avatar, Divider, Flex, FlatList, Spacer, useDisclose, Actionsheet, Checkbox, Button } from "native-base";
+import { Box,Heading,HStack,Icon,IconButton,Menu,Spinner,Text,Pressable, useToast, Avatar, Divider, Flex, FlatList, Spacer, useDisclose, Actionsheet, Checkbox, Button, VStack } from "native-base";
 import * as ImagePicker from "expo-image-picker"
 import { Video, Audio } from 'expo-av';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -454,17 +454,18 @@ const MessageSrceen = () => {
   }
 
   function groupVoiceCallHandle(userId, groupId){
-    console.log("excuted")
+    selectedAudience.push(userId);
     socket.emit("group_voice_calling", {
       callerId: userId,
       groupId,
-      selectedAudience: selectedAudience
+      isCaller: false,
+      participants: selectedAudience
     });
     navigation.navigate("VoiceScreen", {
       isGroup: true,
       groupId,
-      isCalling: true,
-      selectedAudience: selectedAudience
+      isCaller: true,
+      participants: selectedAudience
     });
     onClose();
   }
@@ -1884,7 +1885,7 @@ return (
                     <TextInput
                       value={
                         selectedFile
-                          ? selectedFile.fileName || (messageType === "image" ? "Image" : "Video")
+                          ? "Please press send button" || (messageType === "image" ? "Image" : "Video")
                           : replyMessage || message 
                       }
                       onChangeText={handleInputChange}
@@ -1998,39 +1999,66 @@ return (
           />
           <Actionsheet isOpen={isOpen} onClose={onClose} size="full">
             <Actionsheet.Content>
-              <Box w="100%" h={60} px={4} justifyContent="center">
-                <Text fontSize="16" color="gray.500">Select audience</Text>
-              </Box>
-
               {groupChatInfo ? (
                 <>
                   {/* If it's a Group */}
                   {groupChatInfo.groupMembers ? (
                     <>
-                      <Text fontSize="18" fontWeight="bold">Group Admin</Text>
-                      {groupChatInfo.groupAdmin ? (
-                        <Checkbox
-                          value={groupChatInfo.groupAdmin._id}
-                          isChecked={selectedAudience.includes(groupChatInfo.groupAdmin._id)}
-                          onChange={() => toggleAudience(groupChatInfo.groupAdmin._id)}
-                        >
-                          {groupChatInfo.groupAdmin.user_name}
-                        </Checkbox>
-                      ) : (
-                        <Text>No Admin Assigned</Text>
-                      )}
+                      <Box p={4} borderRadius="lg" boxShadow="md" bg="white" width={"full"}>
+                        {/* Group Admin Section */}
+                        <Text fontSize="16" fontWeight="bold" mb={1} color="teal.500">
+                          Group Admin
+                        </Text>
 
-                      <Text fontSize="18" fontWeight="bold" mt={2}>Members</Text>
-                      {groupChatInfo.groupMembers.map((member) => (
-                        <Checkbox
-                          key={member._id}
-                          value={member._id}
-                          isChecked={selectedAudience.includes(member._id)}
-                          onChange={() => toggleAudience(member._id)}
-                        >
-                          {member.user_name}
-                        </Checkbox>
-                      ))}
+                        {groupChatInfo.groupAdmin ? (
+                          <HStack spacing={4} mb={4} alignItems="center">
+                            <Checkbox
+                              value={groupChatInfo.groupAdmin._id}
+                              isChecked={selectedAudience.includes(groupChatInfo.groupAdmin._id)}
+                              onChange={() => toggleAudience(groupChatInfo.groupAdmin._id)}
+                            >
+                              <Text fontWeight="medium">{groupChatInfo.groupAdmin.user_name}</Text>
+                            </Checkbox>
+                          </HStack>
+                        ) : (
+                          <Text color="gray.500" mb={1}>No Admin Assigned</Text>
+                        )}
+
+                        <Divider my={4} />
+
+                        {/* Members Section */}
+                        <Text fontSize="16" fontWeight="bold" color="teal.500" pb={2}>
+                          Members
+                        </Text>
+                        <FlatList
+                          data={groupChatInfo.groupMembers}
+                          keyExtractor={(item) => item._id}
+                          renderItem={({ item: member }) => (
+                            <HStack spacing={4} alignItems="center" mb={3}>
+                              <Checkbox
+                                value={member._id}
+                                isChecked={selectedAudience.includes(member._id)}
+                                onChange={() => toggleAudience(member._id)}
+                              >
+                                <Text fontWeight="medium">{member.user_name}</Text>
+                              </Checkbox>
+                            </HStack>
+                          )}
+                        />
+                        {/* <VStack align="stretch" spacing={3}>
+                          {groupChatInfo.groupMembers.map((member) => (
+                            <HStack key={member._id} spacing={4} alignItems="center" paddingY={2}>
+                              <Checkbox
+                                value={member._id}
+                                isChecked={selectedAudience.includes(member._id)}
+                                onChange={() => toggleAudience(member._id)}
+                              >
+                                <Text fontWeight="medium">{member.user_name}</Text>
+                              </Checkbox>
+                            </HStack>
+                          ))}
+                        </VStack> */}
+                      </Box>
                     </>
                   ) : (
                     // If it's an Individual User
@@ -2043,26 +2071,12 @@ return (
                     </Checkbox>
                   )}
 
-                  {/* Submit Button */}
-                  <Button mt={4} onPress={()=>groupVoiceCallHandle(userId, groupId)}>
-                    Submit
-                  </Button>
+                  <Button bg={"green.700"} onPress={()=>groupVoiceCallHandle(userId, groupId)} width={"full"}
+                    rightIcon={<Icon as={Ionicons} name="call" size="sm" />} size={"sm"} borderRadius={50} fontWeight={"bold"}>Voice Call</Button>
                 </>
               ) : (
                 <Text>Loading...</Text>
               )}
-
-              {/* Cancel Button */}
-              <Actionsheet.Item
-                startIcon={
-                  <Icon viewBox="0 0 24 24" size="6" fill="none">
-                    <Path d="M12.0007 10.5862L16.9507 5.63623L18.3647 7.05023L13.4147 12.0002L18.3647 16.9502L16.9507 18.3642L12.0007 13.4142L7.05072 18.3642L5.63672 16.9502L10.5867 12.0002L5.63672 7.05023L7.05072 5.63623L12.0007 10.5862Z" />
-                  </Icon>
-                }
-                onPress={onClose}
-              >
-                Cancel
-              </Actionsheet.Item>
             </Actionsheet.Content>
           </Actionsheet>
         </KeyboardAvoidingView>

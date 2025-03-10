@@ -233,7 +233,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
           <Box
             borderBottomWidth="1"
             _dark={{ borderColor: "muted.50" }}
-            borderColor="muted.200"
+            borderColor="#666666"
             pl={["2", "4"]}
             pr={["2", "5"]}
             py="2"

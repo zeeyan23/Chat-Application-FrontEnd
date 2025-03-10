@@ -59,6 +59,7 @@ class SocketService {
         isGroup: true,
         groupId: data.groupId,
         participants: data.participants,
+        isCaller: data.isCaller,
         callerId: data.callerId,
         callerName: data.callerName,
         callerImage: data.callerImage,

@@ -50,10 +50,10 @@ function VoiceScreen({route}){
         socket.on("voice_call_approved", handleCallApproved);
         socket.on("group_voice_call_approved", (data) => {
             setCallAccepted(true);
+            console.log("data participants",data)
             navigation.replace("VoiceCallScreen", {
               channelId: data.channelId,
               participants: data.participants,
-              isHost: !isCalling,
               isGroup: true,
               callerId: callerId
             });
@@ -94,8 +94,9 @@ function VoiceScreen({route}){
         socket.emit("group_voice_call_accepted", { groupId, callerId, recipientId, participants: [...participants, recipientId], });
         navigation.replace("VoiceCallScreen", {
           channelId: groupId,
-          isHost: false,
           isGroup: true,
+          participants : participants,
+          callerId: callerId
         });
       }else{
         if (!callAccepted) {

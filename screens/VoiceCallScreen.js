@@ -15,7 +15,7 @@ import socketInstance from "../Utils/socket";
 import { UserType } from "../Context/UserContext";
 
 const appId = 'b1b769d4b203413881261d9f64b00d47';
-const token = '007eJxTYLgg8erRvI6j3z95TVna5zvRafaix95f9oZcfK/8/NAdkQmpCgxJhknmZpYpJklGBsYmhsYWFoZGZoYplmlmJkkGBikm5lz/T6c3BDIyaN/RYGJkgEAQn4uhLD8zOTU+OTEnh4EBAFkaJQQ=';
+const token = '007eJxTYLjodO/n3BkT8hUOSE94f3PqtyMfHu88lLPS+cvEmyE75MpyFRiSDJPMzSxTTJKMDIxNDI0tLAyNzAxTLNPMTJIMDFJMzCN1zqY3BDIyHH8mwcTIAIEgPhdDWX5mcmp8cmJODgMDAGtcJU8=';
 const channelName = 'voice_call';
 const uid = 0;
 
@@ -32,7 +32,7 @@ function VoiceCallScreen({ route, navigation }){
     const socket = socketInstance.getSocket();
     const {userId, setUserId} = useContext(UserType);
 
-    console.log("voice screen")
+    console.log("voice call screen",participants)
 
     useEffect(() => {
         const init = async () => {

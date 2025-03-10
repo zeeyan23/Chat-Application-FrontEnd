@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { FlatList, SafeAreaView } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { Box, HStack, Avatar, Text, Badge, Spacer, Divider, Flex, Pressable, VStack } from 'native-base';
+import { Box, HStack, Avatar, Text, Badge, Spacer, Divider, Flex, Pressable, VStack, Center } from 'native-base';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
 import moment from 'moment';
@@ -111,10 +111,10 @@ function UsersProfileScreen() {
         ? { uri: baseUrl + filename } 
         : null;
 
-  //console.log(JSON.stringify(chatUserInfo, null, 2))
+  console.log(JSON.stringify(chatUserInfo, null, 2))
   return (
     <Box flex={1} padding={5}  background="black" safeArea width={"full"}>
-      <Box flexDirection="row" width={"full"}>
+      <Box flexDirection="row" width={"full"} paddingBottom={5}>
         <Ionicons
           name="arrow-back-outline"
           size={24}
@@ -124,12 +124,16 @@ function UsersProfileScreen() {
       </Box>
 
       {chatUserInfo && (
-        <>
-            <Box flexDirection="column" width={"full"}alignItems={"center"} alignContent={"center"}>
-                {isGroupChat && userId === chatUserInfo?.groupAdmin?._id ? <Pressable onPress={handleImage}>
+        <Box flexDirection="column" width="full" alignItems="center" alignContent="center">
+
+        {/* Group Icon, Name, and Members Card */}
+          <Box bg="white" borderRadius="lg" p={4} mb={4} shadow={2} width="full">
+            {isGroupChat && userId === chatUserInfo?.groupAdmin?._id ? 
+            <Center>
+              <Pressable onPress={handleImage}>
                   {({ isHovered, isFocused, isPressed }) => {
                       return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'white'} borderWidth={1}  rounded="full" style={{
-                          transform: [{ scale: isPressed ? 0.96 : 1}]}}>
+                          transform: [{ scale: isPressed ? 0.96 : 1}]}} marginBottom={3}>
                           {imageChanged || chatUserInfo.image ? (
                                   <Avatar size="2xl" source={source} />
                               ) : (
@@ -141,103 +145,68 @@ function UsersProfileScreen() {
                           </Box>
                       </Box>
                   }}
-                </Pressable> : isGroupChat ? <Box maxW="96" bg={'white'} borderWidth={1}  rounded="full">
-                          {imageChanged || chatUserInfo.image ? (
-                                  <Avatar size="2xl" source={source} />
-                              ) : (
-                                  <Ionicons name="person-circle-outline" size={100} color="gray" />
-                              )}
-                          
-                      </Box> : <Box maxW="96" bg={'white'} borderWidth={1}  rounded="full" marginBottom={10} marginTop={10}>
-                          {imageChanged || chatUserInfo.image ? (
-                                  <Avatar size={280} source={source} />
-                              ) : (
-                                  <Ionicons name="person-circle-outline" size={230} color="gray" />
-                              )}
-                        </Box>}
-                
-                {!isGroupChat && 
-                <>
-                  <HStack alignItems="center" pb={5}>
-                    <VStack>
-                      <Text color={"coolGray.400"}>User name</Text>
-                      <Text fontSize={"md"} bold color={"white"}>
-                          {chatUserInfo.user_name}
-                      </Text>
-                    </VStack>
-                    <Spacer />
-                  </HStack>
-                  <HStack alignItems="center">
-                    <VStack>
-                      <Text color={"coolGray.400"}>Email address</Text>
-                      <Text fontSize={"md"} bold color={"white"}>
-                          {chatUserInfo.email}
-                      </Text>
-                    </VStack>
-                    <Spacer />
-                  </HStack>
-                </>}
-
-                {isGroupChat && <Text fontSize="lg" fontWeight="semibold">
-                    {chatUserInfo.groupName}
-                </Text>}
-                {isGroupChat && <Flex direction="row" justifyContent="center" w="full" h="58" p="4">
-                    <Text color="trueGray.200" fontSize="md">
-                    Group
-                    </Text>
-                    <Divider bg="emerald.500" thickness="2" mx="2" orientation="vertical" />
-                    <Text color="trueGray.200" fontSize="md">
-                    {formattedData.length} Members
-                    </Text>
-                    <Divider bg="emerald.500" thickness="2" mx="2" orientation="vertical" />
-                    <Text color="trueGray.200" fontSize="md">
-                    {moment(chatUserInfo.created_date).format('DD/MM/YYYY')}
-                    </Text>
-                </Flex>}
-            </Box>
-        </>
-      )}
-        {isGroupChat && 
-        <>
-          <Text color="trueGray.200" fontSize="sm">
-            {formattedData.length} members
-          </Text>
-          <FlatList
-            data={formattedData}
-            contentContainerStyle={{ }}
-            renderItem={({ item,index }) => {
-
-              const baseUrl = `${mainURL}/files/`;
-              const imageUrl = item.image;
-              const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
-              const filename = normalizedPath.split('/').pop();
-
-              const source = item.image 
-                  ? { uri: baseUrl + filename } 
-                  : null;
-              return(
-                <Box
-                  borderBottomWidth="1"
-                  _dark={{ borderColor: "muted.50" }}
-                  borderColor="white"
-                  pl={["0", "4"]}
-                  pr={["0", "5"]}
-                  py="2"
-                  key={index}
-                >
-                  <HStack space={[2, 3]} alignItems="center">
-                    {source ? <Avatar size="md"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
-                    <Text _dark={{ color: "warmGray.50" }} color="white" bold>
-                      {item.user_name}
-                    </Text>
-                    <Spacer />
-                    {item.role === 'Admin' && <Badge colorScheme="success">Admin</Badge>}
-                  </HStack>
+                </Pressable>
+              <Text fontSize="lg" fontWeight="bold" mt={2}>{chatUserInfo.groupName}</Text>
+              <Flex direction="row" justifyContent="center" alignItems={"center"} alignContent={"center"} w="full" h="10">
+                <Text color="gray.500">Group </Text>
+                <Box>
+                  <Entypo name="dot-single" size={20} color="grey"/>
                 </Box>
-              )}}
-            keyExtractor={(item) => item._id}
-          />
-        </>}
+
+                <Text color="gray.500">{formattedData.length} Members</Text>
+              </Flex>
+            </Center> : <Center>
+              {chatUserInfo.image ? (
+                <Avatar size="2xl" source={source} />
+              ) : (
+                <Ionicons name="person-circle-outline" size={100} color="gray" />
+              )}
+              <Text fontSize="lg" fontWeight="bold" mt={2}>{chatUserInfo.groupName}</Text>
+              <Flex direction="row" justifyContent="center" alignItems={"center"} alignContent={"center"} w="full" h="10">
+                <Text color="gray.500">Group </Text>
+                <Box>
+                  <Entypo name="dot-single" size={20} color="grey"/>
+                </Box>
+
+                <Text color="gray.500">{formattedData.length} Members</Text>
+              </Flex>
+            </Center>}
+          </Box>
+        
+          {/* Created By and Date Card */}
+          <Box bg="white" borderRadius="lg" p={4} mb={4} shadow={2} width="full">
+            <HStack justifyContent="space-between">
+              <Text color="gray.600">Created By: {chatUserInfo.groupAdmin.user_name}</Text>
+              <Text color="gray.600">{moment(chatUserInfo.created_date).format('DD/MM/YYYY')}</Text>
+            </HStack>
+          </Box>
+        
+          {/* Group Members List Card */}
+          {isGroupChat && 
+          <Box bg="white" borderRadius="lg" p={4} shadow={2} width="full">
+            <FlatList
+              data={formattedData}
+              renderItem={({ item,index }) => {
+                const baseUrl = `${mainURL}/files/`;
+                const imageUrl = item.image;
+                const normalizedPath = imageUrl ? imageUrl.replace(/\\/g, '/') : '';
+                const filename = normalizedPath.split('/').pop();
+
+                const source = item.image 
+                    ? { uri: baseUrl + filename } 
+                    : null;
+                return(
+                  <Box borderBottomWidth={1} borderBottomColor="gray.200" py={2}>
+                    <HStack space={3} alignItems="center">
+                      {source ? <Avatar size="md"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
+                      <Text fontWeight="bold">{item.user_name}</Text>
+                      <Spacer />
+                      {item.role === 'Admin' && <Badge colorScheme="success">Admin</Badge>}
+                    </HStack>
+                  </Box>)}} keyExtractor={(item) => item._id} />
+          </Box>}
+        </Box>
+      )}
       
     </Box>
   );
