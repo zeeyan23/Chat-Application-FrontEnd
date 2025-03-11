@@ -161,26 +161,37 @@ function UsersProfileScreen() {
               ) : (
                 <Ionicons name="person-circle-outline" size={100} color="gray" />
               )}
-              <Text fontSize="lg" fontWeight="bold" mt={2}>{chatUserInfo.groupName}</Text>
-              <Flex direction="row" justifyContent="center" alignItems={"center"} alignContent={"center"} w="full" h="10">
-                <Text color="gray.500">Group </Text>
-                <Box>
-                  <Entypo name="dot-single" size={20} color="grey"/>
-                </Box>
-
-                <Text color="gray.500">{formattedData.length} Members</Text>
-              </Flex>
+              <>
+                  <HStack alignItems="center" pb={5}>
+                    <VStack>
+                      <Text color={"trueGray.600"}>User name</Text>
+                      <Text fontSize={"md"} bold>
+                          {chatUserInfo.user_name}
+                      </Text>
+                    </VStack>
+                    <Spacer />
+                  </HStack>
+                  <HStack alignItems="center">
+                    <VStack>
+                      <Text color={"trueGray.600"}>Email address</Text>
+                      <Text fontSize={"md"} bold>
+                          {chatUserInfo.email}
+                      </Text>
+                    </VStack>
+                    <Spacer />
+                  </HStack>
+                </>
             </Center>}
           </Box>
         
           {/* Created By and Date Card */}
-          <Box bg="white" borderRadius="lg" p={4} mb={4} shadow={2} width="full">
+          {isGroupChat && <Box bg="white" borderRadius="lg" p={4} mb={4} shadow={2} width="full">
             <HStack justifyContent="space-between">
               <Text color="gray.600">Created By: {chatUserInfo.groupAdmin.user_name}</Text>
               <Text color="gray.600">{moment(chatUserInfo.created_date).format('DD/MM/YYYY')}</Text>
             </HStack>
-          </Box>
-        
+          </Box>}
+          
           {/* Group Members List Card */}
           {isGroupChat && 
           <Box bg="white" borderRadius="lg" p={4} shadow={2} width="full">

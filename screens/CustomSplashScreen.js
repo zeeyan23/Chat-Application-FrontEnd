@@ -27,7 +27,7 @@ const CustomSplashScreen = ({ onFinish }) => {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <Image source={require("../assets/icon_image.jpg")} style={styles.logo} />
+      <Image source={require("../assets/icon.png")} style={styles.logo} />
       <Text style={styles.text}>Welcome to My App</Text>
     </Animated.View>
   );

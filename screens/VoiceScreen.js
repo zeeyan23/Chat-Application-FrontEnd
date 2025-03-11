@@ -91,10 +91,10 @@ function VoiceScreen({route}){
         socket.emit("group_voice_call_accepted", { groupId, callerId, recipientId, participants: [...participants, recipientId], });
         navigation.replace("VoiceCallScreen", {
           channelId: groupId,
+          isCaller: false,
           isGroup: true,
           participants : participants,
           callerId: callerId,
-          isCaller: false,
           memberId: memberId
         });
       }else{

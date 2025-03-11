@@ -114,6 +114,7 @@ const MessageSrceen = () => {
   const [incomingCall, setIncomingCall] = useState(null);
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isOpenVideoCall, setIsOpenVideoCall] = useState(false);
   const [status, setStatus] = useState({
     isOnline: false,
     lastOnlineTime: null
@@ -368,6 +369,18 @@ const MessageSrceen = () => {
 
   const onClose = () => setIsOpen(false);
 
+  const onOpenVideoCall = async () => {
+    try {
+      setIsOpenVideoCall(true);
+      const response = await axios.get(`${mainURL}/get_group_members/${groupId}/${userId}`);
+      setGroupChatInfo(response.data);
+    } catch (error) {
+      console.error("Error fetching chat info:", error);
+    }
+  };
+
+  const onCloseVideoCall = () => setIsOpenVideoCall(false);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: '',
@@ -424,7 +437,7 @@ const MessageSrceen = () => {
                   <IconButton icon={<Icon as={Ionicons} name="call-sharp" color={"white"} size={"lg"} />}  _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={onOpen}  />
                 </Box>
                 <Box flex={1} alignItems="center">
-                  <IconButton icon={<Icon as={Ionicons} name="videocam" color={"white"}/>} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={()=> groupVideoCallHandle(userId, groupId)} />
+                  <IconButton icon={<Icon as={Ionicons} name="videocam" color={"white"}/>} size={"lg"} _hover={{ bg: "white", icon: { color: "#000B66" } }} onPress={onOpenVideoCall} />
                 </Box>
               </>
             }
@@ -476,22 +489,20 @@ const MessageSrceen = () => {
     );
   };
 
-  // Handle Submit (Log selected audience IDs)
-  const handleSubmit = () => {
-    console.log("Selected Audience IDs:", selectedAudience);
-    
-  };
-
-
   function groupVideoCallHandle(userId, groupId){
+    const updatedAudience = [...selectedAudience, userId];
     socket.emit("group_video_calling", {
       callerId: userId,
       groupId,
+      isCaller: false,
+      participants: updatedAudience
     });
     navigation.navigate("VideoScreen", {
       isGroup: true,
       groupId,
+      userId: userId,
       isCaller: true,
+      participants: updatedAudience
     });
   }
 
@@ -2061,6 +2072,76 @@ return (
 
                   <Button bg={"green.700"} onPress={()=>groupVoiceCallHandle(userId, groupId)} width={"full"}
                     rightIcon={<Icon as={Ionicons} name="call" size="sm" />} size={"sm"} borderRadius={50} fontWeight={"bold"}>Voice Call</Button>
+                </>
+              ) : (
+                <Text>Loading...</Text>
+              )}
+            </Actionsheet.Content>
+          </Actionsheet>
+
+          <Actionsheet isOpen={isOpenVideoCall} onClose={onCloseVideoCall} size="full">
+            <Actionsheet.Content>
+              {groupChatInfo ? (
+                <>
+                  {/* If it's a Group */}
+                  {groupChatInfo.groupMembers ? (
+                    <>
+                      <Box p={4} borderRadius="lg" boxShadow="md" bg="white" width={"full"}>
+                        {/* Group Admin Section */}
+                        <Text fontSize="16" fontWeight="bold" mb={1} color="teal.500">
+                          Group Admin
+                        </Text>
+
+                        {groupChatInfo.groupAdmin ? (
+                          <HStack spacing={4} mb={4} alignItems="center">
+                            <Checkbox
+                              value={groupChatInfo.groupAdmin._id}
+                              isChecked={selectedAudience.includes(groupChatInfo.groupAdmin._id)}
+                              onChange={() => toggleAudience(groupChatInfo.groupAdmin._id)}
+                            >
+                              <Text fontWeight="medium">{groupChatInfo.groupAdmin.user_name}</Text>
+                            </Checkbox>
+                          </HStack>
+                        ) : (
+                          <Text color="gray.500" mb={1}>No Admin Assigned</Text>
+                        )}
+
+                        <Divider my={4} />
+
+                        {/* Members Section */}
+                        <Text fontSize="16" fontWeight="bold" color="teal.500" pb={2}>
+                          Members
+                        </Text>
+                        <FlatList
+                          data={groupChatInfo.groupMembers}
+                          keyExtractor={(item) => item._id}
+                          renderItem={({ item: member }) => (
+                            <HStack spacing={4} alignItems="center" mb={3}>
+                              <Checkbox
+                                value={member._id}
+                                isChecked={selectedAudience.includes(member._id)}
+                                onChange={() => toggleAudience(member._id)}
+                              >
+                                <Text fontWeight="medium">{member.user_name}</Text>
+                              </Checkbox>
+                            </HStack>
+                          )}
+                        />
+                      </Box>
+                    </>
+                  ) : (
+                    // If it's an Individual User
+                    <Checkbox
+                      value={groupChatInfo._id}
+                      isChecked={selectedAudience.includes(groupChatInfo._id)}
+                      onChange={() => toggleAudience(groupChatInfo._id)}
+                    >
+                      {groupChatInfo.user_name}
+                    </Checkbox>
+                  )}
+
+                  <Button bg={"green.700"} onPress={()=>groupVideoCallHandle(userId, groupId)} width={"full"}
+                    rightIcon={<Icon as={Ionicons} name="videocam" size="sm" />} size={"sm"} borderRadius={50} fontWeight={"bold"}>Video Call</Button>
                 </>
               ) : (
                 <Text>Loading...</Text>

@@ -81,12 +81,13 @@ class SocketService {
     this.socket.on("incoming_group_video_call", (data) => {
       navigationRef.navigate("VideoScreen", {
         isGroup: true,
-        isCaller: false,
+        isCaller: data.isCaller,
         groupId: data.groupId,
         participants: data.participants,
         callerId: data.callerId,
         callerName: data.callerName,
         callerImage: data.callerImage,
+        memberId: data.memberId
       });
     // }
   });

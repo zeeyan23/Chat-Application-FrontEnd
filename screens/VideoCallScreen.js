@@ -30,12 +30,12 @@ import { Ionicons } from '@expo/vector-icons';
 import CustomButton from '../components/CustomButton';
 
 const appId = '77de8ca3881e4be1a07052447ee4cb51';
-const token = '007eJxTYLhXfT3IfmPTu6Mea/v3nolc7FB5tFp8qwPHY4dJDyu/SQYrMJibp6RaJCcaW1gYppokpRomGpgbmBqZmJinppokJ5ka/v17Or0hkJGhSd+DlZEBAkF8LoayzJTU/PjkxJwcBgYA0a0kHA==';
+const token = '007eJxTYJiy/57RzRv1jyS8ZkWZ2q7OrDnSa/V9S9aSV3Xt7+81CzMrMJibp6RaJCcaW1gYppokpRomGpgbmBqZmJinppokJ5kaPrh+Lr0hkJFhl9daBkYoBPG5GMoyU1Lz45MTc3IYGADnrCTH';
 const channelName = 'video_call';
 const localUid = 0;
 
 const VideoCallScreen = ({ route, navigation }) => {
-    const { callerId, calleeId, isCaller,isGroup, participants = [] } = route.params;
+    const { callerId, calleeId, isCaller,isGroup, participants = [] , memberId} = route.params;
     const agoraEngineRef = useRef(null);
     const [isJoined, setIsJoined] = useState(false);
     const [remoteUids, setRemoteUids] = useState([]);
@@ -68,11 +68,18 @@ const VideoCallScreen = ({ route, navigation }) => {
             }
         
         };
+
+        const handleGroupCallEnded = (data) => {
+            console.log("Received group_call_ended event:", data);
+            Alert.alert("Call Ended", data.message);
+            navigation.goBack();
+          };
         
         socket.on("video_call_ended", handleCallEnded);
-        
+        socket.on("group_video_call_ended", handleGroupCallEnded);
         return () => {
             socket.off("video_call_ended", handleCallEnded);
+            socket.off("group_video_call_ended",handleGroupCallEnded);
         };
     }, []);
 
@@ -97,14 +104,14 @@ const VideoCallScreen = ({ route, navigation }) => {
             },
             onUserJoined: (_connection, uid) => {
                 setMessage(`Remote user ${uid} joined`);
-                setRemoteUsers(prev => [...prev, uid]);
-                setRemoteUids(prevUids => [...new Set([...prevUids, uid])]);
+                // setRemoteUsers(prev => [...prev, uid]);
+                setRemoteUids((prevUids) => [...new Set([...prevUids, uid])]);
                 agoraEngineRef.current?.muteRemoteVideoStream(uid, false);
             },
             onUserOffline: (_connection, uid) => {
                 setMessage(`Remote user ${uid} left the channel`);
                 setRemoteUsers(prev => prev.filter(id => id !== uid));
-                setRemoteUids(prevUids => prevUids.filter(id => id !== uid));
+                setRemoteUids((prevUids) => prevUids.filter((id) => id !== uid))
             },
         };
         agoraEngineRef.current?.registerEventHandler(eventHandler.current);
@@ -181,12 +188,29 @@ const VideoCallScreen = ({ route, navigation }) => {
 
     const leaveChannel = () => {
         try {
-            agoraEngineRef.current?.leaveChannel();
-            setRemoteUids([]);
-            setIsJoined(false);
-            setMessage('Left the channel');
-            socket.emit("leave_video_call", { calleeId: calleeId, callerId: callerId });
-            navigation.goBack();
+            if(isGroup){
+                if(isCaller){
+                    agoraEngineRef.current?.leaveChannel();
+                    setRemoteUids([]);
+                    setIsJoined(false);
+                    socket.emit("leave_group_video_call", {participants:participants, userId: userId, isCaller: isCaller});
+                    console.log(userId)
+                }else{
+                    console.log(memberId)
+                    agoraEngineRef.current?.leaveChannel();
+                    setRemoteUids([]);
+                    setIsJoined(false);
+                    socket.emit("leave_group_video_call", {participants:participants, memberId: memberId, isCaller: isCaller});
+                }
+            }else{
+                agoraEngineRef.current?.leaveChannel();
+                setRemoteUids([]);
+                setIsJoined(false);
+                setMessage('Left the channel');
+                socket.emit("leave_video_call", { calleeId: calleeId, callerId: callerId });
+                navigation.goBack();
+            }
+            
         } catch (e) {
             console.log(e);
         }
@@ -232,9 +256,10 @@ const VideoCallScreen = ({ route, navigation }) => {
                         {remoteUids.map(uid => (
                         <RtcSurfaceView
                         key={uid}
-                        canvas={{ localUid: localUid, sourceType: VideoSourceType.VideoSourceCamera }}
+                        canvas={{ localUid: userId, sourceType: VideoSourceType.VideoSourceCamera }}
                         style={styles.fullScreenVideo}
-                    />))}
+                        />
+                    ))}
                 </Box>
                     
                     </>

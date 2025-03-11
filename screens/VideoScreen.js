@@ -9,7 +9,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import CustomButton from "../components/CustomButton";
 
 const VideoScreen = ({ route }) => {
-  const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, groupId, recipientId, participants = [], callerImage, callerName } = route.params;
+  const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, groupId, recipientId, participants = [], callerImage, callerName,memberId, userId } = route.params;
   const navigation = useNavigation();
   const [callAccepted, setCallAccepted] = useState(false);
   const socket = socketInstance.getSocket();
@@ -58,23 +58,21 @@ const VideoScreen = ({ route }) => {
         navigation.replace("VideoCallScreen", {
           channelId: data.channelId,
           participants: data.participants,
-          isCaller: !isCaller,
           isGroup: true,
-          callerId: callerId
+          isCaller: !isCaller,
+          isCaller:true,
+          userId: userId
         });
     });
 
-      socket.on("group_video_call_declined", (data) => {
-        Alert.alert(
-          "Call Ended", data.message,
-          [
-            {
-              text: "OK",
-              onPress: () => navigation.goBack(), 
-            },
-          ]
-        );
-      });
+    socket.on("group_video_call_declined", (data) => {
+      Alert.alert(
+        "Call Ended",data.message,
+      );
+
+      navigation.goBack();
+    });
+
 
       return () => {
         socket.off("video_call_declined", handleCallDeclined);
@@ -90,6 +88,9 @@ const VideoScreen = ({ route }) => {
         channelId: groupId,
         isCaller: false,
         isGroup: true,
+        participants : participants,
+        callerId: callerId,
+        memberId: memberId
       });
     }else{
       if (!callAccepted) {
@@ -108,8 +109,11 @@ const VideoScreen = ({ route }) => {
 
   const declineCall = (calleeId, groupId) => {
     if(isGroup){
-      socket.emit("decline_group_video_call", { callerId, groupId });
-      navigation.goBack();
+      if(isCaller){
+        socket.emit("decline_group_video_call", { userId : userId, participants: participants, isCaller: isCaller });
+      }else{
+        socket.emit("decline_group_video_call", { memberId : memberId, participants: participants, isCaller: isCaller });
+      }
     }else{
       socket.emit("decline_video_call", { calleeId });
       navigation.goBack();
