@@ -28,7 +28,7 @@ function StarredMessagesScreen({navigation}){
     useEffect(()=> {
         const fetchStarredMessages = async () => {
             
-            const response = await axios.get(`${mainURL}/get-starred-messages/${userId}`);
+            const response = await axios.get(`${mainURL}/message/get-starred-messages/${userId}`);
             // setStarredMessages(response.data);
             const messages = response.data.filter(
                 (message) => !message.clearedBy.includes(userId)

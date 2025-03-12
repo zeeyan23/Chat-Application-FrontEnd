@@ -167,9 +167,9 @@ const MessageSrceen = () => {
     try {
       const url = senderId
         ? isGroupChat
-        ? `${mainURL}/get-group-messages/${groupId}` : `${mainURL}/get-messages/${senderId}/${recipentId}`
+        ? `${mainURL}/message/get-group-messages/${groupId}` : `${mainURL}/message/get-messages/${senderId}/${recipentId}`
         : isGroupChat
-      ? `${mainURL}/get-group-messages/${groupId}` : `${mainURL}/get-messages/${userId}/${recipentId}`;
+      ? `${mainURL}/message/get-group-messages/${groupId}` : `${mainURL}/message/get-messages/${userId}/${recipentId}`;
         const response = await axios.get(url).then((res) => {
 
           const messages = res.data.message.filter(
@@ -292,7 +292,7 @@ const MessageSrceen = () => {
       }
       
       try {
-        const response = await axios.patch(`${mainURL}/viewedVideoOnce/true`, formData);
+        const response = await axios.patch(`${mainURL}/message/viewedVideoOnce/true`, formData);
         
       } catch (error) {
         console.log('Error:', error);
@@ -325,7 +325,7 @@ const MessageSrceen = () => {
       }
       
       try {
-        const response = await axios.patch(`${mainURL}/viewedImageOnce/true`, formData);
+        const response = await axios.patch(`${mainURL}/message/viewedImageOnce/true`, formData);
         
       } catch (error) {
         console.log('Error:', error);
@@ -360,7 +360,7 @@ const MessageSrceen = () => {
   const onOpen = async () => {
     try {
       setIsOpen(true);
-      const response = await axios.get(`${mainURL}/get_group_members/${groupId}/${userId}`);
+      const response = await axios.get(`${mainURL}/friend/get_group_members/${groupId}/${userId}`);
       setGroupChatInfo(response.data);
     } catch (error) {
       console.error("Error fetching chat info:", error);
@@ -372,7 +372,7 @@ const MessageSrceen = () => {
   const onOpenVideoCall = async () => {
     try {
       setIsOpenVideoCall(true);
-      const response = await axios.get(`${mainURL}/get_group_members/${groupId}/${userId}`);
+      const response = await axios.get(`${mainURL}/friend/get_group_members/${groupId}/${userId}`);
       setGroupChatInfo(response.data);
     } catch (error) {
       console.error("Error fetching chat info:", error);
@@ -536,7 +536,7 @@ const MessageSrceen = () => {
       otherUserId: senderId ? senderId : recipentId
     }
     try {
-      const response = await axios.post(`${mainURL}/clear-chat/`, formData);
+      const response = await axios.post(`${mainURL}/chat/clear-chat/`, formData);
       const messages = response.data.filter(
         (message) => !message.clearedBy.includes(userId)
       );
@@ -571,7 +571,7 @@ const MessageSrceen = () => {
     if (messageIds.length > 0) {
       try {
         await axios.patch(
-          `${mainURL}/star-messages`, 
+          `${mainURL}/message/star-messages`, 
           {
             messageIds, 
             starredBy: userId, 
@@ -606,7 +606,7 @@ const MessageSrceen = () => {
     const messageIds = messageObjects.map(msg => msg.messageId);
     const formData = { messages: messageIds, userId: userId, recipentId: recipentId };  
     try {
-      const response = await axios.post(`${mainURL}/deleteMessages/`,  formData)
+      const response = await axios.post(`${mainURL}/message/deleteMessages/`,  formData)
     } catch (error) {
       console.log('Error:', error);
           if (error.response) {
@@ -623,7 +623,7 @@ const MessageSrceen = () => {
     const messageIds = messageObjects.map(msg => msg.messageId);
     const formData = { messages: messageIds, userId: userId, recipentId: recipentId }; 
     try {
-      const response = await axios.post(`${mainURL}/deleteForMeMessages/`, formData)
+      const response = await axios.post(`${mainURL}/message/deleteForMeMessages/`, formData)
     } catch (error) {
       console.log('Error:', error);
           if (error.response) {
@@ -708,7 +708,7 @@ const MessageSrceen = () => {
           }
 
           const response = await axios.post(
-              `${mainURL}/messages/`,
+              `${mainURL}/message/messages/`,
               formData,
               {
                   headers: {
@@ -917,7 +917,7 @@ const MessageSrceen = () => {
   
   const checkMessageInDB = async (id, userId) => {
     try {
-      const response = await axios.get(`${mainURL}/get-starred-message/${id}/${userId}`);
+      const response = await axios.get(`${mainURL}/message/get-starred-message/${id}/${userId}`);
       return response.data.exists;
     } catch (error) {
       console.log('Error:', error); // Log error details
@@ -935,7 +935,7 @@ const MessageSrceen = () => {
     const id = seletedMessages[0]?.messageId;
     //console.log(seletedMessages)
     try {
-      const response = await axios.delete(`${mainURL}/delete-starred-message/${userId}/${id}/`);
+      const response = await axios.delete(`${mainURL}/message/delete-starred-message/${userId}/${id}/`);
       if(response.status==200){
         setShowUnStar(false);
         fetchMessages();

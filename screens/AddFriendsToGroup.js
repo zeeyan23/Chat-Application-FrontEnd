@@ -25,7 +25,7 @@ function AddFriendsToGroup(){
     const fetchUser = async () => {
         try {
             const response = await axios.get(
-                `${mainURL}/get-all-friends/${userId}`
+                `${mainURL}/friend/get-all-friends/${userId}`
             );
             setMyFriends(response.data)
         } catch (error) {
@@ -70,7 +70,7 @@ function AddFriendsToGroup(){
             groupMembers: Array.from(seletedFriends) 
         };
         try {
-            const response = await axios.patch(`${mainURL}/creategroup/${userId}`, groupData);
+            const response = await axios.patch(`${mainURL}/group/creategroup/${userId}`, groupData);
             const { group: { _id: groupId, groupName: group_name } } = response.data;
             
             if (groupId) {

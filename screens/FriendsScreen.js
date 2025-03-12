@@ -21,7 +21,7 @@ function FriendsScreen(){
     const fetchFreindRequests= async()=>{
         try {
             const response = await axios.get(
-                `${mainURL}/get-friend-request/${userId}`).then((res)=>{
+                `${mainURL}/friend/get-friend-request/${userId}`).then((res)=>{
                     if(res.status ===200){
                         const friendRequestsData = res.data.map((friendRequest)=>{
                             return{
@@ -53,7 +53,7 @@ function FriendsScreen(){
         const data={senderId : senderId, recepientId: userId}
         try {
             const response = await axios.post(
-                `${mainURL}/accept-friend-request/accept`, data).then((res)=>{
+                `${mainURL}/friend/accept-friend-request/accept`, data).then((res)=>{
                     setFriendRequestsData(friendRequestsData.filter((request)=> request._id !==senderId));
                     navigation.navigate("Chats");
             })

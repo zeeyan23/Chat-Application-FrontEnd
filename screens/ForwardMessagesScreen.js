@@ -16,7 +16,7 @@ function ForwardMessagesScreen({ route, navigation }){
     useEffect(() => {
         const fetchFriends = async () => {
         try {
-            const response = await axios.get(`${mainURL}/get-all-friends/${userId}`);
+            const response = await axios.get(`${mainURL}/friend/get-all-friends/${userId}`);
             setFriends(response.data.friends); 
             console.log(response.data)
         } catch (error) {
@@ -40,7 +40,7 @@ function ForwardMessagesScreen({ route, navigation }){
           await Promise.all(
             selectedFriends.map(async (friendId) => {
                 const response = await axios.post(
-                    `${mainURL}/messages/forward`, 
+                    `${mainURL}/message/messages/forward`, 
                     {
                       senderId : userId,
                       recipientId: friendId,

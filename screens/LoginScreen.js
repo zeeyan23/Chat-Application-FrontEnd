@@ -133,7 +133,7 @@ function LoginScreen(){
     
         try {
             const response = await axios.post(
-                `${mainURL}/user_login/`,
+                `${mainURL}/user/user_login/`,
                 { ...formData, expoPushToken: expoPushToken || 'null' }, 
                 {
                     headers: {

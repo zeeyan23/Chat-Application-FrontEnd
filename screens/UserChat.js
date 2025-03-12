@@ -35,7 +35,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
 
   const checkChatInDB = async (id, userId) => {
     try {
-      const response = await axios.get(`${mainURL}/get-pinned-chats/${id}/${userId}`);
+      const response = await axios.get(`${mainURL}/chat/get-pinned-chats/${id}/${userId}`);
       return response.data.exists;
     } catch (error) {
       console.log('Error:', error); // Log error details
@@ -124,7 +124,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
       pinnedChats: Array.isArray(selectedChats) ? selectedChats : [selectedChats],
     };
     try {
-      const response = await axios.patch(`${mainURL}/updatePinnedChats`, formData);
+      const response = await axios.patch(`${mainURL}/chat/updatePinnedChats`, formData);
       setSelectedChats([]);
       toast.show({description:"Chat Pinned"})
       if (onPinUpdate) {
@@ -149,7 +149,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
       chatsTobeDeleted: Array.isArray(selectedChats) ? selectedChats : [selectedChats],
     };
     try {
-      const response = await axios.patch(`${mainURL}/deleteChat`, formData);
+      const response = await axios.patch(`${mainURL}/chat/deleteChat`, formData);
       setSelectedChats([]);
       onChatUpdate();
     } catch (error) {
@@ -166,7 +166,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
   const unPinChats = async (selectedChats) => {
     try {
       const requests = selectedChats.map(chatId =>
-        axios.delete(`${mainURL}/unPinChats/${chatId}/${userId}`)
+        axios.delete(`${mainURL}/chat/unPinChats/${chatId}/${userId}`)
       );
       const responses = await Promise.all(requests);
       toast.show({description:"Chat Unpinned"})

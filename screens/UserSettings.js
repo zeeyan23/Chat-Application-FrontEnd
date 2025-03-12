@@ -29,7 +29,7 @@ function UserSettings(){
     
       const fetchUserData = async () => {
         try {
-          const response = await axios.get(`${mainURL}/user-data/${userId}`);
+          const response = await axios.get(`${mainURL}/user/user-data/${userId}`);
           setUser(response.data);
         } catch (error) {
           console.log('Error:', error);
@@ -50,7 +50,7 @@ function UserSettings(){
             [field]: value, // Dynamically assign the field (e.g., user_name or email)
           };
           console.log("payload",payload);
-          const response = await axios.patch(`${mainURL}/users/update`, payload);
+          const response = await axios.patch(`${mainURL}/user/users/update`, payload);
       
           if (response.status === 200) {
             console.log("Changes saved successfully:", response.data);
@@ -74,7 +74,7 @@ function UserSettings(){
         });
         try {
             const response = await axios.patch(
-                `${mainURL}/update-userdata/${userId}`,
+                `${mainURL}/user/update-userdata/${userId}`,
                 formData,
                 {
                     headers: {

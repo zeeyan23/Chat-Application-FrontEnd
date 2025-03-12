@@ -44,7 +44,6 @@ function HomeScreen(){
     useEffect(() => {
         socket.emit("join", userId);
         socket.on("friendRequestReceived", (data) => {
-            console.log(data)
             setFriendRequestsReceived((prev) => [
                 ...prev,
                 { _id: data.senderId, user_name: data.senderName },
@@ -52,6 +51,7 @@ function HomeScreen(){
         });
     
         socket.on("friendRequestAccepted", (data) => {
+            console.log("friendRequestAccepted",data)
             setUserFriends((prev) => [...prev, data.userId]);
         });
 
@@ -67,16 +67,16 @@ function HomeScreen(){
             const decodedToken = jwtDecode(token);
             const userId = decodedToken.userId;
             setUserId(userId);
-            const usersResponse = await axios.get(`${mainURL}/all_users/${userId}`);
+            const usersResponse = await axios.get(`${mainURL}/user/all_users/${userId}`);
             setData(usersResponse.data);
 
-            const sentRequestsResponse = await axios.get(`${mainURL}/friend-requests/sent/${userId}`);
+            const sentRequestsResponse = await axios.get(`${mainURL}/friend/friend-requests/sent/${userId}`);
             setFriendRequests(sentRequestsResponse.data);
 
-            const sentRequestsReceivedResponse = await axios.get(`${mainURL}/friend-requests/received/${userId}`);
+            const sentRequestsReceivedResponse = await axios.get(`${mainURL}/friend/friend-requests/received/${userId}`);
             setFriendRequestsReceived(sentRequestsReceivedResponse.data);
 
-            const friendsResponse = await axios.get(`${mainURL}/friends/${userId}`);
+            const friendsResponse = await axios.get(`${mainURL}/friend/friends/${userId}`);
             const flattenedFriends = friendsResponse.data.flat();
             setUserFriends(flattenedFriends);
         };
@@ -89,7 +89,7 @@ function HomeScreen(){
         const data={currentUserId: userId, selectedUserId: recipent_id};
        
             const response = await axios.post(
-                `${mainURL}/friend-request/`, data).then((res)=>{
+                `${mainURL}/friend/friend-request/`, data).then((res)=>{
                     setRequestSent((prev) => [...prev, recipent_id]);
             })
         } catch (error) {
@@ -122,7 +122,7 @@ function HomeScreen(){
           };
         try {
             const response = await axios.delete(
-                `${mainURL}/remove_chat_from_deleted_chat/`, {data: formData})
+                `${mainURL}/chat/remove_chat_from_deleted_chat/`, {data: formData})
 
             if (response.status === 200) {
                 navigation.navigate("MessageScreen", {

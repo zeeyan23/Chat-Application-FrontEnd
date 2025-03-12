@@ -33,7 +33,7 @@ function ForgotPassword(){
         } else {
             setError(false);
             try {
-                const response = await axios.patch(`${mainURL}/update_password`, formData);
+                const response = await axios.patch(`${mainURL}/user/update_password`, formData);
                 if (response.status === 200) {
                     navigation.navigate('Login');
                 } 

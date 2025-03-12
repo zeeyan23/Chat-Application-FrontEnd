@@ -71,7 +71,7 @@ function ChatScreen(){
 
     try {
       const response = await axios.get(
-          `${mainURL}/get-all-friends/${userId}`
+          `${mainURL}/friend/get-all-friends/${userId}`
       );
       if (response.status === 200) {
           setFriendsData(response.data);
@@ -168,8 +168,8 @@ function ChatScreen(){
         try {
           const endpoint =
           type === 'group'
-              ? `${mainURL}/get-group-messages/${targetId}` 
-              : `${mainURL}/get-messages/${userId}/${targetId}`; 
+              ? `${mainURL}/message/get-group-messages/${targetId}` 
+              : `${mainURL}/message/get-messages/${userId}/${targetId}`; 
 
       const response = await axios.get(endpoint);
             const messages = response.data.message.filter(

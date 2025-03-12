@@ -27,7 +27,7 @@ function UsersProfileScreen() {
 
   const fetchGroupData = async () => {
     try {
-      const response = await axios.get(`${mainURL}/get_chat_info/${id}`);
+      const response = await axios.get(`${mainURL}/friend/get_chat_info/${id}`);
       setChatUserInfo(response.data);
     } catch (error) {
       console.log('Error:', error);
@@ -50,7 +50,7 @@ function UsersProfileScreen() {
     });
     try {
         const response = await axios.patch(
-            `${mainURL}/update-groupData/${id}`,
+            `${mainURL}/group/update-groupData/${id}`,
             formData,
             {
                 headers: {
