@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Box, Text, Heading, VStack, FormControl, Input, Link, Button, HStack, Center, NativeBaseProvider, Pressable, Icon } from "native-base";
-import { Platform, StyleSheet } from "react-native";
+import { Platform, StyleSheet, TouchableOpacity } from "react-native";
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import { useState } from "react";
 import { mainURL } from "../Utils/urls";
@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { navigationRef } from "../App";
 import { AuthContext } from "../Context/AuthContext";
 import { useContext } from "react";
+import { LinearGradient } from 'expo-linear-gradient';
 
 function LoginScreen(){
 
@@ -222,46 +223,68 @@ function LoginScreen(){
                 <VStack space={3} mt="5">
                 <FormControl>
                     <FormControl.Label>Email ID</FormControl.Label>
-                    <Input onChangeText={changeEmailHandler}/>
+                    {/* <Input onChangeText={changeEmailHandler}/> */}
+                    <Box
+                    style={{
+                        elevation: 5, 
+                        paddingVertical:5,
+                        shadowColor: '#000', 
+                        shadowOffset: { width: 0, height: 1 }, 
+                        shadowOpacity: 0.2, 
+                        shadowRadius: 4,
+                        borderRadius: 8, 
+                        backgroundColor: '#fff',}}>
+                        <Input
+                            onChangeText={changeEmailHandler}
+                            placeholder="Enter email"
+                            variant="unstyled"
+                        />
+                    </Box>
                 </FormControl>
                 <FormControl>
                     <FormControl.Label>Password</FormControl.Label>
-                    <Input type={showPassword ? "text" : "password"}  onChangeText={changePasswordHandler} InputRightElement={
-                        <Pressable onPress={() => setShowPassword(!showPassword)}>
-                            <Icon
-                            as={<Ionicons name={showPassword ? "eye-off" : "eye"} />}
-                            size={5}
-                            mr="2"
-                            color="muted.400"
-                            />
-                        </Pressable>
+                    <Box
+                    style={{
+                        elevation: 5, 
+                        paddingVertical:5,
+                        shadowColor: '#000', 
+                        shadowOffset: { width: 0, height: 1 }, 
+                        shadowOpacity: 0.2, 
+                        shadowRadius: 4,
+                        borderRadius: 8, 
+                        backgroundColor: '#fff',}}>
+                        <Input type={showPassword ? "text" : "password"} onChangeText={changePasswordHandler} placeholder="Enter email"
+                            variant="unstyled" InputRightElement={
+                            <Pressable onPress={() => setShowPassword(!showPassword)}>
+                                <Icon
+                                as={<Ionicons name={showPassword ? "eye-off" : "eye"} />}
+                                size={5}
+                                mr="2"
+                                color="muted.400"
+                                />
+                            </Pressable>
                         }/>
-                    <Link _text={{
+                    </Box>
+                    
+                    {/* <Link _text={{
                         fontSize: "xs",
                         fontWeight: "500",
                         color: "indigo.500"
                     }} alignSelf="flex-end" mt="1" onPress={() => navigation.navigate('ForgotPassword')}>
                     Forget Password?
-                    </Link>
+                    </Link> */}
                 </FormControl>
                 {errorMessage && <Text color="red.500" fontSize="xs">{errorMessage}</Text>}
-                <Button mt="2" colorScheme="indigo" onPress={SignInHandler}>
-                    Sign in
-                </Button>
-                {/* <HStack mt="6" justifyContent="center">
-                    <Text fontSize="sm" color="coolGray.600" _dark={{
-                    color: "warmGray.200"
-                }}>
-                    I'm a new user.{" "}
-                    </Text>
-                    <Link _text={{
-                    color: "indigo.500",
-                    fontWeight: "medium",
-                    fontSize: "sm"
-                }} onPress={handleSignUpClick}>
-                    Sign Up
-                    </Link>
-                </HStack> */}
+                <TouchableOpacity onPress={SignInHandler} activeOpacity={0.8}>
+                <LinearGradient
+                    // Button Linear Gradient
+                    colors={['#693685', '#2c1738']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }} 
+                    style={styles.button}>
+                    <Text style={styles.btntext}>Log in</Text>
+                </LinearGradient>
+                </TouchableOpacity>
                 </VStack>
             </Box>
         </Center>
@@ -274,7 +297,21 @@ const styles= StyleSheet.create({
         backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center',
-      }
+      },
+    button:{
+        paddingHorizontal:10,
+        paddingVertical:11,
+        borderRadius:6
+    },
+    btntext:{
+        color:"white",
+        textAlign:"center",
+        fontWeight:"bold"
+    },
+    // inputBoxStyle:{
+    //     borderWidth:0,
+    //     backgroundColor:"white"
+    // }
 });
 
 export default LoginScreen;

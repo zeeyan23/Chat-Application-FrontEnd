@@ -83,7 +83,7 @@ function FriendsScreen(){
                     ? { uri: baseUrl + filename } 
                     : null;
                 return(
-                    <Box borderBottomWidth="1" _dark={{ borderColor: "muted.50" }} borderColor="muted.400" pl={["2", "4"]} pr={["2", "5"]} py="2">
+                    <Box borderBottomWidth="1" _dark={{ borderColor: "muted.50" }} borderColor="muted.400" pl={["2", "4"]} pr={["2", "5"]} py="3">
                         <HStack space={[2, 3]} justifyContent="space-between">
                         {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
                         <VStack alignSelf={"center"}>

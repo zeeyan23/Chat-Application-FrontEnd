@@ -6,8 +6,11 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "ios": {
-        "resourceClass": "m1-medium"
+        "simulator": true
       }
     },
     "preview": {
@@ -16,18 +19,26 @@
         "buildType":"apk"
       },
       "ios": {
+        "simulator": false,
         "resourceClass": "m1-medium"
       }
     },
     "production": {
-      "developmentClient": false,
-      "distribution": "internal",
+      "distribution": "store",
+      "android": {
+        "buildType": "app-bundle"
+      },
       "ios": {
+        "simulator": false,
         "resourceClass": "m1-medium"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "inifinityos27@gmail.com"
+      }
+    }
   }
 }

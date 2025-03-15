@@ -28,7 +28,7 @@
  * SOFTWARE.
  */
 
-import { StyleSheet, View, ScrollView, KeyboardAvoidingView, TextInput, Image, Modal, Platform,Linking, Animated, PanResponder, TouchableOpacity,PermissionsAndroid, Alert, ActionSheetIOS} from "react-native";
+import { StyleSheet, View, ScrollView, KeyboardAvoidingView, TextInput, Image, Modal, Platform,Linking, Animated, PanResponder, TouchableOpacity,PermissionsAndroid, Alert, ActionSheetIOS, Dimensions} from "react-native";
 import React, { useState, useContext, useLayoutEffect, useEffect,useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
@@ -1505,6 +1505,9 @@ const renderMessage = useCallback((item, index) => {
 }, [handlePress, handleSelectedMessage, seletedMessages, mainURL]);
 
   const renderTextMessage = useCallback((item, index) => {
+    const MAX_INLINE_LENGTH = 40; // Adjust the length for "short/medium"
+
+  const isShortMessage = message.length <= MAX_INLINE_LENGTH;
   const isSelected = seletedMessages.some((selected) => selected.messageId === item._id);
   const profileImageUrl = item?.senderId?.image;
   const normalizedProfileImagePath = profileImageUrl ? profileImageUrl.replace(/\\/g, '/') : '';
@@ -1525,7 +1528,7 @@ const renderMessage = useCallback((item, index) => {
             highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }]} 
             onLongPress={()=> handleSelectedMessage(item)} onPress={() => isSelectionMode && handleSelectedMessage(item)}>
           {renderReplyMessage(item.replyMessage, handleReplyPress, userId)}
-          <Box flexDirection={"row"} alignItems="center">
+          {/* <Box flexDirection={"row"} alignItems="center">
             {isGroupChat && (
               <Box flexDirection={"row"} paddingBottom={2} paddingRight={1}>
                 {!item.replyMessage ? (
@@ -1551,6 +1554,39 @@ const renderMessage = useCallback((item, index) => {
                 )}
               </Text>
             </Box>
+          </Box> */}
+          <Box safeArea p={1}>
+      
+            {/* Row 1 */}
+            <HStack space={2} justifyContent="space-between" paddingRight={12}>
+              <Text color="white" fontSize="lg" bold>
+                {!item.replyMessage && isGroupChat ? (
+                  profileImageSource ? (
+                    <Avatar size="xs" source={profileImageSource} />
+                  ) : (
+                    <Ionicons name="person-circle-outline" size={25} color="grey" />
+                  )
+                ) : null}
+              </Text>
+              <Text>{item?.message}</Text>
+            </HStack>
+
+            {/* Row 2 */}
+            <HStack space={4} justifyContent="space-between" alignItems="center">
+              <Box></Box>
+              <Text
+                style={[
+                  styles.infoText,
+                  { color: item?.senderId?._id === userId ? "black" : "black", marginLeft:"auto" } ,
+                ]}
+              >
+                {formatTime(item.timeStamp)}
+                {item?.starredBy[0] === userId && (
+                  <Entypo name="star" size={10} color="#828282" />
+                )}
+              </Text>
+            </HStack>
+
           </Box>
 
         </Pressable>
@@ -2004,9 +2040,9 @@ return (
             isOpen={isDeleteChatOpen} 
             onClose={() => setIsDeleteChatOpen(false)}
             onConfirm={handleClearChatConfirm}
-            header="Delete Customer"
-            body="Are you sure you want to delete this chat? This action cannot be undone."
-            confirmText="Delete"
+            header="Clear this chat?"
+            body="This action cannot be undone."
+            confirmText="Clear chat"
             cancelText="Cancel"
           />
           <Actionsheet isOpen={isOpen} onClose={onClose} size="full">
@@ -2280,9 +2316,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     borderRadius: 20,
+    paddingVertical:10,
     paddingHorizontal: 10,
     backgroundColor:'white',
-    minHeight: 40,
+    minHeight: 43,
     maxHeight: 120,
   },
   swipeText:{

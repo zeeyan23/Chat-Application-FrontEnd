@@ -19,6 +19,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
 
   const [showUnPin, setShowUnPin]=useState(false);
   const [isDeleteChat, setIsDeleteChat] = useState(false);
+  const [chatType,setChatType]=useState(null);
 
   function formatTime(time) {
     const input = moment(time);
@@ -50,6 +51,8 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
   };
 
   const handleSelectedChat = async (item) => {
+    setChatType(item.type)
+    console.log(item.type)
     const chatId = item._id;
     const isSelected = selectedChats.includes(chatId);
     const updatedChats = isSelected
@@ -94,7 +97,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
               ]}/>
               </Pressable>
             )}
-              <Pressable onPress={() => setIsDeleteChat(true)} >
+              {chatType != 'group' && <Pressable onPress={() => setIsDeleteChat(true)} >
                 <MaterialCommunityIcons name="trash-can" size={24} color="white" style={({ pressed }) => [
                 {
                   backgroundColor: pressed ? '#e0e0e0' : 'transparent',
@@ -102,7 +105,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
                   padding: 5,
                 },
               ]}/>
-              </Pressable>
+              </Pressable>}
           </Box>
         ) :  
         <Box w="90%" alignItems="flex-end" paddingRight={4}>
@@ -187,13 +190,13 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
     }
   };
   
-  const truncateText = (text, wordLimit) => {
-    if (!text) return ""; // Handle cases where text is undefined or null
-    const words = text.split(" ");
-    return words.length > wordLimit 
-      ? words.slice(0, wordLimit).join(" ") + "..." 
+  const truncateText = (text, charLimit) => {
+    if (!text) return "";
+    return text.length > charLimit 
+      ? text.substring(0, charLimit) + "..." 
       : text;
   };
+  
   
   const handlePress = (friend) => {
     if (friend.type === 'friend') {
@@ -231,12 +234,12 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
         onPress={()=>handlePress(item)} onLongPress={()=> handleSelectedChat(item)}>
         {({ isHovered, isFocused, isPressed }) => (
           <Box
-            borderBottomWidth="1"
+            // borderBottomWidth="1"
             _dark={{ borderColor: "muted.50" }}
-            borderColor="#666666"
+            // borderColor="#666666"
             pl={["2", "4"]}
             pr={["2", "5"]}
-            py="2"
+            py="3"
             bg={isPressed ? "coolGray.200" : isHovered ? "coolGray.200" : "coolGray.100"}
             style={{
               backgroundColor: selectedChats.includes(item._id) ? 'lightgray' : 'black', 
