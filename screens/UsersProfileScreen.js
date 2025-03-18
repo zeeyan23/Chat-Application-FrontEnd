@@ -170,19 +170,20 @@ function UsersProfileScreen() {
 
   function renderSingleUserProfile(){
     return(
-      <Center>
+      <Center paddingY={5}>
         {chatUserInfo.image ? (
-          <Box paddingY={12}>
+          <Box>
             <Avatar size="2xl" source={source}/>
           </Box>
           ) : (
-          <Box paddingY={12}>
+          <Box>
             <Ionicons name="person-circle-outline" size={100} color="gray" />
           </Box>
           )}
-          <>
-            <HStack alignItems="center" pb={5}>
-              <VStack>
+          <Text fontSize={"md"} bold> {chatUserInfo.user_name} </Text>
+          {/* <>
+            <HStack background={"red.500"} >
+              <VStack >
                 <Text color={"trueGray.600"}>User name</Text>
                 <Text fontSize={"md"} bold>
                   {chatUserInfo.user_name}
@@ -199,7 +200,7 @@ function UsersProfileScreen() {
               </VStack>
               <Spacer />
             </HStack>
-          </>
+          </> */}
       </Center>
     )
   }
@@ -243,14 +244,28 @@ function UsersProfileScreen() {
         
           {/* Created By and Date Card */}
           {isGroupChat && <Box bg="white" borderRadius="lg" p={4} mb={4} shadow={2} width="full">
-            <HStack justifyContent="space-between">
+            <HStack justifyContent="space-between" marginBottom={2}>
               {userId === chatUserInfo?.groupAdmin?._id ? <Text color="gray.600">Created you: {chatUserInfo.groupAdmin.user_name}</Text> :
                 <Text color="gray.600">Created by: {chatUserInfo.groupAdmin.user_name}</Text>}
               <Text color="gray.600">{moment(chatUserInfo.created_date).format('DD/MM/YYYY')}</Text>
             </HStack>
           </Box>}
-          
-          {/* Group Members List Card */}
+
+          {/* <Box bg="white" borderRadius="lg" p={4} mb={4} shadow={2} width="full">
+            <Pressable _hover={{ bg: 'gray.200' }}  _pressed={{ bg: 'gray.200' }} borderRadius="md" paddingTop={1} 
+              onPress={() => navigation.navigate('Disappearing Messages', {participant_id: userId,other_participant_id : id})}>
+                <HStack>
+                  <VStack>
+                    <Ionicons name="timer-outline" size={24} color="grey"/>
+                  </VStack>
+                  <VStack paddingX={3}>
+                    <Text fontSize="lg" bold colorScheme={"black"}>Disappearing messages</Text>
+                    <Text mt={2} colorScheme={"black"}>Disappearing messages status</Text>
+                  </VStack>
+                </HStack>
+            </Pressable>
+          </Box> */}
+
           {isGroupChat && 
           <>
             <Box bg="white" borderRadius="lg" p={4}  mb={4} shadow={2} width="full">
@@ -287,12 +302,13 @@ function UsersProfileScreen() {
               
             </Box>
           </>}
+
           {isGroupChat && <Box bg="white" borderRadius="lg" shadow={2} width="full">
             <Pressable _hover={{ bg: 'red.100' }}  _pressed={{ bg: 'red.200' }}  
-                _focus={{ borderColor: 'blue.500', borderWidth: 1 }} borderRadius="md" p={1} onPress={openDialog}>
+                _focus={{ borderColor: 'blue.500', borderWidth: 1 }} borderRadius="md" p={3} onPress={openDialog}>
                 <HStack alignItems="center" alignSelf={"center"}>
                   <Text fontWeight="bold" fontSize="md">Delete Group</Text>
-                  <Ionicons name="trash" size={20} color="white" style={{backgroundColor:"red", padding:5, borderRadius:50, marginHorizontal:5}}/>
+                  {/* <Ionicons name="trash" size={20} color="white" style={{backgroundColor:"red", padding:5, borderRadius:50, marginHorizontal:5}}/> */}
                 </HStack>
             </Pressable>
             <ConfirmationDialog

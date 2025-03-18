@@ -13,9 +13,9 @@ import { Box, Center, Flex, Row, VStack, Wrap,Text, FlatList, Button, Icon } fro
 import CustomButton from "../components/CustomButton";
 import socketInstance from "../Utils/socket";
 import { UserType } from "../Context/UserContext";
+import axios from "axios";
 
-const appId = 'b1b769d4b203413881261d9f64b00d47';
-const token = '007eJxTYOh3Klz04/ZTvQmeb2d1v8sszr01y0VrM9dNpSUL3v43XxyswJBkmGRuZplikmRkYGxiaGxhYWhkZphimWZmkmRgkGJiXlp5Mb0hkJGh7dJ1FkYGCATxuRjK8jOTU+OTE3NyGBgA2BMkOg==';
+const appId = 'bb4384dc3e7f4eba9d8b371263ac938e';
 const channelName = 'voice_call';
 const uid = 0;
 
@@ -131,6 +131,12 @@ function VoiceCallScreen({ route, navigation }){
         agoraEngineRef.current?.enableAudio();
         agoraEngineRef.current?.muteLocalAudioStream(false);
         try {
+            const response = await fetch(
+                `${mainURL}/generate_voice_token?channelName=${channelName}&uid=${uid}`
+              );
+            const data = await response.json();
+            console.log("data token",data.token)
+            const token = data.token;
                 agoraEngineRef.current?.joinChannel(token, channelName, uid, {
                     channelProfile: ChannelProfileType.ChannelProfileCommunication,
                     clientRoleType: ClientRoleType.ClientRoleBroadcaster,

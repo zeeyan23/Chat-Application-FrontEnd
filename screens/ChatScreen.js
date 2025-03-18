@@ -181,7 +181,7 @@ function ChatScreen(){
           if (error.response && error.response.status === 404) {
             return null; 
           }
-          console.error(`Error fetching messages for friend ID ${friendId}:`, error);
+          //console.error(`Error fetching messages for friend ID ${friendId}:`, error);
           return null;
         }
     };

@@ -15,6 +15,8 @@ function VoiceScreen({route}){
     const navigation = useNavigation();
     const [callAccepted, setCallAccepted] = useState(false);
     const socket = socketInstance.getSocket();
+    const [callTimedOut, setCallTimedOut] = useState(false);
+    let ringtoneSound = null;
 
     let source, caller_image;
     if(callerImage){
@@ -32,9 +34,52 @@ function VoiceScreen({route}){
       const filename=normalizedPath.split("/").pop();
       caller_image = {uri: baseUrl + filename}
     }
+
     useEffect(()=>{
+
+      let timeoutRef;
+
+
+      if (isCaller  && !isGroup) {
+          // Start timeout for call approval
+          timeoutRef = setTimeout(() => {
+              console.log("Call not answered!");
+              setCallTimedOut(true);
+          }, 30000); // 30 seconds
+      }
+
+      if (!isCaller  && !isGroup) {
+        // Start timeout for call approval
+        timeoutRef = setTimeout(() => {
+            console.log("Call not answered!");
+            setCallTimedOut(true);
+          
+            navigation.goBack();
+        }, 30000); // 30 seconds
+      }
+
+      if (isCaller  && isGroup) {
+        // Start timeout for call approval
+        timeoutRef = setTimeout(() => {
+            console.log("Call not answered!");
+            setCallTimedOut(true);
+        }, 30000); // 30 seconds
+    }
+
+    if (!isCaller  && isGroup) {
+      timeoutRef = setTimeout(() => {
+          console.log("Call not answered!");
+          setCallTimedOut(true);
+          
+          navigation.goBack();
+      }, 30000); // 30 seconds
+    }
+
+
       const handleCallApproved = (data) => {
         if (!callAccepted) {
+          clearTimeout(timeoutRef);
+          setCallTimedOut(false);
           setCallAccepted(true);
           navigation.replace("VoiceCallScreen", {
             callerId: data.callerId,
@@ -48,7 +93,10 @@ function VoiceScreen({route}){
 
         socket.on("voice_call_approved", handleCallApproved);
         socket.on("group_voice_call_approved", (data) => {
+          clearTimeout(timeoutRef);
+          setCallTimedOut(false);
             setCallAccepted(true);
+
             //console.log("data participants",data)
             navigation.replace("VoiceCallScreen", {
               channelId: data.channelId,
@@ -82,6 +130,7 @@ function VoiceScreen({route}){
           return () => {
             socket.off("voice_call_declined", handleCallDeclined);
             // socket.off("call_ended", handleCallEnded);
+            clearTimeout(timeoutRef);
             socket.off("voice_call_approved", handleCallApproved);
           };
     },[callAccepted, navigation])
@@ -136,11 +185,16 @@ function VoiceScreen({route}){
               <Box maxW="96" rounded="full">
                 <MaterialCommunityIcons name="account" size={100} color="gray" />
               </Box>
-              <Text>Waiting for to connect...</Text>
+              <Text>{callTimedOut ? "Call not answered" : "Waiting for connection..."}</Text>
           </Box>
           <Box flex={1} justifyContent="flex-end" padding={10}>
               <Box flexDirection={"row"} justifyContent={"center"}>
-                  <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={() => declineCall(calleeId, isGroup && groupId)}/>
+                  {callTimedOut ? (
+                        <CustomButton iconName={"arrow-back"} bgColor={"gray.500"} onPress={() => navigation.goBack()} />
+                    ) : (
+                        <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={() => declineCall(calleeId, isGroup && groupId)} />
+                    )}
+                  {/* <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={() => declineCall(calleeId, isGroup && groupId)}/> */}
               </Box>
           </Box>
         </Box>
@@ -154,11 +208,16 @@ function VoiceScreen({route}){
               <Box maxW="96" rounded="full">
                 <MaterialCommunityIcons name="account-group" size={100} color="gray" />
               </Box>
-              <Text>Waiting for participants to connect...</Text>
+              <Text>{callTimedOut ? "Call not answered" : "Waiting for participants..."}</Text>
           </Box>
           <Box flex={1} justifyContent="flex-end" padding={10}>
               <Box flexDirection={"row"} justifyContent={"center"}>
-                  <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall()}/>
+                  {callTimedOut ? (
+                        <CustomButton iconName={"arrow-back"} bgColor={"gray.500"} onPress={() => navigation.goBack()} />
+                    ) : (
+                        // <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={() => declineCall(calleeId, isGroup && groupId)} />
+                        <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall()}/>
+                    )}
               </Box>
           </Box>
         </Box>

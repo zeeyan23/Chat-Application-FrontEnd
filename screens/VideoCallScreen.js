@@ -1,7 +1,7 @@
 
 
 
-import React, { useRef, useState, useEffect, useContext } from 'react';
+import React, { useRef, useState, useEffect, useContext, useMemo } from 'react';
 import {
     SafeAreaView,
     ScrollView,
@@ -28,9 +28,9 @@ import { UserType } from '../Context/UserContext';
 import { Box, Center, FlatList, VStack } from 'native-base';
 import { Ionicons } from '@expo/vector-icons';
 import CustomButton from '../components/CustomButton';
+import axios from 'axios';
 
-const appId = '77de8ca3881e4be1a07052447ee4cb51';
-const token = '007eJxTYKitOL/y9IwJcl9X9X1ZuX/n5oCarAnbZ2TI83hevzO74+lpBQZz85RUi+REYwsLw1STpFTDRANzA1MjExPz1FST5CRTQ83Ki+kNgYwMn1+7MDMyQCCIz8VQlpmSmh+fnJiTw8AAAE93Ja0=';
+const appId = '4c1e2db4af064ae29874d36ac9f21d44';
 const channelName = 'video_call';
 const localUid = 0;
 
@@ -39,13 +39,14 @@ const VideoCallScreen = ({ route, navigation }) => {
     const agoraEngineRef = useRef(null);
     const [isJoined, setIsJoined] = useState(false);
     const [remoteUids, setRemoteUids] = useState([]);
+    const remoteUidsRef = useRef([]);
     const [message, setMessage] = useState('');
     const eventHandler = useRef(null);
     const baseUrl = `${mainURL}/files/`;
     const socket = socketInstance.getSocket();
     const {userId, setUserId} = useContext(UserType);
     const [remoteUsers, setRemoteUsers] = useState([]);
-
+    const [firstJoinedUid, setFirstJoinedUid] = useState(null); 
     useEffect(() => {
         const init = async () => {
             await setupVideoSDKEngine();
@@ -69,10 +70,25 @@ const VideoCallScreen = ({ route, navigation }) => {
         
         };
 
-        const handleGroupCallEnded = (data) => {
-            console.log("Received group_call_ended event:", data);
+        const handleGroupCallEnded = async(data) => {
+            //console.log("Received group_call_ended event:", data);
             Alert.alert("Call Ended", data.message);
-            navigation.goBack();
+            try {
+                if (agoraEngineRef.current) {
+                    await agoraEngineRef.current.leaveChannel();  // Leave Agora channel
+                    await agoraEngineRef.current.disableAudio();  // Disable audio
+                    await agoraEngineRef.current.disableVideo();  // Disable video
+                    agoraEngineRef.current.removeAllListeners();  // Remove all Agora event listeners
+                }
+        
+                setRemoteUids([]);  // 🔥 Force clear remaining users
+                setIsJoined(false);  // Reset call state
+        
+                socket.off("group_video_call_ended", handleGroupCallEnded);  // Remove event listener
+                navigation.goBack();  // Navigate back to previous screen
+            } catch (error) {
+                console.log("Error handling group call ended:", error);
+            }
           };
         
         socket.on("video_call_ended", handleCallEnded);
@@ -87,7 +103,7 @@ const VideoCallScreen = ({ route, navigation }) => {
         return () => {
           if (userId) {
             socketInstance.joinRoom(userId);
-            console.log(`🔄 Rejoined room after call: ${userId}`);
+            //console.log(`🔄 Rejoined room after call: ${userId}`);
           }
         };
     }, []);
@@ -98,25 +114,68 @@ const VideoCallScreen = ({ route, navigation }) => {
                 setMessage(`Successfully joined channel: ${channelName}`);
                 setupLocalVideo();
                 setIsJoined(true);
-                //restartCamera();
+                agoraEngineRef.current?.enableVideo();
+                agoraEngineRef.current?.enableAudio();
                 agoraEngineRef.current?.muteLocalVideoStream(false);
                 agoraEngineRef.current?.muteLocalAudioStream(false);
+
+                setTimeout(() => {
+                    agoraEngineRef.current?.enableVideo();
+                    agoraEngineRef.current?.muteLocalVideoStream(false);
+                    agoraEngineRef.current?.startPreview();
+                }, 500);
             },
             onUserJoined: (_connection, uid) => {
                 setMessage(`Remote user ${uid} joined`);
-                // setRemoteUsers(prev => [...prev, uid]);
-                setRemoteUids((prevUids) => [...new Set([...prevUids, uid])]);
-                agoraEngineRef.current?.muteRemoteVideoStream(uid, false);
+                
+                // Add UID to state to track remote users
+                //setRemoteUids((prevUids) => [...new Set([...prevUids, uid])]);
+                setRemoteUids((prevUids) => {
+                    const updatedUids = new Set(prevUids); // Preserve previous UIDs
+                    updatedUids.add(uid); // Add new UID
+                    console.log("✅ Updated remoteUids:", Array.from(updatedUids));
+                    return Array.from(updatedUids); // Convert Set back to array
+                });
+                
+                // setFirstJoinedUid((prevUid) => {
+                //     if (prevUid === null || prevUid === undefined) {
+                //         console.log("✅ Setting firstJoinedUid:", uid);
+                //         return uid;
+                //     }
+                //     return prevUid; // Don't overwrite if already set
+                // });
+                setTimeout(() => {
+                    remoteUids.forEach((uid) => {
+                        agoraEngineRef.current?.muteRemoteVideoStream(uid, false);
+                        agoraEngineRef.current?.muteRemoteAudioStream(uid, false);
+                        agoraEngineRef.current?.setupRemoteVideo({ uid, renderMode: 1 });
+                        //console.log(`✅ Subscribed to video/audio of UID: ${uid}`);
+                    });
+                }, 1000);
+                
+            },
+            
+            onUserPublished: (_connection, uid, mediaType) => {
+                //console.log(`🎥 User ${uid} published ${mediaType}`);
+    
+                if (mediaType === "video") {
+                    agoraEngineRef.current?.subscribe(uid, mediaType)
+                        .then(() => {
+                            setRemoteUids((prevUids) => [...new Set([...prevUids, uid])]);
+                            //console.log(`✅ Subscribed to video for UID: ${uid}`);
+                        })
+                        .catch(err => console.error(`❌ Video subscription failed for UID ${uid}:`, err));
+                }
             },
             onUserOffline: (_connection, uid) => {
-                setMessage(`Remote user ${uid} left the channel`);
-                setRemoteUsers(prev => prev.filter(id => id !== uid));
-                setRemoteUids((prevUids) => prevUids.filter((id) => id !== uid))
+                console.log(`User ${uid} left the channel`);
+    setRemoteUids((prevUids) => prevUids.filter((id) => id !== uid));
             },
         };
         agoraEngineRef.current?.registerEventHandler(eventHandler.current);
     };
 
+    
     const setupVideoSDKEngine = async () => {
         try {
             const hasPermissions = await getPermission();
@@ -128,9 +187,9 @@ const VideoCallScreen = ({ route, navigation }) => {
                 agoraEngineRef.current = createAgoraRtcEngine();
                 await agoraEngineRef.current.initialize({ appId });
                 agoraEngineRef.current.enableVideo();
-                agoraEngineRef.current.enableDualStreamMode(false);
+                agoraEngineRef.current.enableDualStreamMode(true);
                 agoraEngineRef.current.enableLocalVideo(true); 
-                console.log('✅ Agora Engine Initialized');
+                //console.log('✅ Agora Engine Initialized');
             }
 
         } catch (e) {
@@ -138,25 +197,10 @@ const VideoCallScreen = ({ route, navigation }) => {
         }
     };
 
-    const restartCamera = async () => {
-        try {
-            if (agoraEngineRef.current) {
-                console.log('🔄 Restarting local camera...');
-                await agoraEngineRef.current.enableLocalVideo(false);
-                await new Promise((resolve) => setTimeout(resolve, 1000)); // Small delay to reset
-                await agoraEngineRef.current.enableLocalVideo(true);
-                await agoraEngineRef.current.startPreview();
-            }
-        } catch (e) {
-            console.error('❌ Error restarting camera:', e);
-        }
-    };
-
-    
     const setupLocalVideo = async() => {
         try {
             if (agoraEngineRef.current) {
-                console.log('📷 Enabling local video');
+                //console.log('📷 Enabling local video');
                 await agoraEngineRef.current.enableLocalVideo(true);
                 await agoraEngineRef.current.enableVideo();
                 await agoraEngineRef.current.startPreview();
@@ -167,13 +211,18 @@ const VideoCallScreen = ({ route, navigation }) => {
         }
     };
     
-
     const joinChannel = async () => {
         if (isJoined) return;
+        //const token = await getAgoraToken("video_call", localUid);
         agoraEngineRef.current?.enableVideo();
         agoraEngineRef.current?.startPreview();
         try {
-            agoraEngineRef.current?.joinChannel(token, channelName, localUid || 0, {
+            const response = await fetch(
+                            `${mainURL}/generate_video_token?channelName=${channelName}&uid=${localUid}`
+                          );
+            const data = await response.json();
+            const token = data.token;
+             await agoraEngineRef.current?.joinChannel(token, channelName, localUid || 0, {
                 channelProfile: isGroup ? ChannelProfileType.ChannelProfileLiveBroadcasting : ChannelProfileType.ChannelProfileCommunication,
                 clientRoleType: ClientRoleType.ClientRoleBroadcaster,
                 publishMicrophoneTrack: true,
@@ -181,36 +230,48 @@ const VideoCallScreen = ({ route, navigation }) => {
                 autoSubscribeAudio: true,
                 autoSubscribeVideo: true,
             });
+            setTimeout(() => {
+                remoteUids.forEach((uid) => {
+                    agoraEngineRef.current?.muteRemoteVideoStream(uid, false);
+                    agoraEngineRef.current?.muteRemoteAudioStream(uid, false);
+                    //console.log(`Subscribed to video of user: ${uid}`);
+                });
+            }, 1000);
         } catch (e) {
             console.log(e);
         }
     };
 
-    const leaveChannel = () => {
+
+    
+    const leaveChannel = async() => {
+        
+        
         try {
+            if (agoraEngineRef.current) {
+                await agoraEngineRef.current.leaveChannel();  // Leave the channel only for this user
+                await agoraEngineRef.current.disableVideo();  // Disable local video
+                await agoraEngineRef.current.disableAudio();  // Disable local audio
+                agoraEngineRef.current.removeAllListeners();
+            }
+    
+            // Remove the user from the participants list locally
+            setRemoteUids((prevUids) => prevUids.filter((id) => id !== userId));
+            setIsJoined(false);
             if(isGroup){
                 if(isCaller){
-                    agoraEngineRef.current?.leaveChannel();
-                    setRemoteUids([]);
-                    setIsJoined(false);
+                    await agoraEngineRef.current.leaveChannel(); 
                     socket.emit("leave_group_video_call", {participants:participants, userId: userId, isCaller: isCaller});
-                    console.log(userId)
                 }else{
-                    console.log(memberId)
-                    agoraEngineRef.current?.leaveChannel();
-                    setRemoteUids([]);
-                    setIsJoined(false);
+                    await agoraEngineRef.current.leaveChannel(); 
                     socket.emit("leave_group_video_call", {participants:participants, memberId: memberId, isCaller: isCaller});
                 }
             }else{
-                agoraEngineRef.current?.leaveChannel();
-                setRemoteUids([]);
-                setIsJoined(false);
                 setMessage('Left the channel');
                 socket.emit("leave_video_call", { calleeId: calleeId, callerId: callerId });
                 navigation.goBack();
             }
-            
+            navigation.goBack();
         } catch (e) {
             console.log(e);
         }
@@ -234,33 +295,40 @@ const VideoCallScreen = ({ route, navigation }) => {
         );
     };
 
+    //console.log("remoteUids",remoteUids)
 
+    // const displayedUids = useMemo(() => {
+    //     return firstJoinedUid && !remoteUids.includes(firstJoinedUid)
+    //         ? [...new Set([firstJoinedUid, ...remoteUids])]
+    //         : remoteUids;
+    // }, [firstJoinedUid, remoteUids]);
+    
+
+    console.log("remoteUids", remoteUids)
     return (
         <SafeAreaView style={styles.container}>
         <Box style={styles.videoContainer}>
             {isGroup ? (
                 // Grid layout for group participants
                 <>
-                <Box>
-                <FlatList
-                            data={remoteUids}
-                            keyExtractor={(uid) => uid.toString()}
-                            renderItem={({ item: uid }) => (
-                                <RtcSurfaceView
-                                    canvas={{ uid, sourceType: VideoSourceType.VideoSourceRemote }}
-                                    style={styles.remoteVideoBox}
-                                />
-                            )}
-                            numColumns={2}
-                        />
-                        {remoteUids.map(uid => (
-                        <RtcSurfaceView
-                        key={uid}
-                        canvas={{ localUid: userId, sourceType: VideoSourceType.VideoSourceCamera }}
-                        style={styles.fullScreenVideo}
-                        />
-                    ))}
-                </Box>
+                    <Box>
+                            <FlatList
+                                data={remoteUids}
+                                keyExtractor={(item) => item.toString()}
+    renderItem={({ item }) => (
+        <RtcSurfaceView canvas={{ uid: item }} style={styles.remoteVideoBox} />
+    )}
+                                numColumns={2}
+                            />
+                            <RtcSurfaceView
+                                canvas={{ uid: userId, sourceType: VideoSourceType.VideoSourceCamera }}
+                                style={styles.fullScreenVideo}
+                            />
+                            <RtcSurfaceView
+                                canvas={{ uid: calleeId, sourceType: VideoSourceType.VideoSourceCamera }}
+                                style={styles.fullScreenVideo}
+                            />
+                    </Box>
                     
                     </>
             ) : (

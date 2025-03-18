@@ -33,7 +33,7 @@ import React, { useState, useContext, useLayoutEffect, useEffect,useRef, useCall
 import { Ionicons } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
 import EmojiSelector from "react-native-emoji-selector";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { UserType } from "../Context/UserContext";
 import axios from "axios";
 import { mainURL } from "../Utils/urls";
@@ -108,6 +108,8 @@ const MessageSrceen = () => {
 
   const [text,setText]=useState('')
   const [test,setTest]=useState('')
+  const [disappearMessage, setDisAppearMessage]=useState(false);
+  const [disappearMessageTime, setDisAppearMessageTime]=useState("");
   const agoraEngineRef = useRef(null); 
   const eventHandler = useRef(null); 
   const [dial , setDial]=useState(false);
@@ -190,9 +192,32 @@ const MessageSrceen = () => {
     }
   }
 
+  // const fetchChatSettings = async()=>{
+  //   try {
+  //     const response = await axios.get(`${mainURL}/chat/get_chat_settings/${userId}/${recipentId}`);
+  //     setDisAppearMessage(response.data.messageShouldDisappear);
+  //     setDisAppearMessageTime(response.data.messageDisappearTime);
+  //   } catch (error) {
+  //       console.log('Error:', error); 
+  //       if (error.response) {
+  //           console.log('Server Error:', error.response.data); 
+  //       } else if (error.request) {
+  //           console.log('Network Error:', error.request); 
+  //       } else {
+  //           console.log('Other Error:', error.message); 
+  //       }
+  //   }
+  // }
+
   useEffect(() => {
     fetchMessages();
   }, []);
+
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     fetchChatSettings();
+  //   }, [userId, recipentId])
+  // );
 
   const updateImageViewed = (messageId) => {
     setGetMessage((prevMessages) =>
@@ -525,7 +550,7 @@ const MessageSrceen = () => {
   }
 
   const handleClearChatConfirm = async () => {
-  
+    setGetMessage([]); 
     await handleClearChat();
     setIsDeleteChatOpen(false); 
   };
@@ -649,6 +674,8 @@ const MessageSrceen = () => {
       try {
           const formData = new FormData()
           formData.append("senderId",userId);
+          // formData.append("messageDisappearTime","");
+          // formData.append("messageShouldDisappear",disappearMessage);
           if(!isGroupChat){
             formData.append("recepientId",recipentId);
           }else{
@@ -1559,8 +1586,8 @@ const renderMessage = useCallback((item, index) => {
       
             {/* Row 1 */}
             <HStack space={2} justifyContent="space-between" paddingRight={12}>
-              <Text color="white" fontSize="lg" bold>
-                {!item.replyMessage && isGroupChat ? (
+               <Text color="white" fontSize="lg" bold>
+                {!item.replyMessage ? (
                   profileImageSource ? (
                     <Avatar size="xs" source={profileImageSource} />
                   ) : (

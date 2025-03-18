@@ -34,6 +34,7 @@ import VoiceScreen from './screens/VoiceScreen';
 import VoiceCallScreen from './screens/VoiceCallScreen';
 import socketInstance from "./Utils/socket";
 import CustomSplashScreen from './screens/CustomSplashScreen';
+import DisappearingMessages from './screens/DisappearingMessages';
 
 export const navigationRef = createNavigationContainerRef();
 const firebaseConfig = {
@@ -110,6 +111,11 @@ export default function App() {
         <Stack.Screen name="Settings" component={UserSettings} options={{
           headerShown: true,
           headerStyle: { backgroundColor: 'black',borderBottomWidth: 1, borderBottomColor: 'white' }, animation: 'fade',presentation: 'transparentModal',
+          headerTintColor: 'white',
+        }}/>
+         <Stack.Screen name="Disappearing Messages" component={DisappearingMessages} options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: 'black',borderBottomWidth: 1, borderBottomColor: 'white' },
           headerTintColor: 'white',
         }}/>
         <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{headerShown: false}}/>

@@ -1,5 +1,5 @@
 import { Alert, StyleSheet, View } from "react-native";
-import { Box, useDisclose, IconButton, Stagger, HStack, Icon, Center, NativeBaseProvider, Button, Pressable, Menu, HamburgerIcon } from 'native-base';
+import { Box, useDisclose, IconButton, Stagger, HStack, Icon, Center, NativeBaseProvider, Button, Pressable, Menu, HamburgerIcon, Input } from 'native-base';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
@@ -29,7 +29,10 @@ function HomeScreen(){
     const [friendRequestsReceived, setFriendRequestsReceived]=useState([]);
     const [userFriends, setUserFriends]=useState([]);
 
-    
+    const [enableSearchInputBox, setEnableSearchInputBox]=useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filteredData, setFilteredData] = useState([]);
+
     useLayoutEffect(()=>{
         navigation.setOptions({
             headerTitle:"",
@@ -149,11 +152,32 @@ function HomeScreen(){
         
     }
 
+    function enableSearchInput(){
+        if (isOpen) onToggle();
+        setEnableSearchInputBox((prev) => !prev);
+    }
+
+    const handleSearch = (text) => {
+        setSearchQuery(text);
+        
+        if (text.trim() === '') {
+            setFilteredData([]); // Reset to full list if input is empty
+            return;
+        } else {
+            const filtered = data.filter((item) =>
+                item.user_name.toLowerCase().includes(text.toLowerCase())
+            );
+            setFilteredData(filtered);
+        }
+    };
+
     return(
         <Box style={styles.container}>
+            {enableSearchInputBox && <Input variant="underlined" placeholder="Enter friend name" style={styles.inputBox} value={searchQuery}
+            onChangeText={handleSearch}/>}
             <Box style={{ flex: 1, width: "100%" }}>
                 <FlatList
-                data={data}
+                data={filteredData}
                 renderItem={({ item }) => {
                     const baseUrl = `${mainURL}/files/`;
                     const imageUrl = item.image;
@@ -216,14 +240,16 @@ function HomeScreen(){
                             )}
                             </Box>
                         </HStack>
-                    </Box>)}} keyExtractor={(item) => item._id} ListEmptyComponent={
-                    <Box alignItems="center" justifyContent="center" mt="10">
-                        <Text fontSize="lg" color="gray.500">
-                            You will find registered users here
-                        </Text>
-                    </Box>
-                }/>
+                    </Box>)}} keyExtractor={(item) => item._id} 
+                    // ListEmptyComponent={
+                    // <Box alignItems="center" justifyContent="center" mt="10">
+                    //     <Text fontSize="lg" color="gray.500">
+                    //         You will find registered users here
+                    //     </Text>
+                    // </Box>}
+                />
             </Box>
+
             <Box style={{ position: "absolute" }} alignSelf={"flex-end"} bottom={20} right={5} >
                 <Stagger visible={isOpen} initial={{ opacity: 0, scale: 0, translateY: 34 }} 
                     animate={{ translateY: 0, scale: 1, opacity: 1, 
@@ -231,14 +257,17 @@ function HomeScreen(){
                     exit={{ translateY: 34, scale: 0.5, opacity: 0, transition: { duration: 100, 
                     stagger: { offset: 30, reverse: true } } }}>
 
-                <IconButton mb="4" variant="solid" bg="indigo.500" colorScheme="indigo" 
-                    borderRadius="full" icon={<Icon as={Ionicons} size="6" name="people-circle-sharp" 
-                    _dark={{ color: "warmGray.50" }} color="warmGray.50" />} onPress={()=>navigation.navigate("FriendRequests")}/>
-                    
-                <IconButton mb="4" variant="solid" bg="yellow.400" colorScheme="yellow" 
-                    borderRadius="full" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 
-                    size="6" name="chatbox" color="warmGray.50" />} onPress={()=>navigation.navigate("Chats")}/>
-                    
+                <Pressable onPress={enableSearchInput} mb={4} bg="green.500" colorScheme={"green"} borderRadius="full" p={3}>
+                    <Icon as={<Ionicons name={"add-circle"} />}size={6} color="warmGray.50" />
+                </Pressable>
+
+                <Pressable onPress={()=>navigation.navigate("FriendRequests")} mb={4} bg="indigo.500" colorScheme="indigo"  borderRadius="full" p={3}>
+                    <Icon as={<Ionicons name={"people-circle-sharp"} />}size={6} color="warmGray.50" />
+                </Pressable>
+
+                <Pressable onPress={()=>navigation.navigate("Chats")} mb={4} bg="yellow.400" colorScheme="yellow"  borderRadius="full" p={3}>
+                    <Icon as={<Ionicons name={"chatbox"} />}size={6} color="warmGray.50" />
+                </Pressable>                    
                 </Stagger>
             </Box>
             <HStack position={"absolute"} alignSelf={"flex-end"} bottom={10} right={5} >
@@ -254,6 +283,9 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal:4,
         backgroundColor:"black"
+    },
+    inputBox:{
+        color:"white",
     }
 })
 export default HomeScreen;

@@ -1,1 +1,1 @@
-export const mainURL = "https://inifinityos.pro";
+export const mainURL = "http://inifinityos.pro";

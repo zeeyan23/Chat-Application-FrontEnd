@@ -259,24 +259,24 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
                       <>
                         <HStack space={2}>
                           <Entypo name="image" size={15} color="grey" style={{alignSelf:"center"}} />
-                          <Text>Image</Text>
+                          <Text color={"grey"}>Image</Text>
                         </HStack>
                         
                       </>
                        : item.lastMessage?.messageType==='video' ? <>
                        <HStack space={2}>
                         <Entypo name="video-camera" size={15} color="grey" style={{alignSelf:"center"}}/>
-                        <Text>Video</Text>
+                        <Text color={"grey"}>Video</Text>
                        </HStack>
                      </> :
                     item.lastMessage?.messageType === "pdf" || item.lastMessage?.messageType === "docx" || item.lastMessage?.messageType === "xlsx" 
                     || item.lastMessage?.messageType === "zip" || item.lastMessage?.messageType === "pptx" ? 
                     <>
                       <Entypo name="text-document-inverted" size={15} color="grey" style={{alignSelf:"center"}}/>
-                      <Text>{item.lastMessage?.messageType}</Text>
+                      <Text color={"grey"}>{item.lastMessage?.messageType}</Text>
                     </> : item.lastMessage?.messageType === "audio" ? <>
                       <Ionicons name="mic" size={15} color="grey" style={{alignSelf:"center"}}/>
-                      <Text>{item.lastMessage?.messageType}</Text>
+                      <Text color={"grey"}>{item.lastMessage?.messageType}</Text>
                     </> : ""}
                 </Text> : ""}
 

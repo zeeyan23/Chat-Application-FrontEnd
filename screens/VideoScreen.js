@@ -13,6 +13,7 @@ const VideoScreen = ({ route }) => {
   const navigation = useNavigation();
   const [callAccepted, setCallAccepted] = useState(false);
   const socket = socketInstance.getSocket();
+  const [callTimedOut, setCallTimedOut] = useState(false);
 
   let source, caller_image;
   if(callerImage){
@@ -31,8 +32,49 @@ const VideoScreen = ({ route }) => {
     caller_image = {uri: baseUrl + filename}
   }
     useEffect(() => {
+
+      let timeoutRef;
+
+
+      if (isCaller  && !isGroup) {
+          // Start timeout for call approval
+          timeoutRef = setTimeout(() => {
+              console.log("Call not answered!");
+              setCallTimedOut(true);
+          }, 30000); // 30 seconds
+      }
+
+      if (!isCaller  && !isGroup) {
+        // Start timeout for call approval
+        timeoutRef = setTimeout(() => {
+            console.log("Call not answered!");
+            setCallTimedOut(true);
+          
+            navigation.goBack();
+        }, 30000); // 30 seconds
+      }
+
+      if (isCaller  && isGroup) {
+        // Start timeout for call approval
+        timeoutRef = setTimeout(() => {
+            console.log("Call not answered!");
+            setCallTimedOut(true);
+        }, 30000); // 30 seconds
+    }
+
+    if (!isCaller  && isGroup) {
+      timeoutRef = setTimeout(() => {
+          console.log("Call not answered!");
+          setCallTimedOut(true);
+          
+          navigation.goBack();
+      }, 30000); // 30 seconds
+    }
+
       const handleCallApproved = (data) => {
         if (!callAccepted) {
+          clearTimeout(timeoutRef);
+          setCallTimedOut(false);
           setCallAccepted(true);
           navigation.replace("VideoCallScreen", {
             callerId: data.callerId,
@@ -55,6 +97,7 @@ const VideoScreen = ({ route }) => {
 
       socket.on("group_video_call_approved", (data) => {
         setCallAccepted(true);
+        clearTimeout(timeoutRef);
         navigation.replace("VideoCallScreen", {
           channelId: data.channelId,
           participants: data.participants,
@@ -76,6 +119,7 @@ const VideoScreen = ({ route }) => {
 
       return () => {
         socket.off("video_call_declined", handleCallDeclined);
+        clearTimeout(timeoutRef);
         socket.off("video_call_approved");
       
       };
@@ -127,11 +171,16 @@ const VideoScreen = ({ route }) => {
             <Box maxW="96" rounded="full">
               <MaterialCommunityIcons name="account" size={100} color="gray" />
             </Box>
-            <Text>Waiting for to connect...</Text>
+            <Text>{callTimedOut ? "Call not answered" : "Waiting for connection..."}</Text>
         </Box>
         <Box flex={1} justifyContent="flex-end" padding={10}>
             <Box flexDirection={"row"} justifyContent={"center"}>
-                <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={() => declineCall(calleeId, isGroup && groupId)}/>
+                  {callTimedOut ? (
+                        <CustomButton iconName={"arrow-back"} bgColor={"gray.500"} onPress={() => navigation.goBack()} />
+                    ) : (
+                        // <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={() => declineCall(calleeId, isGroup && groupId)} />
+                        <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={() => declineCall(calleeId, isGroup && groupId)}/>
+                    )}
             </Box>
         </Box>
       </Box>
@@ -145,11 +194,17 @@ const VideoScreen = ({ route }) => {
             <Box maxW="96" rounded="full">
               <MaterialCommunityIcons name="account-group" size={100} color="gray" />
             </Box>
-            <Text>Waiting for participants to connect...</Text>
+            <Text>{callTimedOut ? "Call not answered" : "Waiting for participants..."}</Text>
         </Box>
         <Box flex={1} justifyContent="flex-end" padding={10}>
             <Box flexDirection={"row"} justifyContent={"center"}>
-                <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId, groupId)}/>
+                {callTimedOut ? (
+                        <CustomButton iconName={"arrow-back"} bgColor={"gray.500"} onPress={() => navigation.goBack()} />
+                    ) : (
+                        // <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={() => declineCall(calleeId, isGroup && groupId)} />
+                        // <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall()}/>
+                        <CustomButton iconName={"call-outline"} rotation={135} bgColor={"red.900"} onPress={()=>declineCall(callerId, groupId)}/>
+                    )}
             </Box>
         </Box>
       </Box>
