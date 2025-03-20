@@ -23,6 +23,20 @@ const NotificationHandler = () => {
       }
     });
 
+    (async () => {
+      const initialNotification = await Notifications.getLastNotificationResponseAsync();
+      if (initialNotification) {
+        const { data } = initialNotification.notification.request.content;
+        if (data.senderId) {
+          navigation.navigate("MessageScreen", {
+            senderId: data.senderId,
+            recipentId: data.recepientId,
+            userName: data.userName
+          });
+        }
+      }
+    })();
+
     return () => {
       subscription.remove();
       responseSubscription.remove();

@@ -2,6 +2,7 @@
 import { io } from "socket.io-client";
 import { mainURL } from "./urls";
 import { navigationRef } from "../App";
+import { Toast } from "native-base";
 
 const SOCKET_URL = mainURL;
 
@@ -44,6 +45,14 @@ class SocketService {
         this.socket.emit("send_call_notification", {
           calleeId: data.calleeId,
           callerInfo: data.callerInfo,
+        });
+
+        Toast.show({
+          title: "Incoming Call",
+          description: `is calling you!`,
+          status: "info",
+          duration: 5000,
+          placement: "top",
         });
         navigationRef.navigate("VoiceScreen", {
           callerId: data.callerId,

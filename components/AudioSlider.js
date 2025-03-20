@@ -150,6 +150,17 @@ export default class AudioSlider extends PureComponent {
 
     async componentDidMount() {
         this.soundObject = new Audio.Sound();
+
+        await Audio.setAudioModeAsync({
+            allowsRecordingIOS: false,
+            playsInSilentModeIOS: true,
+            staysActiveInBackground: true,
+            interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+            shouldDuckAndroid: true,
+            playThroughEarpieceAndroid: false,
+            outputAudioPort: Audio.OUTPUT_AUDIO_PORT_SPEAKER, // 👈 Forces loudspeaker
+        });
+        
         await this.soundObject.loadAsync(this.props.audio);
         const status = await this.soundObject.getStatusAsync();
         this.setState({ duration: status["durationMillis"] });

@@ -1555,33 +1555,7 @@ const renderMessage = useCallback((item, index) => {
             highLight === item._id && { borderColor: "#2E7800", borderWidth: 2 }]} 
             onLongPress={()=> handleSelectedMessage(item)} onPress={() => isSelectionMode && handleSelectedMessage(item)}>
           {renderReplyMessage(item.replyMessage, handleReplyPress, userId)}
-          {/* <Box flexDirection={"row"} alignItems="center">
-            {isGroupChat && (
-              <Box flexDirection={"row"} paddingBottom={2} paddingRight={1}>
-                {!item.replyMessage ? (
-                  profileImageSource ? (
-                    <Avatar size="xs" source={profileImageSource} />
-                  ) : (
-                    <Ionicons name="person-circle-outline" size={25} color="grey" />
-                  )
-                ) : null}
-              </Box>
-            )}
-            <Box flexDirection="row" alignItems="center" flexWrap="wrap">
-              <Text paddingRight={5}>{item?.message}</Text>
-              <Text
-                style={[
-                  styles.infoText,
-                  { color: item?.senderId?._id === userId ? "black" : "black", marginLeft:"auto" } ,
-                ]}
-              >
-                {formatTime(item.timeStamp)}
-                {item?.starredBy[0] === userId && (
-                  <Entypo name="star" size={10} color="#828282" />
-                )}
-              </Text>
-            </Box>
-          </Box> */}
+          
           <Box safeArea p={1}>
       
             {/* Row 1 */}
@@ -1885,7 +1859,7 @@ return (
   <SafeAreaProvider>
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <ImageBackground source={bckimage} resizeMode="cover" style={styles.image}>
-        <KeyboardAvoidingView style={{ flex: 1}}>
+        <KeyboardAvoidingView style={{ flex: 1}} behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <FlatList
             data={getMessage}
             ref={flatListRef}

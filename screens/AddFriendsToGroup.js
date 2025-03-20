@@ -3,9 +3,10 @@ import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { UserType } from "../Context/UserContext";
 import { mainURL } from "../Utils/urls";
 import axios from "axios";
-import { FlatList, Image } from "react-native";
+import { FlatList, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from "react-native";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { Keyboard } from "react-native";
 function AddFriendsToGroup(){
 
     const {userId, setUserId} = useContext(UserType);
@@ -236,6 +237,11 @@ function AddFriendsToGroup(){
     }
     return(
         <>
+            <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"} 
+            style={{ flex: 1 }}
+            >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <Box flex={1} background={"black"}>
                 <Box padding={2}>
                     {seletedFriends.length > 0 && <Text fontSize="md" fontWeight={"semibold"} mb={3} color={"white"}>Selected Friends</Text>}
@@ -283,6 +289,8 @@ function AddFriendsToGroup(){
                         isMemberAdd ? addMemberToGroupHandle() : createGroupHandle(); 
                       }} />    
             </Box>
+            </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
         </>
         
     )

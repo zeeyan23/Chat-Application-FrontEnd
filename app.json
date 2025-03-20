@@ -37,6 +37,7 @@
           "NSAllowsArbitraryLoads": true
         }
       },
+      "icon": "./assets/icon.png",
       "bundleIdentifier": "com.mohammadzeeyan.chatapp"
     },
     "android": {

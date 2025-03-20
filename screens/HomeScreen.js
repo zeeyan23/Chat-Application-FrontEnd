@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, View } from "react-native";
+import { Alert, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
 import { Box, useDisclose, IconButton, Stagger, HStack, Icon, Center, NativeBaseProvider, Button, Pressable, Menu, HamburgerIcon, Input } from 'native-base';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -172,6 +172,11 @@ function HomeScreen(){
     };
 
     return(
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"} 
+            style={{ flex: 1 }}
+            >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <Box style={styles.container}>
             {enableSearchInputBox && <Input variant="underlined" placeholder="Enter friend name" style={styles.inputBox} value={searchQuery}
             onChangeText={handleSearch}/>}
@@ -241,12 +246,6 @@ function HomeScreen(){
                             </Box>
                         </HStack>
                     </Box>)}} keyExtractor={(item) => item._id} 
-                    // ListEmptyComponent={
-                    // <Box alignItems="center" justifyContent="center" mt="10">
-                    //     <Text fontSize="lg" color="gray.500">
-                    //         You will find registered users here
-                    //     </Text>
-                    // </Box>}
                 />
             </Box>
 
@@ -271,10 +270,11 @@ function HomeScreen(){
                 </Stagger>
             </Box>
             <HStack position={"absolute"} alignSelf={"flex-end"} bottom={10} right={5} >
-            {/* <Button title="Delete All Messages" onPress={deleteAllMessages} color="#ff0000" /> */}
                 <IconButton variant="solid" borderRadius="full" size="lg" onPress={onToggle} bg="cyan.400" icon={<Icon as={MaterialCommunityIcons} size="6" name="dots-horizontal" color="warmGray.50" _dark={{ color: "warmGray.50" }} />} />
             </HStack>
         </Box>
+        </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
     )
 }
 
