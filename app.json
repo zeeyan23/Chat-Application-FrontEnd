@@ -35,7 +35,8 @@
         "NSBluetoothAlwaysUsageDescription": "This app requires Bluetooth access to connect to audio devices.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "ITSAppUsesNonExemptEncryption": false
       },
       "icon": "./assets/icon.png",
       "bundleIdentifier": "com.mohammadzeeyan.chatapp"
@@ -49,12 +50,12 @@
       },
       "permissions": [
         "android.permission.RECORD_AUDIO",
-        "INTERNET",
-        "NOTIFICATIONS",
-        "CAMERA",
-        "RECORD_AUDIO",
-        "BLUETOOTH",
-        "BLUETOOTH_CONNECT"
+        "android.permission.INTERNET",
+        "android.permission.NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_CONNECT"
       ],
       "package": "com.mohammadzeeyan.chat_application"
     },
