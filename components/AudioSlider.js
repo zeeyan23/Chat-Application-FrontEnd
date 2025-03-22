@@ -134,8 +134,9 @@ export default class AudioSlider extends PureComponent {
       // If there is a saved position, start from there
       await this.soundObject.setPositionAsync(this.state.pausedPosition);
     }
+
     await this.soundObject.playAsync();
-    this.setState({ playing: true }); // This is for the play-button to go to play
+    this.setState({ playing: true, pausedPosition: 0 }); // This is for the play-button to go to play
     this.startMovingDot();
   };
 
