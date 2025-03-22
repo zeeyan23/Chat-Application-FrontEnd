@@ -179,15 +179,15 @@ export default class AudioSlider extends PureComponent {
   async componentDidMount() {
     this.soundObject = new Audio.Sound();
 
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: true,
-      interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
-      outputAudioPort: Audio.OUTPUT_AUDIO_PORT_SPEAKER, // 👈 Forces loudspeaker
-    });
+    // await Audio.setAudioModeAsync({
+    //   allowsRecordingIOS: false,
+    //   playsInSilentModeIOS: true,
+    //   staysActiveInBackground: true,
+    //   interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+    //   shouldDuckAndroid: true,
+    //   playThroughEarpieceAndroid: false,
+    //   outputAudioPort: Audio.OUTPUT_AUDIO_PORT_SPEAKER, // 👈 Forces loudspeaker
+    // });
     //    console.log('Im here')
     //     await this.soundObject
     //       .loadAsync({ uri: this.props.audio.uri })

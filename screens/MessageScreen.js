@@ -42,7 +42,14 @@ import {
   ActionSheetIOS,
   Keyboard,
 } from "react-native";
-import { useState, useContext, useLayoutEffect, useEffect, useRef, useCallback } from "react";
+import {
+  useState,
+  useContext,
+  useLayoutEffect,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
 import EmojiSelector from "react-native-emoji-selector";
@@ -1931,7 +1938,7 @@ const MessageSrceen = () => {
           >
             {renderReplyMessage(item.replyMessage, handleReplyPress, userId)}
 
-            <Box safeArea p={1}>
+            <Box>
               {/* Row 1 */}
               <HStack
                 space={2}
@@ -1960,7 +1967,7 @@ const MessageSrceen = () => {
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Box></Box>
+                {/* <Box></Box> */}
                 <Text
                   style={[
                     styles.infoText,
