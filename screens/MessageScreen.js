@@ -30,7 +30,6 @@
 import {
   StyleSheet,
   View,
-  ScrollView,
   KeyboardAvoidingView,
   TextInput,
   Image,
@@ -39,29 +38,15 @@ import {
   Linking,
   Animated,
   PanResponder,
-  TouchableOpacity,
-  PermissionsAndroid,
   Alert,
   ActionSheetIOS,
-  Dimensions,
   Keyboard,
 } from "react-native";
-import React, {
-  useState,
-  useContext,
-  useLayoutEffect,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import { useState, useContext, useLayoutEffect, useEffect, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
 import EmojiSelector from "react-native-emoji-selector";
-import {
-  useFocusEffect,
-  useNavigation,
-  useRoute,
-} from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserType } from "../Context/UserContext";
 import axios from "axios";
 import { mainURL } from "../Utils/urls";
@@ -80,20 +65,15 @@ import {
   Divider,
   Flex,
   FlatList,
-  Spacer,
-  useDisclose,
   Actionsheet,
   Checkbox,
   Button,
-  VStack,
 } from "native-base";
 import * as ImagePicker from "expo-image-picker";
-import { Video, Audio } from "expo-av";
+import { Audio } from "expo-av";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { io } from "socket.io-client";
 import moment from "moment";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
 import AudioSlider from "../components/AudioSlider";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 import useBackHandler from "../components/CustomBackHandler";
@@ -103,7 +83,6 @@ import MessageDeleteDialog from "../components/MessagesDeleteDialog";
 import socketInstance from "../Utils/socket";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
-import { Path } from "react-native-svg";
 
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
@@ -193,27 +172,36 @@ const MessageSrceen = () => {
     lastOnlineTime: null,
   });
   const [keyboardStatus, setKeyboardStatus] = useState(false);
-  const animatedFlex = useRef(new Animated.Value(0.98)).current;
+  const animatedFlex = useRef(
+    new Animated.Value(Platform.OS === "android" ? 1 : 0.98)
+  ).current;
+  useEffect(() => {
+    fetchMessages();
+  }, []);
   useEffect(() => {
     const showSubscription = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
       () => {
         setKeyboardStatus(true);
         Animated.timing(animatedFlex, {
-          toValue: 0.8, // Shrink chatbox smoothly
-          duration: 300, // Smooth transition
+          toValue: Platform.OS === "android" ? 0.55 : 0.8,
+          duration: 300,
           useNativeDriver: false,
         }).start();
       }
     );
-    const hideSubscription = Keyboard.addListener("keyboardWillHide", () => {
-      setKeyboardStatus(false);
-      Animated.timing(animatedFlex, {
-        toValue: 0.98, // Expand chatbox smoothly
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    });
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => {
+        setKeyboardStatus(false);
+        console;
+        Animated.timing(animatedFlex, {
+          toValue: Platform.OS === "android" ? 1 : 0.98,
+          duration: 300,
+          useNativeDriver: false,
+        }).start();
+      }
+    );
 
     return () => {
       showSubscription.remove();
@@ -265,10 +253,17 @@ const MessageSrceen = () => {
         : isGroupChat
         ? `${mainURL}/message/get-group-messages/${groupId}`
         : `${mainURL}/message/get-messages/${userId}/${recipentId}`;
+      const startTime = Date.now(); // Record start time
+
+      console.log("request sent");
       const response = await axios.get(url).then((res) => {
+        console.log("response :", res);
         const messages = res.data.message.filter(
           (message) => !message.clearedBy.includes(userId)
         );
+        console.log("messages :", messages);
+        const endTime = Date.now(); // Record end time
+        console.log(`Response received after ${endTime - startTime} ms`);
         setGetMessage(messages.reverse());
       });
     } catch (error) {
@@ -299,10 +294,6 @@ const MessageSrceen = () => {
   //       }
   //   }
   // }
-
-  useEffect(() => {
-    fetchMessages();
-  }, []);
 
   // useFocusEffect(
   //   useCallback(() => {
