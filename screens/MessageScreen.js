@@ -168,6 +168,7 @@ const MessageSrceen = () => {
   });
   useBackHandler("Home");
 
+  const [hasPermission, setHasPermission] = useState(false);
   const recordingRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -251,6 +252,17 @@ const MessageSrceen = () => {
     }
   }, [highlightedMessageId, getMessage]);
 
+  useEffect(() => {
+    const requestPermission = async () => {
+      const { status } = await Audio.requestPermissionsAsync();
+      console.log(status)
+
+      setHasPermission(status === "granted");
+      
+    };
+
+    requestPermission();
+  }, []);
   const fetchMessages = async () => {
     try {
       const url = senderId
@@ -912,12 +924,10 @@ const MessageSrceen = () => {
     setIsSending(true);
     setText(fileUri);
     setTest(messageType);
-    //console.log("test")
+    console.log("filename", fileName)
     try {
       const formData = new FormData();
       formData.append("senderId", userId);
-      // formData.append("messageDisappearTime","");
-      // formData.append("messageShouldDisappear",disappearMessage);
       if (!isGroupChat) {
         formData.append("recepientId", recipentId);
       } else {
@@ -930,16 +940,19 @@ const MessageSrceen = () => {
 
       if (messageType === "video") {
         formData.append("messageType", messageType);
+        const fileExtension = fileName.split(".").pop().toLowerCase();
+        const mimeType = fileExtension === "mov" ? "video/quicktime" : "video/mp4";
         const videoUri =
           Platform.OS === "android" ? fileUri : fileUri.replace("file://", "");
         formData.append("videoViewOnce", viewOnceSelected);
         formData.append("file", {
           uri: videoUri,
-          name: "video.mp4",
-          type: "video/mp4",
+          name: `video.${fileExtension}`,
+          type: mimeType,
         });
         formData.append("duration", duration);
         formData.append("videoName", fileName);
+        console.log("formData",formData)
       } else if (messageType === "image") {
         formData.append("messageType", messageType);
         formData.append("imageViewOnce", viewOnceSelected);
@@ -1164,11 +1177,16 @@ const MessageSrceen = () => {
     }
   };
 
+  const getFileNameWithExtension = (uri) => {
+    const fileExtension = uri.split('.').pop(); // Extract the file extension
+    return `media_${Date.now()}.${fileExtension}`;
+  };
+
   // Handle the selected media (image/video)
   const handleSelectedMedia = (result) => {
     const asset = result.assets[0]; // Get the first asset
     const isVideo = asset.type === "video";
-
+    console.log("result",result)
     // Set message type (image/video)
     setMessageType(isVideo ? "video" : "image");
 
@@ -1176,7 +1194,7 @@ const MessageSrceen = () => {
     setSelectedFile({
       uri: asset.uri,
       duration: asset.duration || null, // Only for video
-      fileName: asset.fileName || null,
+      fileName: asset.fileName || getFileNameWithExtension(asset.uri),
     });
 
     // console.log('Selected Media:', {
@@ -1188,6 +1206,7 @@ const MessageSrceen = () => {
   };
 
   const handleSendFileMessage = () => {
+    console.log("selectedFile",selectedFile);
     if (selectedFile) {
       sendMessage(
         messageType,
@@ -1502,6 +1521,17 @@ const MessageSrceen = () => {
   };
 
   const voiceRecordHandle = async () => {
+    console.log(hasPermission)
+    // if (!hasPermission) {
+    //   console.log(hasPermission)
+    //   Alert.alert(
+    //     "Permission Denied",
+    //     "Microphone permission is required to record audio."
+    //   );
+    //   return;
+    // }
+
+
     if (isRecordingInProgress) return;
 
     try {
@@ -1515,14 +1545,14 @@ const MessageSrceen = () => {
         recordingRef.current = null;
       }
 
-      const { granted } = await Audio.requestPermissionsAsync();
-      if (!granted) {
-        alert("You need to enable microphone permissions to use this feature.");
-        setIsRecording(false);
-        setIsRecordingInProgress(false);
-        stopRecordingAnimation();
-        return;
-      }
+      // const { granted } = await Audio.requestPermissionsAsync();
+      // if (!granted) {
+      //   alert("You need to enable microphone permissions to use this feature.");
+      //   setIsRecording(false);
+      //   setIsRecordingInProgress(false);
+      //   stopRecordingAnimation();
+      //   return;
+      // }
 
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,

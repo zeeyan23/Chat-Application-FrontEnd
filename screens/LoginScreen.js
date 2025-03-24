@@ -146,44 +146,19 @@ function LoginScreen(){
             console.log(response.data)
             const token = response.data.token;
             await AsyncStorage.setItem("authToken", token); 
-            signIn();
-            setTimeout(() => {
-                if (navigationRef.isReady()) {
-                    if(response.data.hasValidFriends === true || response.data.hasValidGroups === true){
-                        navigation.navigate('Chats');
-                    }else {
-                        navigation.navigate('Home');
-                    }
-                //     navigationRef.navigate('Login');
-                //   navigationRef.dispatch(
-                //     CommonActions.reset({
-                //       index: 0,
-                //       routes: [{ name: response.data.hasValidFriends || response.data.hasValidGroups ? 'Chats' : 'Home' }],
-                //     })
-                //   );
-                }
-              }, 300);
-            // if(response.data.hasValidFriends || response.data.hasValidGroups){
-            //     //navigation.navigate('Chats');
+            const isNewUser = !(response.data.hasValidFriends);
+            
+            signIn(isNewUser);
+            
+            // setTimeout(() => {
             //     if (navigationRef.isReady()) {
-            //         navigationRef.dispatch(
-            //           CommonActions.reset({
-            //             index: 0,
-            //             routes: [{ name: 'Chats' }], // Ensure 'Chats' exists in your stack
-            //           })
-            //         );
-            //       }
-                
-            // }else{
-            //     if (navigationRef.isReady()) {
-            //         navigationRef.dispatch(
-            //           CommonActions.reset({
-            //             index: 0,
-            //             routes: [{ name: 'Home' }], // Ensure 'Chats' exists in your stack
-            //           })
-            //         );
-            //       }
-            // }
+            //         if(response.data.hasValidFriends === true || response.data.hasValidGroups === true){
+            //             navigation.navigate('Chats');
+            //         }else {
+            //             navigation.navigate('Home');
+            //         }
+            //     }
+            //   }, 300);
             
         } catch (error) {
             if (error.response) {
@@ -198,13 +173,6 @@ function LoginScreen(){
         }
     }
     
-    // if (isLoading) {
-    //     return (
-    //         <Center w="100%" style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    //             <Heading>Loading...</Heading>
-    //         </Center>
-    //     );
-    // }
 
     return(
         <Center w="100%" style={styles.container}>
