@@ -299,12 +299,9 @@ export default function App() {
 
     useEffect(() => {
       if (isAuthenticated && navigationRef.isReady()) {
+        console.log(isNewUser)
         setTimeout(() => {
-          if (!isNewUser) {
-            navigationRef.navigate("Chats");
-          } else {
-            navigationRef.navigate("Home");
-          }
+          navigationRef.navigate(isNewUser ? 'Home' : 'Chats');
         }, 300);
       }
     }, [isAuthenticated, isNewUser]);

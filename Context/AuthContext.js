@@ -33,7 +33,12 @@ export const AuthProvider = ({ children }) => {
     checkUserStatus();
   }, []);
 
-  const signIn = () => setIsAuthenticated(true);
+  const signIn = (isNewUser) => {
+    console.log("isNewUser", isNewUser)
+    setIsAuthenticated(true);
+    setIsNewUser(isNewUser);
+  };
+
   const signOut = async () => {
     try {
       await AsyncStorage.removeItem('authToken');
