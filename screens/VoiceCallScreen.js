@@ -129,6 +129,7 @@ function VoiceCallScreen({ route, navigation }){
     const joinChannel = async () => {
         if (isJoined) return;
         agoraEngineRef.current?.enableAudio();
+        agoraEngineRef.current?.setDefaultAudioRouteToSpeakerphone(false); 
         agoraEngineRef.current?.muteLocalAudioStream(false);
         try {
             const response = await fetch(

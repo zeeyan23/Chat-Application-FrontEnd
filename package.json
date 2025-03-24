@@ -50,7 +50,8 @@
     "react-native-screens": "~4.1.0",
     "react-native-svg": "^15.10.1",
     "react-native-webrtc": "^124.0.5",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "expo-linking": "~7.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

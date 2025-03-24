@@ -41,6 +41,7 @@ import {
   Alert,
   ActionSheetIOS,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import {
   useState,
@@ -182,6 +183,21 @@ const MessageSrceen = () => {
   const animatedFlex = useRef(
     new Animated.Value(Platform.OS === "android" ? 1 : 0.98)
   ).current;
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!socket.connected) socket.connect();
+    }, 10000);
+
+    socket.on("disconnect", () => {
+      console.warn("Socket disconnected! Reconnecting...");
+      setTimeout(() => socket.connect(), 2000);
+    });
+
+    return () => {
+      clearInterval(interval);
+      socket.off("disconnect");
+    };
+  }, []);
   useEffect(() => {
     fetchMessages();
   }, []);
@@ -325,6 +341,7 @@ const MessageSrceen = () => {
   };
 
   useEffect(() => {
+    if (!socket.connected) socket.connect();
     socket.emit("join", userId);
     socket.on("newMessage", (message) => {
       console.log("Received message: ", message);
@@ -370,7 +387,7 @@ const MessageSrceen = () => {
       socket.off("videoViewedUpdate");
       socket.off("voice_call_declined");
     };
-  }, [userId, recipentId, socket, groupId]);
+  }, [userId]);
 
   useEffect(() => {
     if (socket) {
@@ -389,7 +406,7 @@ const MessageSrceen = () => {
     return () => {
       socket.off("update_user_status");
     };
-  }, [socket, senderId, recipentId]);
+  }, [recipentId]);
 
   const handleVideoPress = async (videoUrl, item) => {
     console.log(videoUrl);
@@ -930,8 +947,8 @@ const MessageSrceen = () => {
 
       if (messageType === "video") {
         formData.append("messageType", messageType);
-        const videoUri =
-          Platform.OS === "android" ? fileUri : fileUri.replace("file://", "");
+        const videoUri = fileUri;
+        // Platform.OS === "android" ? fileUri : fileUri.replace("file://", "")
         formData.append("videoViewOnce", viewOnceSelected);
         formData.append("file", {
           uri: videoUri,
@@ -980,7 +997,7 @@ const MessageSrceen = () => {
         formData.append("isGroupChat", isGroupChat);
         formData.append("groupId", groupId);
       }
-
+      console.log("formData :", formData);
       const response = await axios.post(
         `${mainURL}/message/messages/`,
         formData,
@@ -1014,6 +1031,7 @@ const MessageSrceen = () => {
         });
       }
     } catch (error) {
+      console.log("error sending message :", error);
       if (error.response && error.response.data.error) {
         setErrorMessage(error.response.data.error);
       } else if (error.request) {
@@ -1131,10 +1149,7 @@ const MessageSrceen = () => {
   const openCamera = async (mediaType) => {
     try {
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes:
-          mediaType === "photo"
-            ? ImagePicker.MediaTypeOptions.Images
-            : ImagePicker.MediaTypeOptions.Videos,
+        mediaTypes: mediaType === "photo" ? ["images"] : ["videos"],
         allowsEditing: true,
         quality: 0.8, // Image/Video quality (0.0 to 1.0)
       });
@@ -1166,6 +1181,7 @@ const MessageSrceen = () => {
 
   // Handle the selected media (image/video)
   const handleSelectedMedia = (result) => {
+    console.log("selected file result :", result);
     const asset = result.assets[0]; // Get the first asset
     const isVideo = asset.type === "video";
 
@@ -1174,9 +1190,9 @@ const MessageSrceen = () => {
 
     // Store the media details (URI, duration, fileName)
     setSelectedFile({
-      uri: asset.uri,
-      duration: asset.duration || null, // Only for video
-      fileName: asset.fileName || null,
+      uri: result.assets[0].uri,
+      duration: result.assets[0].duration || null, // Only for video
+      fileName: result.assets[0].fileName || null,
     });
 
     // console.log('Selected Media:', {
@@ -1189,12 +1205,18 @@ const MessageSrceen = () => {
 
   const handleSendFileMessage = () => {
     if (selectedFile) {
+      console.log("selected file :", selectedFile);
       sendMessage(
         messageType,
         selectedFile.uri,
         selectedFile.duration,
         selectedFile.fileName
-      );
+          ? selectedFile.fileName
+          : selectedFile.uri.split("ImagePicker/")[1]
+      )
+        .catch((e) => console.log("error sending message:", e))
+        .then((s) => console.log("message sent successfully!".s));
+
       setSelectedFile(null); // Clear the selected file after sending
       setMessageType(null);
     }
@@ -1342,7 +1364,16 @@ const MessageSrceen = () => {
         } else if (mimeType === "application/zip") {
           docType = "zip";
         }
-        sendMessage(docType, asset.uri, null, fileName);
+        console.log(
+          "sending files :Doc type :",
+          docType,
+          "URI :",
+          result.assets[0].uri,
+          fileName
+        );
+        sendMessage(docType, result.assets[0].uri, null, fileName)
+          .catch((e) => console.log("error sending message:", e))
+          .then((s) => console.log("message sent successfully!".s));
       }
     } catch (error) {
       console.log("Error picking document:", error);
@@ -2425,7 +2456,6 @@ const MessageSrceen = () => {
     player.loop = true;
     player.play();
   });
-
   const { isPlaying } = useEvent(player, "playingChange", {
     isPlaying: player.playing,
   });
@@ -2494,6 +2524,18 @@ const MessageSrceen = () => {
                     allowsFullscreen
                     allowsPictureInPicture
                   />
+                  {!player.playing && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: [{ translateX: -25 }, { translateY: -25 }],
+                      }}
+                    >
+                      <ActivityIndicator size="large" color="white" />
+                    </View>
+                  )}
                   <Entypo
                     name="cross"
                     size={24}
