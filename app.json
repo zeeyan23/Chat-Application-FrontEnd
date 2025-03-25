@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon_image.jpg",
     "userInterfaceStyle": "light",
+    "scheme": "chatapp",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/icon_image.jpg",
@@ -59,7 +60,7 @@
       ],
       "package": "com.mohammadzeeyan.chat_application"
     },
-    "scheme": "chat_application",
+
     "web": {
       "favicon": "./assets/favicon.png"
     },

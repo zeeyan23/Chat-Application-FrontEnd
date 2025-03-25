@@ -54,50 +54,50 @@ class SocketService {
           duration: 5000,
           placement: "top",
         });
-        navigationRef.navigate("VoiceScreen", {
-          callerId: data.callerId,
-          calleeId: data.calleeId,
-          isCaller: false,
-          callerInfo: data.callerInfo,
-          calleeInfo: data.calleeInfo,
-        });
+        // navigationRef.navigate("VoiceScreen", {
+        //   callerId: data.callerId,
+        //   calleeId: data.calleeId,
+        //   isCaller: false,
+        //   callerInfo: data.callerInfo,
+        //   calleeInfo: data.calleeInfo,
+        // });
       // }
     });
     this.socket.on("incoming_group_voice_call", (data) => {
-      navigationRef.navigate("VoiceScreen", {
-        isGroup: true,
-        groupId: data.groupId,
-        participants: data.participants,
-        isCaller: data.isCaller,
-        callerId: data.callerId,
-        callerName: data.callerName,
-        callerImage: data.callerImage,
-        memberId: data.memberId
-      });
+      // navigationRef.navigate("VoiceScreen", {
+      //   isGroup: true,
+      //   groupId: data.groupId,
+      //   participants: data.participants,
+      //   isCaller: data.isCaller,
+      //   callerId: data.callerId,
+      //   callerName: data.callerName,
+      //   callerImage: data.callerImage,
+      //   memberId: data.memberId
+      // });
     });
 
     this.socket.on("incoming_video_call", (data) => {
-        navigationRef.navigate("VideoScreen", {
-          callerId: data.callerId,
-          calleeId: data.calleeId,
-          isCaller: false,
-          callerInfo: data.callerInfo,
-          calleeInfo: data.calleeInfo,
-        });
+        // navigationRef.navigate("VideoScreen", {
+        //   callerId: data.callerId,
+        //   calleeId: data.calleeId,
+        //   isCaller: false,
+        //   callerInfo: data.callerInfo,
+        //   calleeInfo: data.calleeInfo,
+        // });
       // }
     });
 
     this.socket.on("incoming_group_video_call", (data) => {
-      navigationRef.navigate("VideoScreen", {
-        isGroup: true,
-        isCaller: data.isCaller,
-        groupId: data.groupId,
-        participants: data.participants,
-        callerId: data.callerId,
-        callerName: data.callerName,
-        callerImage: data.callerImage,
-        memberId: data.memberId
-      });
+      // navigationRef.navigate("VideoScreen", {
+      //   isGroup: true,
+      //   isCaller: data.isCaller,
+      //   groupId: data.groupId,
+      //   participants: data.participants,
+      //   callerId: data.callerId,
+      //   callerName: data.callerName,
+      //   callerImage: data.callerImage,
+      //   memberId: data.memberId
+      // });
     // }
   });
 

@@ -34,7 +34,9 @@ import VoiceCallScreen from "./screens/VoiceCallScreen";
 import socketInstance from "./Utils/socket";
 import CustomSplashScreen from "./screens/CustomSplashScreen";
 import DisappearingMessages from "./screens/DisappearingMessages";
-
+import * as Device from "expo-device";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 export const navigationRef = createNavigationContainerRef();
 const firebaseConfig = {
   apiKey: "AIzaSyDNMObk5i4DCZE8hm7CU4PeYAs9j3PkbFM",
@@ -44,7 +46,13 @@ const firebaseConfig = {
   //messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
   appId: "1:844526207661:android:3f188c4649487fb74a3c24",
 };
-
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 const app = initializeApp(firebaseConfig);
 
 // Ensure Firebase Auth is initialized properly
@@ -94,6 +102,15 @@ export default function App() {
             headerTintColor: "white",
             animation: "fade",
             // presentation: "transparentModal",
+          }}
+        />
+        <Stack.Screen
+          name="VoiceScreen"
+          component={VoiceScreen}
+          options={{
+            headerShown: false,
+            //  animation: "fade",
+            //  presentation: "transparentModal",
           }}
         />
         <Stack.Screen
@@ -244,15 +261,7 @@ export default function App() {
             presentation: "transparentModal",
           }}
         />
-        <Stack.Screen
-          name="VoiceScreen"
-          component={VoiceScreen}
-          options={{
-            headerShown: false,
-            animation: "fade",
-            presentation: "transparentModal",
-          }}
-        />
+
         <Stack.Screen
           name="VoiceCallScreen"
           component={VoiceCallScreen}
@@ -299,27 +308,81 @@ export default function App() {
 
     useEffect(() => {
       if (isAuthenticated && navigationRef.isReady()) {
-        console.log(isNewUser)
+        console.log(isNewUser);
         setTimeout(() => {
-          navigationRef.navigate(isNewUser ? 'Home' : 'Chats');
+          navigationRef.navigate(isNewUser ? "Home" : "Chats");
         }, 300);
       }
     }, [isAuthenticated, isNewUser]);
+    async function registerForPushNotificationsAsync() {
+      if (Device.isDevice) {
+        if (Platform.OS === "android") {
+          Notifications.setNotificationChannelAsync("default", {
+            name: "default",
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: "#FF231F7C",
+          });
+        }
 
+        const { status: existingStatus } =
+          await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== "granted") {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== "granted") {
+          console.log(
+            "Permission not granted to get push token for push notification!"
+          );
+          return null;
+        }
+
+        const projectId =
+          Constants?.expoConfig?.extra?.eas?.projectId ??
+          Constants?.easConfig?.projectId;
+        if (!projectId) {
+          console.log("Project ID not found");
+          return null;
+        }
+
+        try {
+          const pushToken = (
+            await Notifications.getExpoPushTokenAsync({
+              projectId,
+            })
+          ).data;
+          console.log("Expo Push Token:", pushToken);
+          return pushToken;
+        } catch (error) {
+          console.log("Error fetching Expo Push Token:", error);
+          return null;
+        }
+      } else {
+        console.log("Must use physical device for push notifications");
+        return null;
+      }
+    }
     useEffect(() => {
-      const subscription =
-        Notifications.addNotificationResponseReceivedListener((response) => {
-          const { screen, callerId, calleeId, isCaller, isGroup } =
-            response.notification.request.content.data;
-          if (screen === "VoiceScreen" && navigationRef.isReady()) {
-            navigationRef.navigate("VoiceScreen", {
-              callerId,
-              calleeId,
-              isCaller,
-              isGroup,
-            });
-          }
-        });
+      registerForPushNotificationsAsync().then((t) =>
+        console.log("token :", Platform.OS, t)
+      );
+      const subscription = Notifications.addNotificationReceivedListener(
+        (response) => {
+          console.log("Notifications :", response.request.content);
+          // const { screen, callerId, calleeId, isCaller, isGroup } =
+          //   response.notification.request.content.data;
+          // if (screen === "VoiceScreen" && navigationRef.isReady()) {
+          //   // navigationRef.navigate("VoiceScreen", {
+          //   //   callerId,
+          //   //   calleeId,
+          //   //   isCaller,
+          //   //   isGroup,
+          //   // });
+          // }
+        }
+      );
 
       // Cleanup on unmount
       return () => subscription.remove();
@@ -335,9 +398,9 @@ export default function App() {
           prefixes: [Linking.createURL("/")],
           config: {
             screens: {
-              Home: "home",
-              Chats: "chats",
-              CallScreen: "call/:callerId/:calleeId",
+              Notifications: "Notifications",
+              VoiceScreen: "VoiceScreen/:callerId/:callerName/:groupId",
+              VoiceScreen: "VoiceScreen/:callerId/:callerName",
             },
           },
           async getInitialURL() {
@@ -347,14 +410,7 @@ export default function App() {
             }
             const response =
               await Notifications.getLastNotificationResponseAsync();
-            if (response) {
-              const { screen, callerId, calleeId } =
-                response.notification.request.content.data;
-              if (screen === "CallScreen") {
-                return Linking.createURL(`/call/${callerId}/${calleeId}`);
-              }
-            }
-            return null;
+            return response?.notification.request.content.data?.screen;
           },
           subscribe(listener) {
             const onReceiveURL = ({ url }) => {
@@ -369,13 +425,7 @@ export default function App() {
             const subscription =
               Notifications.addNotificationResponseReceivedListener(
                 (response) => {
-                  const { screen, callerId, calleeId } =
-                    response.notification.request.content.data;
-                  if (screen === "CallScreen") {
-                    listener(
-                      Linking.createURL(`/call/${callerId}/${calleeId}`)
-                    );
-                  }
+                  listener(response.notification.request.content.data?.screen);
                 }
               );
 
@@ -385,13 +435,13 @@ export default function App() {
             };
           },
         }}
-        ref={navigationRef}
       >
         {isAuthenticated ? (
           <AuthenticatedComponents isNewUser={isNewUser} />
         ) : (
           <AuthStack />
         )}
+
         <NotificationHandler />
       </NavigationContainer>
     );

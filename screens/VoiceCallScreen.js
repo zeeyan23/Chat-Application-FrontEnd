@@ -22,6 +22,8 @@ const uid = 0;
 function VoiceCallScreen({ route, navigation }){
     // const { channelId, recipientId,isHost, isGroup,  } = route.params;
     const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup,  participants: initialParticipants = [], memberId} = route.params;
+   console.log('callerID :',callerId)
+   
     const agoraEngineRef = useRef(null);
     const [isJoined, setIsJoined] = useState(false);
     const [remoteUid, setRemoteUid] = useState(0);

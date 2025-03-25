@@ -728,6 +728,7 @@ const MessageSrceen = () => {
   }, [navigation, seletedMessages, Platform.OS, userName, status]);
 
   function voiceCallHandle() {
+    console.log('caller id',userId)
     socket.emit("voice_calling", {
       callerId: userId,
       calleeId: recipentId,

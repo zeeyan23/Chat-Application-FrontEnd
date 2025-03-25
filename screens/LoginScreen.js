@@ -1,17 +1,14 @@
-import * as React from "react";
-import { Box, Text, Heading, VStack, FormControl, Input, Link, Button, HStack, Center, NativeBaseProvider, Pressable, Icon } from "native-base";
+import { Box, Text, Heading, VStack, FormControl, Input, Center, Pressable, Icon } from "native-base";
 import { Platform, StyleSheet, TouchableOpacity } from "react-native";
-import { CommonActions, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { useState } from "react";
 import { mainURL } from "../Utils/urls";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useEffect } from "react";
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Ionicons } from "@expo/vector-icons";
-import { navigationRef } from "../App";
 import { AuthContext } from "../Context/AuthContext";
 import { useContext } from "react";
 import { LinearGradient } from 'expo-linear-gradient';
@@ -50,14 +47,6 @@ function LoginScreen(){
     
     //     isLoggedIn();
     // }, []);
-    
-    Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: true,
-            shouldSetBadge: true,
-        }),
-    });
 
     async function registerForPushNotificationsAsync() {
     if (Device.isDevice) {

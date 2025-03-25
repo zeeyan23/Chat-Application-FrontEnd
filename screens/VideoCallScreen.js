@@ -12,7 +12,7 @@ import { mainURL } from "../Utils/urls";
 import { UserType } from "../Context/UserContext";
 import { Box, FlatList } from "native-base";
 import CustomButton from "../components/CustomButton";
-
+import { useToast } from "native-base";
 const appId = "4c1e2db4af064ae29874d36ac9f21d44";
 const channelName = "video_call";
 const localUid = 0;
@@ -27,6 +27,7 @@ const VideoCallScreen = ({ route, navigation }) => {
     memberId,
   } = route.params;
   const agoraEngineRef = useRef(null);
+  const toast = useToast();
   const [isJoined, setIsJoined] = useState(false);
   const [remoteUids, setRemoteUids] = useState([]);
   const remoteUidsRef = useRef([]);
@@ -159,7 +160,7 @@ const VideoCallScreen = ({ route, navigation }) => {
         setMessage(`Remote user ${uid} joined`);
         // Show join alert only for group calls
         if (isGroup) {
-          Alert.alert(`${uid} joined the call`);
+          toast.show({ description: `${uid} joined the call` });
         }
 
         // Add UID to state to track remote users
@@ -206,7 +207,7 @@ const VideoCallScreen = ({ route, navigation }) => {
       onUserOffline: (_connection, uid) => {
         console.log(`User ${uid} left the channel`);
         if (isGroup) {
-          Alert.alert(`${uid} left the call`);
+          toast.show({ description: `${uid} left the call` });
         }
         // Clear the remote user and check if call should end
         setRemoteUids((prevUids) => {
