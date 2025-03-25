@@ -34,6 +34,7 @@ import {
   PanResponder,
   View,
   Easing,
+  ActivityIndicator,
 } from "react-native";
 import { Audio } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
@@ -47,6 +48,7 @@ export default class AudioSlider extends PureComponent {
     super(props);
     this.state = {
       playing: false,
+      loading: false,
       currentTime: 0, // milliseconds; value interpolated by animation
       duration: 0,
       trackLayout: {},
@@ -117,9 +119,13 @@ export default class AudioSlider extends PureComponent {
 
   onPressPlayPause = async () => {
     if (!this.soundObject._loaded) {
+      this.setState({ loading: true });
       await this.soundObject
         .loadAsync({ uri: this.props.audio.uri })
-        .then((res) => console.log("sound is loaded", res))
+        .then((res) => {
+          console.log("sound is loaded", res);
+          this.setState({ loading: false });
+        })
         .catch((e) => console.log("error while loading :", e));
     }
     if (this.state.playing) {
@@ -234,7 +240,9 @@ export default class AudioSlider extends PureComponent {
             }}
             onPress={this.onPressPlayPause}
           >
-            {this.state.playing ? (
+            {this.state.loading ? (
+              <ActivityIndicator size={"small"} />
+            ) : this.state.playing ? (
               <Ionicons name="pause" size={30} color="black" />
             ) : (
               <Ionicons name="play" size={30} color="black" />
