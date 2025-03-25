@@ -3,10 +3,11 @@ import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { UserType } from "../Context/UserContext";
 import { mainURL } from "../Utils/urls";
 import axios from "axios";
-import { FlatList, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from "react-native";
+import { FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, TextInput, TouchableWithoutFeedback } from "react-native";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Keyboard } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 function AddFriendsToGroup(){
 
     const {userId, setUserId} = useContext(UserType);
@@ -235,13 +236,28 @@ function AddFriendsToGroup(){
             />
         )
     }
+    const keyboardVerticalOffset = Platform.OS === "ios" ? 64 : StatusBar.currentHeight || 0;
     return(
         <>
-            <KeyboardAvoidingView 
+            {/* <KeyboardAvoidingView 
             behavior={Platform.OS === "ios" ? "padding" : "height"} 
             style={{ flex: 1 }}
-            >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            > */}
+            {/* <TouchableWithoutFeedback onPress={Keyboard.dismiss}> */}
+            <SafeAreaProvider>
+                <KeyboardAvoidingView
+                        style={{ flex: 1 }}
+                        behavior={Platform.OS === "ios" ? "padding" : undefined}
+                        keyboardVerticalOffset={keyboardVerticalOffset}
+                      >
+                        <SafeAreaView
+                          style={styles.container}
+                          edges={["left", "right", "bottom"]}
+                        >
+                            <ScrollView 
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
             <Box flex={1} background={"black"}>
                 <Box padding={2}>
                     {seletedFriends.length > 0 && <Text fontSize="md" fontWeight={"semibold"} mb={3} color={"white"}>Selected Friends</Text>}
@@ -249,6 +265,7 @@ function AddFriendsToGroup(){
                         data={myfriends.friends?.flatMap((friend) => friend.friendsList).filter((friend) => seletedFriends.includes(friend._id))}
                         keyExtractor={(item) => item._id}
                         horizontal
+                        
                         showsHorizontalScrollIndicator={false}
                         renderItem={({ item }) => {
                             const baseUrl = `${mainURL}/files/`;
@@ -279,21 +296,42 @@ function AddFriendsToGroup(){
                     
                 </Box>
             </Box>
-            <Box bg={"black"} padding={3}> 
-                {!isMemberAdd && <FormControl bottom={2} isInvalid={error}>
-                    <FormControl.Label fontSize="md" fontWeight={"semibold"}>{error ? "Please enter group name" : "Group Name"}</FormControl.Label>
-                    <Input width={"75%"} rounded="sm" fontSize="xs" ref={initialFocusRef} onChangeText={onInputChange} color={"white"}/>
+            </ScrollView>
+            <Box bg={"black"} padding={3} flexDirection="row" alignItems="center"> 
+                {!isMemberAdd && <FormControl  isInvalid={error} style={{ flex: 1 }}>
+                    <FormControl.Label bottom={3} fontSize="md" fontWeight={"semibold"}>{error ? "Please enter group name" : "Group Name"}</FormControl.Label>
+                    <TextInput ref={initialFocusRef} onChangeText={onInputChange} style={styles.messageInputBox}/>
                 </FormControl>}
                 <Fab renderInPortal={false} shadow={5} size="sm" icon={<Icon as={Ionicons} _dark={{ color: "warmGray.50" }} 
                     size="4" name="checkmark" color="warmGray.50"   /> }  onPress={() => { 
                         isMemberAdd ? addMemberToGroupHandle() : createGroupHandle(); 
                       }} />    
             </Box>
-            </TouchableWithoutFeedback>
+            
+            
+            </SafeAreaView>
             </KeyboardAvoidingView>
+            </SafeAreaProvider>
+            
         </>
         
     )
 }
+
+const styles = StyleSheet.create({
+    container:{
+        flex:1
+    },
+    messageInputBox: {
+        // 
+        width:"80%",
+        borderRadius:8,
+        paddingVertical:8,
+        paddingHorizontal:8,
+        bottom:8,
+        backgroundColor:"white",
+        color:"black"
+      },
+})
 
 export default AddFriendsToGroup;
