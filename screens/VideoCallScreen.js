@@ -160,17 +160,18 @@ const VideoCallScreen = ({ route, navigation }) => {
         setMessage(`Remote user ${uid} joined`);
         // Show join alert only for group calls
         if (isGroup) {
+          setRemoteUids((prev) => [...prev, { id: uid, userName: uid }]);
           toast.show({ description: `${uid} joined the call` });
         }
 
         // Add UID to state to track remote users
         //setRemoteUids((prevUids) => [...new Set([...prevUids, uid])]);
-        setRemoteUids((prevUids) => {
-          const updatedUids = new Set(prevUids); // Preserve previous UIDs
-          updatedUids.add(uid); // Add new UID
-          console.log("✅ Updated remoteUids:", Array.from(updatedUids));
-          return Array.from(updatedUids); // Convert Set back to array
-        });
+        // setRemoteUids((prevUids) => {
+        //   const updatedUids = new Set(prevUids); // Preserve previous UIDs
+        //   updatedUids.add(uid); // Add new UID
+        //   console.log("✅ Updated remoteUids:", Array.from(updatedUids));
+        //   return Array.from(updatedUids); // Convert Set back to array
+        // });
 
         // setFirstJoinedUid((prevUid) => {
         //     if (prevUid === null || prevUid === undefined) {
@@ -207,6 +208,9 @@ const VideoCallScreen = ({ route, navigation }) => {
       onUserOffline: (_connection, uid) => {
         console.log(`User ${uid} left the channel`);
         if (isGroup) {
+          setRemoteUids((prevParticipants) =>
+            prevParticipants.filter((participant) => participant.id !== uid)
+          );
           toast.show({ description: `${uid} left the call` });
         }
         // Clear the remote user and check if call should end
@@ -340,7 +344,7 @@ const VideoCallScreen = ({ route, navigation }) => {
           calleeId: calleeId,
           callerId: callerId,
         });
-        navigation.goBack()
+        navigation.goBack();
       }
 
       //   // Navigate back after a small delay to ensure cleanup completes
@@ -391,7 +395,10 @@ const VideoCallScreen = ({ route, navigation }) => {
                 keyExtractor={(item) => item.toString()}
                 renderItem={({ item }) => (
                   <RtcSurfaceView
-                    canvas={{ uid: item }}
+                    canvas={{
+                      uid: item,
+                      sourceType: VideoSourceType.VideoSourceCamera,
+                    }}
                     style={styles.remoteVideoBox}
                   />
                 )}

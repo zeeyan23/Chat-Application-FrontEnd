@@ -14,6 +14,7 @@ import {
   ClientRoleType,
   RtcSurfaceView,
 } from "react-native-agora";
+import { useToast } from "native-base";
 import { mainURL } from "../Utils/urls";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import {
@@ -50,12 +51,12 @@ function VoiceCallScreen({ route, navigation }) {
     memberId,
   } = route.params;
   console.log("callerID :", callerId);
-
+  const toast = useToast();
   const agoraEngineRef = useRef(null);
   const [isJoined, setIsJoined] = useState(false);
   const [remoteUid, setRemoteUid] = useState(0);
   const [message, setMessage] = useState("");
-  const [participants, setParticipants] = useState(initialParticipants);
+  const [participants, setParticipants] = useState([]);
   const eventHandler = useRef(null);
   const baseUrl = `${mainURL}/files/`;
   const socket = socketInstance.getSocket();
@@ -129,11 +130,23 @@ function VoiceCallScreen({ route, navigation }) {
         setIsJoined(true);
       },
       onUserJoined: (_connection, uid) => {
+        if (isGroup) {
+          setParticipants((prev) => [...prev, { id: uid, userName: uid }]);
+          toast.show({ description: `${uid} joined the call` });
+        }
         setMessage(`Remote user ${uid} joined`);
         setRemoteUid(uid);
       },
       onUserOffline: (_connection, uid) => {
+        console.log("connection :", _connection);
         setMessage(`Remote user ${uid} left the channel`);
+        if (isGroup) {
+          toast.show({ description: `${uid} left the call` });
+          console.log("particpants :", participants);
+          setParticipants((prevParticipants) =>
+            prevParticipants.filter((participant) => participant.id !== uid)
+          );
+        }
         setRemoteUid(0);
         setParticipants((prevParticipants) =>
           prevParticipants.filter((p) => p.id !== uid)
@@ -189,6 +202,7 @@ function VoiceCallScreen({ route, navigation }) {
             isCaller: isCaller,
           });
           console.log(userId);
+          navigation.goBack()
         } else {
           console.log(memberId);
           agoraEngineRef.current?.leaveChannel();
