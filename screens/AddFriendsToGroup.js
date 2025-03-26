@@ -128,13 +128,18 @@ function AddFriendsToGroup(){
     }
 
     const addMemberToGroupHandle = async()=>{
+        if(seletedFriends.length===0){
+            console.log("it's empty")
+            return;
+        }
         const groupData ={
             groupMembers: Array.from(seletedFriends) 
         }
 
         try {
             const response = await axios.patch(`${mainURL}/group/update_group_member/${groupId}`, groupData);
-            navigation.navigate("Chats")
+            navigation.goBack();
+            setTimeout(() => navigation.goBack(), 100);
         } catch (error) {
             console.error('Error fetching friends:', error);
             if (error.response) {

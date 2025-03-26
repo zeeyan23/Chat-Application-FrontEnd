@@ -251,6 +251,16 @@ function UsersProfileScreen() {
             </HStack>
           </Box>}
 
+          {isGroupChat && <Box bg="white" borderTopLeftRadius={"lg"} borderTopRightRadius={"lg"} px={4} shadow={2} width="full">
+            <Pressable onPress={()=>navigation.navigate("AddFriendsToGroup",{ isMemberAdd : true, groupId: id} )} _hover={{ bg: 'gray.100' }}  _pressed={{ bg: 'gray.200' }}  
+                _focus={{ borderColor: 'blue.500', borderWidth: 1 }} borderRadius="md" pr={2} pt={2} pb={2}>
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text fontWeight="bold" fontSize="md">Add Members</Text>
+                  <Ionicons name="person-add" size={24} color="white" style={{backgroundColor:"#0E8C00", padding:8, borderRadius:50}}/>
+                </HStack>
+              </Pressable>
+            </Box>}
+
           {/* <Box bg="white" borderRadius="lg" p={4} mb={4} shadow={2} width="full">
             <Pressable _hover={{ bg: 'gray.200' }}  _pressed={{ bg: 'gray.200' }} borderRadius="md" paddingTop={1} 
               onPress={() => navigation.navigate('Disappearing Messages', {participant_id: userId,other_participant_id : id})}>
@@ -268,15 +278,9 @@ function UsersProfileScreen() {
 
           {isGroupChat && 
           <>
-            <Box bg="white" borderRadius="lg" p={4}  mb={4} shadow={2} width="full">
+            <Box bg="white" borderBottomLeftRadius="lg" borderBottomRightRadius={"lg"} px={4}  mb={4} shadow={2} width="full">
               <Text color="gray.500">Total Members: {formattedData.length}</Text>
-              <Pressable onPress={()=>navigation.navigate("AddFriendsToGroup",{ isMemberAdd : true, groupId: id} )} _hover={{ bg: 'gray.100' }}  _pressed={{ bg: 'gray.200' }}  
-                _focus={{ borderColor: 'blue.500', borderWidth: 1 }} borderRadius="md" pr={2} pt={2} pb={2}>
-                <HStack justifyContent="space-between" alignItems="center">
-                  <Text fontWeight="bold" fontSize="md">Add Members</Text>
-                  <Ionicons name="person-add" size={24} color="white" style={{backgroundColor:"#0E8C00", padding:8, borderRadius:50}}/>
-                </HStack>
-              </Pressable>
+              
               <FlatList
                 data={formattedData}
                 style={{ height: Math.min(formattedData.length * 70, 230) }}
@@ -303,7 +307,7 @@ function UsersProfileScreen() {
             </Box>
           </>}
 
-          {isGroupChat && <Box bg="white" borderRadius="lg" shadow={2} width="full">
+          {isGroupChat && userId === chatUserInfo?.groupAdmin?._id && <Box bg="white" borderRadius="lg" shadow={2} width="full">
             <Pressable _hover={{ bg: 'red.100' }}  _pressed={{ bg: 'red.200' }}  
                 _focus={{ borderColor: 'blue.500', borderWidth: 1 }} borderRadius="md" p={3} onPress={openDialog}>
                 <HStack alignItems="center" alignSelf={"center"}>
