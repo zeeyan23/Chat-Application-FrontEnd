@@ -394,6 +394,7 @@ export default function App() {
 
     return (
       <NavigationContainer
+      ref={navigationRef}
         linking={{
           prefixes: [Linking.createURL("/")],
           config: {

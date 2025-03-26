@@ -340,6 +340,7 @@ const VideoCallScreen = ({ route, navigation }) => {
           calleeId: calleeId,
           callerId: callerId,
         });
+        navigation.goBack()
       }
 
       //   // Navigate back after a small delay to ensure cleanup completes
