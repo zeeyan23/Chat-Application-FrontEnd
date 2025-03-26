@@ -86,7 +86,7 @@ export default function App() {
             },
             headerTintColor: "white",
             animation: "fade",
-            presentation: "transparentModal",
+            //presentation: "transparentModal",
           }}
         />
         <Stack.Screen
@@ -132,7 +132,7 @@ export default function App() {
             },
             headerTintColor: "white",
             animation: "fade",
-            presentation: "transparentModal",
+            //presentation: "transparentModal",
           }}
         />
 
@@ -163,7 +163,7 @@ export default function App() {
             },
             headerTintColor: "white",
             animation: "fade",
-            presentation: "transparentModal",
+            //presentation: "transparentModal",
           }}
         />
         <Stack.Screen
@@ -177,7 +177,7 @@ export default function App() {
               borderBottomColor: "white",
             },
             animation: "fade",
-            presentation: "transparentModal",
+            //presentation: "transparentModal",
             headerTintColor: "white",
           }}
         />
@@ -192,7 +192,7 @@ export default function App() {
               borderBottomColor: "white",
             },
             animation: "fade",
-            presentation: "transparentModal",
+            //presentation: "transparentModal",
             headerTintColor: "white",
           }}
         />
@@ -202,7 +202,7 @@ export default function App() {
           options={{
             headerShown: false,
             animation: "fade",
-            presentation: "transparentModal",
+            //presentation: "transparentModal",
           }}
         />
         <Stack.Screen
@@ -216,7 +216,7 @@ export default function App() {
               borderBottomColor: "white",
             },
             animation: "fade",
-            presentation: "transparentModal",
+            //presentation: "transparentModal",
             headerTintColor: "white",
           }}
         />
@@ -258,7 +258,7 @@ export default function App() {
           options={{
             headerShown: false,
             animation: "fade",
-            presentation: "transparentModal",
+            //presentation: "transparentModal",
           }}
         />
 
@@ -268,7 +268,7 @@ export default function App() {
           options={{
             headerShown: false,
             animation: "fade",
-            presentation: "transparentModal",
+            //presentation: "transparentModal",
           }}
         />
       </Stack.Navigator>

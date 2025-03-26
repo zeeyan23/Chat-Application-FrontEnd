@@ -1,4 +1,4 @@
-import { Box, Text, Heading, VStack, FormControl, Input, Center, Pressable, Icon } from "native-base";
+import { Box, Text, Heading, VStack, FormControl, Input, Center, Pressable, Icon, Avatar } from "native-base";
 import { Platform, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useState } from "react";
@@ -166,18 +166,16 @@ function LoginScreen(){
     return(
         <Center w="100%" style={styles.container}>
             <Box safeArea p="2" py="8" w="90%" maxW="290">
-                <Heading size="lg" fontWeight="600" color="coolGray.800" _dark={{
-                color: "warmGray.50"
-            }}>
-                Welcome
-                </Heading>
-                <Heading mt="1" _dark={{
-                color: "warmGray.200"
-            }} color="coolGray.600" fontWeight="medium" size="xs">
-                Sign in to continue!
-                </Heading>
+                <Center mb={3}>
+                    <Heading size="xl" fontWeight="600" color="white" _dark={{
+                    color: "warmGray.50"}} textAlign={"center"}>
+                    InfinityOS
+                    </Heading>
+                </Center>
+                <Avatar size={"xl"} alignSelf={"center"} source={require("../assets/icon.png")}/>
 
-                <VStack space={3} mt="5">
+
+                <VStack space={3} mt="3">
                 <FormControl>
                     <FormControl.Label>Email ID</FormControl.Label>
                     {/* <Input onChangeText={changeEmailHandler}/> */}
@@ -251,7 +249,7 @@ function LoginScreen(){
 const styles= StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: 'black',
         alignItems: 'center',
         justifyContent: 'center',
       },
