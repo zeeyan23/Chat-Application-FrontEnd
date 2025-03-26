@@ -172,7 +172,7 @@ function LoginScreen(){
                     InfinityOS
                     </Heading>
                 </Center>
-                <Avatar size={"xl"} alignSelf={"center"} source={require("../assets/icon.png")}/>
+                <Avatar size={"xl"} alignSelf={"center"} source={require("../assets/icon_image.jpg")}/>
 
 
                 <VStack space={3} mt="3">

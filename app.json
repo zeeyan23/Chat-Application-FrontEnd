@@ -4,12 +4,12 @@
     "slug": "chat_application",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon_image.jpg",
     "userInterfaceStyle": "light",
     "scheme": "chatapp",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/icon_image.jpg",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -46,7 +46,7 @@
       "googleServicesFile": "./google-services.json",
       "useNextNotificationsApi": true,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/icon_image.jpg",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
