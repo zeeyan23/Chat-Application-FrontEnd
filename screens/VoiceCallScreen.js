@@ -14,6 +14,8 @@ import {
   ClientRoleType,
   RtcSurfaceView,
 } from "react-native-agora";
+
+import { Notifier, Easing, NotifierComponents } from "react-native-notifier";
 import { useToast } from "native-base";
 import { mainURL } from "../Utils/urls";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -63,7 +65,26 @@ function VoiceCallScreen({ route, navigation }) {
   const { userId, setUserId } = useContext(UserType);
 
   console.log("voice call screen", participants);
+  useEffect(() => {
+    return () => {
+      // Perform cleanup when component unmounts
+      const cleanup = async () => {
+        try {
+          if (agoraEngineRef.current) {
+            await agoraEngineRef.current.leaveChannel();
+            await agoraEngineRef.current.stopPreview();
+            await agoraEngineRef.current.disableVideo();
+            await agoraEngineRef.current.disableAudio();
+            agoraEngineRef.current.removeAllListeners();
+          }
+        } catch (error) {
+          console.log("Unmount cleanup error:", error);
+        }
+      };
 
+      cleanup();
+    };
+  }, []);
   useEffect(() => {
     const init = async () => {
       await setupVideoSDKEngine();
@@ -132,7 +153,18 @@ function VoiceCallScreen({ route, navigation }) {
       onUserJoined: (_connection, uid) => {
         if (isGroup) {
           setParticipants((prev) => [...prev, { id: uid, userName: uid }]);
-          toast.show({ description: `${uid} joined the call` });
+          Notifier.showNotification({
+            title: "Joined",
+            description:
+              `${uid} has joined the call`,
+            Component: NotifierComponents.Alert,
+            componentProps: {
+              alertType: "success",
+            },
+            showAnimationDuration: 800,
+            showEasing: Easing.bounce,
+          });
+          
         }
         setMessage(`Remote user ${uid} joined`);
         setRemoteUid(uid);
@@ -141,7 +173,17 @@ function VoiceCallScreen({ route, navigation }) {
         console.log("connection :", _connection);
         setMessage(`Remote user ${uid} left the channel`);
         if (isGroup) {
-          toast.show({ description: `${uid} left the call` });
+          Notifier.showNotification({
+            title: "Left",
+            description:
+              `${uid} has left the call`,
+            Component: NotifierComponents.Alert,
+            componentProps: {
+              alertType: "error",
+            },
+            showAnimationDuration: 800,
+            showEasing: Easing.bounce,
+          });
           console.log("particpants :", participants);
           setParticipants((prevParticipants) =>
             prevParticipants.filter((participant) => participant.id !== uid)

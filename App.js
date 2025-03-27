@@ -37,6 +37,8 @@ import DisappearingMessages from "./screens/DisappearingMessages";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
+import { NotifierWrapper } from "react-native-notifier";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 export const navigationRef = createNavigationContainerRef();
 const firebaseConfig = {
   apiKey: "AIzaSyDNMObk5i4DCZE8hm7CU4PeYAs9j3PkbFM",
@@ -394,7 +396,7 @@ export default function App() {
 
     return (
       <NavigationContainer
-      ref={navigationRef}
+        ref={navigationRef}
         linking={{
           prefixes: [Linking.createURL("/")],
           config: {
@@ -448,13 +450,17 @@ export default function App() {
     );
   }
   return (
-    <AuthProvider>
-      <UserContext>
-        <NativeBaseProvider>
-          <StatusBar style="light" hidden={false} />
-          <Navigation />
-        </NativeBaseProvider>
-      </UserContext>
-    </AuthProvider>
+    <GestureHandlerRootView>
+      <AuthProvider>
+        <UserContext>
+          <NativeBaseProvider>
+            <StatusBar style="light" hidden={false} />
+            <NotifierWrapper>
+              <Navigation />
+            </NotifierWrapper>
+          </NativeBaseProvider>
+        </UserContext>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

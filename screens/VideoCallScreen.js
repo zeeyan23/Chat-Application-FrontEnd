@@ -11,6 +11,7 @@ import {
 import { mainURL } from "../Utils/urls";
 import { UserType } from "../Context/UserContext";
 import { Box, FlatList } from "native-base";
+import { Notifier, Easing, NotifierComponents } from "react-native-notifier";
 import CustomButton from "../components/CustomButton";
 import { useToast } from "native-base";
 const appId = "4c1e2db4af064ae29874d36ac9f21d44";
@@ -161,7 +162,16 @@ const VideoCallScreen = ({ route, navigation }) => {
         // Show join alert only for group calls
         if (isGroup) {
           setRemoteUids((prev) => [...prev, { id: uid, userName: uid }]);
-          toast.show({ description: `${uid} joined the call` });
+          Notifier.showNotification({
+            title: "Joined",
+            description: `${uid} has joined the call`,
+            Component: NotifierComponents.Alert,
+            componentProps: {
+              alertType: "success",
+            },
+            showAnimationDuration: 800,
+            showEasing: Easing.bounce,
+          });
         }
 
         // Add UID to state to track remote users
@@ -211,7 +221,16 @@ const VideoCallScreen = ({ route, navigation }) => {
           setRemoteUids((prevParticipants) =>
             prevParticipants.filter((participant) => participant.id !== uid)
           );
-          toast.show({ description: `${uid} left the call` });
+          Notifier.showNotification({
+            title: "Left",
+            description: `${uid} has left the call`,
+            Component: NotifierComponents.Alert,
+            componentProps: {
+              alertType: "error",
+            },
+            showAnimationDuration: 800,
+            showEasing: Easing.bounce,
+          });
         }
         // Clear the remote user and check if call should end
         setRemoteUids((prevUids) => {
