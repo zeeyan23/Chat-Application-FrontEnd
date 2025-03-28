@@ -39,7 +39,7 @@
         },
         "ITSAppUsesNonExemptEncryption": false
       },
-      "icon": "./assets/icon.png",
+      "icon": "./assets/icon_image.jpg",
       "bundleIdentifier": "com.mohammadzeeyan.chatapp"
     },
     "android": {

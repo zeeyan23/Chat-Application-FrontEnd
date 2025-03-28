@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   Alert,
   Keyboard,
   KeyboardAvoidingView,
@@ -45,6 +46,7 @@ import { FlatList, Heading, Avatar, VStack, Spacer, Text } from "native-base";
 import Entypo from "@expo/vector-icons/Entypo";
 import socketInstance from "../Utils/socket";
 import { AuthContext } from "../Context/AuthContext";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 function HomeScreen() {
   const socket = socketInstance.getSocket();
   const { isOpen, onToggle } = useDisclose();
@@ -62,7 +64,10 @@ function HomeScreen() {
   const [filteredData, setFilteredData] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
+  const [loading, setLoading] = useState(false);
   const { signOut } = useContext(AuthContext);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: "",
@@ -78,9 +83,10 @@ function HomeScreen() {
           <Pressable onPress={() => setShowModal(true)} style={{ paddingHorizontal:15}}>
               <Ionicons name="add-circle" size={24} color="white" />
           </Pressable>
-            <Pressable style={{ paddingRight: 20 }} onPress={handleLogout}>
+            <Pressable style={{ paddingRight: 20 }} onPress={() => setIsLogoutDialogOpen(true)}>
               <AntDesign name="logout" size={24} color="white" />
           </Pressable>
+          
         </>
       ),
     });
@@ -153,6 +159,7 @@ function HomeScreen() {
 
   const handleFriendRequest = async (recipent_id) => {
     try {
+      setLoading(true);
       const data = { currentUserId: userId, selectedUserId: recipent_id };
 
       const response = await axios
@@ -173,7 +180,10 @@ function HomeScreen() {
       } else {
         console.log("Other Error:", error.message);
       }
+    }finally {
+      setLoading(false); // Stop loading after the request is completed
     }
+  
   };
 
   // const deleteAllMessages = async () => {
@@ -367,6 +377,10 @@ function HomeScreen() {
                                 </Text>
                                 </Pressable>
                             ) :
+                            
+                                            <>
+                                            {loading && <ActivityIndicator size="large" color="#0000ff" />}
+
                                             <Pressable
                                                 onPress={() => handleFriendRequest( item._id)}
                                                 style={{
@@ -375,11 +389,12 @@ function HomeScreen() {
                                                     borderRadius: 6,
                                                     width: 105,
                                                 }}
+                                                disabled={loading}
                                                 >
                                                 <Text style={{ textAlign: "center", color: "white", fontSize: 13 }}>
                                                     Add Friend
                                                 </Text>
-                                            </Pressable>}
+                                            </Pressable></>}
                                         </HStack>
                                     </Box>
                                 );
@@ -399,6 +414,15 @@ function HomeScreen() {
                     </Modal.Footer>
                 </Modal.Content>
             </Modal>
+            <ConfirmationDialog
+              isOpen={isLogoutDialogOpen}
+              onClose={() => setIsLogoutDialogOpen(false)}
+              onConfirm={handleLogout}
+              header="Logout?"
+              body="Are you sure you want to log out?"
+              confirmText="Logout"
+              cancelText="Cancel"
+            />
         </Box>
         
         </TouchableWithoutFeedback>

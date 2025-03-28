@@ -11,7 +11,6 @@ import {
 import { mainURL } from "../Utils/urls";
 import { UserType } from "../Context/UserContext";
 import { Box, FlatList } from "native-base";
-import { Notifier, Easing, NotifierComponents } from "react-native-notifier";
 import CustomButton from "../components/CustomButton";
 import { useToast } from "native-base";
 const appId = "4c1e2db4af064ae29874d36ac9f21d44";
@@ -39,6 +38,8 @@ const VideoCallScreen = ({ route, navigation }) => {
   const { userId, setUserId } = useContext(UserType);
   const [remoteUsers, setRemoteUsers] = useState([]);
   const [firstJoinedUid, setFirstJoinedUid] = useState(null);
+  const [forceUpdate, setForceUpdate] = useState(false);
+
   useEffect(() => {
     return () => {
       // Perform cleanup when component unmounts
@@ -161,27 +162,17 @@ const VideoCallScreen = ({ route, navigation }) => {
         setMessage(`Remote user ${uid} joined`);
         // Show join alert only for group calls
         if (isGroup) {
-          setRemoteUids((prev) => [...prev, { id: uid, userName: uid }]);
-          Notifier.showNotification({
-            title: "Joined",
-            description: `${uid} has joined the call`,
-            Component: NotifierComponents.Alert,
-            componentProps: {
-              alertType: "success",
-            },
-            showAnimationDuration: 800,
-            showEasing: Easing.bounce,
-          });
+          toast.show({ description: `${uid} joined the call` });
         }
 
         // Add UID to state to track remote users
         //setRemoteUids((prevUids) => [...new Set([...prevUids, uid])]);
-        // setRemoteUids((prevUids) => {
-        //   const updatedUids = new Set(prevUids); // Preserve previous UIDs
-        //   updatedUids.add(uid); // Add new UID
-        //   console.log("✅ Updated remoteUids:", Array.from(updatedUids));
-        //   return Array.from(updatedUids); // Convert Set back to array
-        // });
+        setRemoteUids((prevUids) => {
+          const updatedUids = new Set(prevUids); // Preserve previous UIDs
+          updatedUids.add(uid); // Add new UID
+          console.log("✅ Updated remoteUids:", Array.from(updatedUids));
+          return Array.from(updatedUids); // Convert Set back to array
+        });
 
         // setFirstJoinedUid((prevUid) => {
         //     if (prevUid === null || prevUid === undefined) {
@@ -218,19 +209,7 @@ const VideoCallScreen = ({ route, navigation }) => {
       onUserOffline: (_connection, uid) => {
         console.log(`User ${uid} left the channel`);
         if (isGroup) {
-          setRemoteUids((prevParticipants) =>
-            prevParticipants.filter((participant) => participant.id !== uid)
-          );
-          Notifier.showNotification({
-            title: "Left",
-            description: `${uid} has left the call`,
-            Component: NotifierComponents.Alert,
-            componentProps: {
-              alertType: "error",
-            },
-            showAnimationDuration: 800,
-            showEasing: Easing.bounce,
-          });
+          toast.show({ description: `${uid} left the call` });
         }
         // Clear the remote user and check if call should end
         setRemoteUids((prevUids) => {
@@ -363,7 +342,7 @@ const VideoCallScreen = ({ route, navigation }) => {
           calleeId: calleeId,
           callerId: callerId,
         });
-        navigation.goBack();
+        navigation.goBack()
       }
 
       //   // Navigate back after a small delay to ensure cleanup completes
@@ -402,6 +381,11 @@ const VideoCallScreen = ({ route, navigation }) => {
   // }, [firstJoinedUid, remoteUids]);
 
   console.log("remoteUids", remoteUids);
+  useEffect(() => {
+    setForceUpdate(false); 
+    setTimeout(() => setForceUpdate(true), 100); // Briefly unmount & remount
+  }, [userId, calleeId]);
+
   return (
     <SafeAreaView style={styles.container}>
       <Box style={styles.videoContainer}>
@@ -414,16 +398,14 @@ const VideoCallScreen = ({ route, navigation }) => {
                 keyExtractor={(item) => item.toString()}
                 renderItem={({ item }) => (
                   <RtcSurfaceView
-                    canvas={{
-                      uid: item,
-                      sourceType: VideoSourceType.VideoSourceCamera,
-                    }}
+                    canvas={{ uid: item }}
                     style={styles.remoteVideoBox}
                   />
                 )}
                 numColumns={2}
               />
               <RtcSurfaceView
+              key={userId}
                 canvas={{
                   uid: userId,
                   sourceType: VideoSourceType.VideoSourceCamera,
@@ -431,6 +413,7 @@ const VideoCallScreen = ({ route, navigation }) => {
                 style={styles.fullScreenVideo}
               />
               <RtcSurfaceView
+              key={calleeId}
                 canvas={{
                   uid: calleeId,
                   sourceType: VideoSourceType.VideoSourceCamera,

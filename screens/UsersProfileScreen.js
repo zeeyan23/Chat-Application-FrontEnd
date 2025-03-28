@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { ActionSheetIOS, Alert, Platform, SafeAreaView } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { Box, HStack, Avatar, Text, Badge, Spacer, Divider, Flex, Pressable, VStack, Center, FlatList, View } from 'native-base';
+import { Box, HStack, Avatar, Text, Badge, Spacer, Divider, Flex, Pressable, VStack, Center, FlatList, View, AlertDialog, Button, useDisclose } from 'native-base';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
 import moment from 'moment';
@@ -27,9 +27,14 @@ function UsersProfileScreen() {
   const [imageChanged, setImageChanged] = useState(false);
   const { id, isGroupChat } = route.params || {};
 
+  const { isOpen, onOpen, onClose } = useDisclose();
+  const cancelRef = useRef(null);
+  const [selectedId, setSelectedId] = useState(null);
+
   useEffect(() => {
     fetchGroupData();
   }, [imageChanged]);
+  console.log("group id", id)
 
   const fetchGroupData = async () => {
     try {
@@ -222,6 +227,34 @@ function UsersProfileScreen() {
     closeDialog();
   };
   
+  const handleOpen = (id) => {
+    setSelectedId(id); // Store the selected user's id
+    onOpen();
+  };
+
+  const handleGroupMember = async(groupId) =>{
+    try {
+      const formData={
+        groupId: groupId,
+        memberId : selectedId
+      }
+      const response = await axios.patch(`${mainURL}/group/remove_member/`, formData);
+      fetchGroupData();
+      onClose();
+    } catch (error) {
+      console.log('Error:', error);
+      if (error.response) {
+        console.log('Server Error:', error.response.data);
+      } else if (error.request) {
+        console.log('Network Error:', error.request);
+      } else {
+        console.log('Other Error:', error.message);
+      }
+    }
+    onClose();
+  }
+
+  //console.log(JSON.stringify(formattedData, null, 2))
   return (
     <Box flex={1} padding={5}  background="black" safeArea width={"full"}>
       <Box flexDirection="row" width={"full"} paddingBottom={5}>
@@ -296,35 +329,84 @@ function UsersProfileScreen() {
                       : null;
                   return(
                     <Box borderBottomWidth={1} borderBottomColor="gray.200" py={2}>
-                      <HStack space={3} alignItems="center" >
-                        {source ? <Avatar size="md"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
-                        <Text fontWeight="bold">{item.user_name}</Text>
-                        <Spacer />
-                        {item.role === 'Admin' && <Badge colorScheme="success">Admin</Badge>}
-                      </HStack>
+                      <Pressable style={({ pressed }) => ({
+                            backgroundColor: pressed ? '#E0E0E0' : 'transparent',
+                            borderRadius: 10,
+                            padding: 5,
+                          })} onPress={item.role === 'Admin' ? null : () => handleOpen(item._id)} >
+                            {({ isHovered, isFocused, isPressed }) => {
+                              return(
+                                <HStack space={3} alignItems="center"  bg={
+                                  isPressed ? "coolGray.50" : isHovered ? "coolGray.50" : "white"
+                                }>
+                                  {source ? <Avatar size="md"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
+                                  <Text fontWeight="bold">{item.user_name}</Text>
+                                  <Spacer />
+                                  {item.role === 'Admin' && <Badge colorScheme="success">Admin</Badge>}
+                                </HStack>
+                              )
+                            }}
+                      
+                      </Pressable>
                     </Box>)}} keyExtractor={(item) => item._id} />
               
             </Box>
           </>}
 
-          {isGroupChat && userId === chatUserInfo?.groupAdmin?._id && <Box bg="white" borderRadius="lg" shadow={2} width="full">
-            <Pressable _hover={{ bg: 'red.100' }}  _pressed={{ bg: 'red.200' }}  
-                _focus={{ borderColor: 'blue.500', borderWidth: 1 }} borderRadius="md" p={3} onPress={openDialog}>
-                <HStack alignItems="center" alignSelf={"center"}>
-                  <Text fontWeight="bold" fontSize="md">Delete Group</Text>
-                  {/* <Ionicons name="trash" size={20} color="white" style={{backgroundColor:"red", padding:5, borderRadius:50, marginHorizontal:5}}/> */}
-                </HStack>
-            </Pressable>
-            <ConfirmationDialog
-              isOpen={isDialogOpen} 
-              onClose={closeDialog}
-              onConfirm={deleteGroupHandle}
-              header="Delete Group?"
-              body="Are you sure you want to delete this group?"
-              confirmText="Delete"
-              cancelText="Cancel"
-            />
-          </Box>}
+          {isGroupChat && userId === chatUserInfo?.groupAdmin?._id && 
+          <>
+            <Box bg="white" borderRadius="lg" shadow={2} width="full">
+              <Pressable _hover={{ bg: 'red.100' }}  _pressed={{ bg: 'red.200' }}  
+                  _focus={{ borderColor: 'blue.500', borderWidth: 1 }} borderRadius="md" p={3} onPress={openDialog}>
+                  <HStack alignItems="center" alignSelf={"center"}>
+                    <Text fontWeight="bold" fontSize="md">Delete Group</Text>
+                    {/* <Ionicons name="trash" size={20} color="white" style={{backgroundColor:"red", padding:5, borderRadius:50, marginHorizontal:5}}/> */}
+                  </HStack>
+              </Pressable>
+              <ConfirmationDialog
+                isOpen={isDialogOpen} 
+                onClose={closeDialog}
+                onConfirm={deleteGroupHandle}
+                header="Delete Group?"
+                body="Are you sure you want to delete this group?"
+                confirmText="Delete"
+                cancelText="Cancel"
+              />
+            </Box>
+            <AlertDialog leastDestructiveRef={cancelRef} isOpen={isOpen} onClose={onClose}>
+              <AlertDialog.Content borderRadius="lg">
+                <AlertDialog.Header fontSize="lg" fontWeight="bold">
+                  <HStack space={2} alignItems="center">
+                    <Ionicons name="alert-circle-outline" size={24} color="red" />
+                    <Text>Confirm Action</Text>
+                  </HStack>
+                </AlertDialog.Header>
+
+                <AlertDialog.Body>
+                  <Text fontSize="md" textAlign="center">
+                    Are you sure you want to remove this user from the group? This action cannot be undone.
+                  </Text>
+                </AlertDialog.Body>
+
+                <AlertDialog.Footer>
+                  <Button.Group space={3} width="100%">
+                    <Button flex={1} variant="outline" colorScheme="coolGray" onPress={onClose}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      flex={1} 
+                      colorScheme="red" 
+                      onPress={() => handleGroupMember(id)}
+                    >
+                      Remove User
+                    </Button>
+                  </Button.Group>
+                </AlertDialog.Footer>
+              </AlertDialog.Content>
+            </AlertDialog>
+
+          </>
+          }
         </Box>
       )}
       

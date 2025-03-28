@@ -11,6 +11,7 @@ import { CommonActions, useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { navigationRef } from "../App";
 import { AuthContext } from "../Context/AuthContext";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 function UserSettings(){
 
     const [user, setUser]=useState([]);
@@ -23,6 +24,7 @@ function UserSettings(){
     const [imageChanged, setImageChanged] = useState(false);
     const navigation = useNavigation();
     const { signOut } = useContext(AuthContext);
+    const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
     useEffect(() => {
         fetchUserData();
       }, [imageChanged]);
@@ -219,7 +221,7 @@ function UserSettings(){
                 }}
             </Pressable>
               <Box flex={1} justifyContent="flex-end" alignItems="center">
-                <Pressable onPress={handleLogout} width={"full"}>
+                <Pressable onPress={() => setIsLogoutDialogOpen(true)} width={"full"}>
                     {({
                       isHovered,
                       isFocused,
@@ -238,6 +240,15 @@ function UserSettings(){
                     }}
                 </Pressable>
               </Box>
+              <ConfirmationDialog
+                isOpen={isLogoutDialogOpen}
+                onClose={() => setIsLogoutDialogOpen(false)}
+                onConfirm={handleLogout}
+                header="Logout?"
+                body="Are you sure you want to log out?"
+                confirmText="Logout"
+                cancelText="Cancel"
+              />
             </Box>
             <Actionsheet isOpen={isOpen} onClose={onClose}>
               <Actionsheet.Content>
