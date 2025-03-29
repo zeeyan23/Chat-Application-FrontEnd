@@ -83,7 +83,7 @@ export default function App() {
             headerShown: true,
             headerStyle: {
               backgroundColor: "black",
-              borderBottomWidth: 1,
+              borderBottomWidth: 0.4,
               borderBottomColor: "white",
             },
             headerTintColor: "white",
@@ -98,7 +98,7 @@ export default function App() {
             headerShown: true,
             headerStyle: {
               backgroundColor: "black",
-              borderBottomWidth: 1,
+              borderBottomWidth: 0.4,
               borderBottomColor: "white",
             },
             headerTintColor: "white",
@@ -129,7 +129,7 @@ export default function App() {
             title: "Friend Requests",
             headerStyle: {
               backgroundColor: "black",
-              borderBottomWidth: 1,
+              borderBottomWidth: 0.4,
               borderBottomColor: "white",
             },
             headerTintColor: "white",
@@ -145,7 +145,7 @@ export default function App() {
             headerShown: true,
             headerStyle: {
               backgroundColor: "black",
-              borderBottomWidth: 1,
+              borderBottomWidth: 0.4,
               borderBottomColor: "white",
             },
             animation: "fade",
@@ -160,7 +160,7 @@ export default function App() {
             headerShown: true,
             headerStyle: {
               backgroundColor: "black",
-              borderBottomWidth: 1,
+              borderBottomWidth: 0.4,
               borderBottomColor: "white",
             },
             headerTintColor: "white",
@@ -175,7 +175,7 @@ export default function App() {
             headerShown: true,
             headerStyle: {
               backgroundColor: "black",
-              borderBottomWidth: 1,
+              borderBottomWidth: 0.4,
               borderBottomColor: "white",
             },
             animation: "fade",
@@ -190,7 +190,7 @@ export default function App() {
             headerShown: true,
             headerStyle: {
               backgroundColor: "black",
-              borderBottomWidth: 1,
+              borderBottomWidth: 0.4,
               borderBottomColor: "white",
             },
             animation: "fade",
@@ -214,7 +214,7 @@ export default function App() {
             headerShown: true,
             headerStyle: {
               backgroundColor: "black",
-              borderBottomWidth: 1,
+              borderBottomWidth: 0.4,
               borderBottomColor: "white",
             },
             animation: "fade",
@@ -229,7 +229,7 @@ export default function App() {
             headerShown: true,
             headerStyle: {
               backgroundColor: "black",
-              borderBottomWidth: 1,
+              borderBottomWidth: 0.4,
               borderBottomColor: "white",
             },
             headerTintColor: "white",

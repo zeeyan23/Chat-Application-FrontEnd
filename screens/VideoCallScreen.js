@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useContext } from "react";
+import { useRef, useState, useEffect, useContext, memo } from "react";
 import { SafeAreaView, StyleSheet, Text, Alert } from "react-native";
 import { PermissionsAndroid, Platform } from "react-native";
 import {
@@ -10,7 +10,7 @@ import {
 } from "react-native-agora";
 import { mainURL } from "../Utils/urls";
 import { UserType } from "../Context/UserContext";
-import { Box, FlatList } from "native-base";
+import { Box, FlatList, View } from "native-base";
 import CustomButton from "../components/CustomButton";
 import { useToast } from "native-base";
 const appId = "4c1e2db4af064ae29874d36ac9f21d44";
@@ -297,6 +297,11 @@ const VideoCallScreen = ({ route, navigation }) => {
         remoteUids.forEach((uid) => {
           agoraEngineRef.current?.muteRemoteVideoStream(uid, false);
           agoraEngineRef.current?.muteRemoteAudioStream(uid, false);
+          agoraEngineRef.current?.setupLocalVideo({ 
+            uid: localUid, 
+            renderMode: 1, 
+            sourceType: VideoSourceType.VideoSourceCamera 
+          });
           //console.log(`Subscribed to video of user: ${uid}`);
         });
       }, 1000);
@@ -386,6 +391,15 @@ const VideoCallScreen = ({ route, navigation }) => {
     setTimeout(() => setForceUpdate(true), 100); // Briefly unmount & remount
   }, [userId, calleeId]);
 
+  const VideoItem = memo(({ uid }) => (
+    <View style={{ flex: 1 }}>
+      <RtcSurfaceView 
+        key={uid}
+        canvas={{ uid, sourceType: VideoSourceType.VideoSourceRemote, }} 
+        style={styles.remoteVideoBox} 
+      />
+    </View>
+  ));
   return (
     <SafeAreaView style={styles.container}>
       <Box style={styles.videoContainer}>
@@ -396,12 +410,7 @@ const VideoCallScreen = ({ route, navigation }) => {
               <FlatList
                 data={remoteUids}
                 keyExtractor={(item) => item.toString()}
-                renderItem={({ item }) => (
-                  <RtcSurfaceView
-                    canvas={{ uid: item }}
-                    style={styles.remoteVideoBox}
-                  />
-                )}
+                renderItem={({ item }) => <VideoItem uid={item} />}
                 numColumns={2}
               />
               <RtcSurfaceView
@@ -540,10 +549,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   remoteVideoBox: {
-    width: "50%",
+    width: 150,
+    height: 150, // Ensures a fixed size
     aspectRatio: 1,
     margin: 2,
     top: 50,
+    backgroundColor: "red",
   },
   fullScreenVideo: {
     width: "90%",

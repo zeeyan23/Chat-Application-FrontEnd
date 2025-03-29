@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { useContext } from "react";
 import { useState } from "react";
-import { BackHandler, SafeAreaView, View } from "react-native";
+import { BackHandler, SafeAreaView, StyleSheet, View } from "react-native";
 import { UserType } from "../Context/UserContext";
 import { mainURL } from "../Utils/urls";
 import {
@@ -302,16 +302,9 @@ function ChatScreen() {
           </Pressable>
         </ScrollView>
       ) : (
-        <Box flex={1} justifyContent="center" alignItems="center" bg="black">
-          <Pressable onPress={() => navigation.navigate("Home")}>
-            <Text color="white" textAlign="center">
-              No Chats yet.{" "}
-              <Text color="blue.400" underline>
-                Create a new chat
-              </Text>
-            </Text>
-          </Pressable>
-        </Box>
+        <View style={styles.container}>
+          <Spinner color="white" size="lg" />
+        </View>
       )}
       <Box
         style={{ position: "absolute" }}
@@ -423,5 +416,13 @@ function ChatScreen() {
     </Box>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});
 
 export default ChatScreen;

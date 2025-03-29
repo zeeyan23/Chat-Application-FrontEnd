@@ -74,7 +74,7 @@ function HomeScreen() {
       headerLeft: () => (
         <Box paddingLeft={4}>
           <Text fontWeight={"bold"} fontSize={20} color={"white"}>
-            Explore Connections
+            Pending Requests
           </Text>
         </Box>
       ),
@@ -84,7 +84,7 @@ function HomeScreen() {
               <Ionicons name="add-circle" size={24} color="white" />
           </Pressable>
             <Pressable style={{ paddingRight: 20 }} onPress={() => setIsLogoutDialogOpen(true)}>
-              <AntDesign name="logout" size={24} color="white" />
+              <AntDesign name="logout" size={18} color="white" />
           </Pressable>
           
         </>
@@ -270,11 +270,11 @@ function HomeScreen() {
                         ? { uri: baseUrl + filename } 
                         : null;
                     return(
-                    <Box borderBottomWidth="1" borderColor="muted.300" pl={["2", "4"]} pr={["2", "5"]} py="2">
+                    <Box borderBottomWidth="0.3" borderColor="#999999" pl={["2", "4"]} pr={["2", "5"]} py="4">
                         <HStack space={[2, 3]} justifyContent="space-between">
                             {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
                             <VStack alignSelf={"center"}>
-                                <Text fontSize="lg" color="white" style={{fontWeight:"bold"}}>{item.user_name}</Text>
+                                <Text fontSize="lg" color="white" >{item.user_name}</Text>
                             </VStack>
                             <Spacer />
                             <Box alignSelf={"center"}>
@@ -287,7 +287,7 @@ function HomeScreen() {
                                     borderRadius: 6,
                                 }}
                                 >
-                                <Text style={{ textAlign: "center", color: "white", fontSize: 13 }}>
+                                <Text style={{ textAlign: "center", color: "white", fontSize: 10, fontWeight:"bold" }}>
                                 {friendRequestsReceived.some((friend) => friend._id === item._id)
                                 ? "Request Received"
                                 : "Request Sent"}

@@ -1,5 +1,5 @@
-import { Box, Text, Heading, VStack, FormControl, Input, Center, Pressable, Icon, Avatar } from "native-base";
-import { Platform, StyleSheet, TouchableOpacity } from "react-native";
+import { Box, Text, Heading, VStack, FormControl, Input, Center, Pressable, Icon, Avatar, Spinner } from "native-base";
+import { ActivityIndicator, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useState } from "react";
 import { mainURL } from "../Utils/urls";
@@ -22,7 +22,7 @@ function LoginScreen(){
     const [errorMessage, setErrorMessage] = useState("");
     const { signIn } = useContext(AuthContext);
     const navigation = useNavigation();
-
+    const [loading, setLoading] = useState(false);
     // useEffect(() => {
     //     const isLoggedIn = async () => {
 
@@ -109,7 +109,7 @@ function LoginScreen(){
 
     async function SignInHandler() {
         let expoPushToken = null;
-    
+        setLoading(true);
         try {
             expoPushToken = await registerForPushNotificationsAsync();
         } catch (error) {
@@ -136,7 +136,7 @@ function LoginScreen(){
             const token = response.data.token;
             await AsyncStorage.setItem("authToken", token); 
             const isNewUser = !(response.data.hasValidFriends);
-            
+            setLoading(false);
             signIn(isNewUser);
             
             // setTimeout(() => {
@@ -153,11 +153,14 @@ function LoginScreen(){
             if (error.response) {
                 if (error.response.status === 404) {
                     setErrorMessage("User not found");
+                    setLoading(false);
                 } else if(error.response.data && error.response.data.message){
                     setErrorMessage("Failed to login. Please try again.");
+                    setLoading(false);
                 }
             } else {
                 setErrorMessage("Network error. Please check your connection.");
+                setLoading(false);
             }
         }
     }
@@ -191,7 +194,7 @@ function LoginScreen(){
                         backgroundColor: '#fff',}}>
                         <Input
                             onChangeText={changeEmailHandler}
-                            placeholder="Enter email"
+                            placeholder="Enter email Id"
                             variant="unstyled"
                         />
                     </Box>
@@ -208,7 +211,7 @@ function LoginScreen(){
                         shadowRadius: 4,
                         borderRadius: 8, 
                         backgroundColor: '#fff',}}>
-                        <Input type={showPassword ? "text" : "password"} onChangeText={changePasswordHandler} placeholder="Enter email"
+                        <Input type={showPassword ? "text" : "password"} onChangeText={changePasswordHandler} placeholder="Enter password"
                             variant="unstyled" InputRightElement={
                             <Pressable onPress={() => setShowPassword(!showPassword)}>
                                 <Icon
@@ -221,13 +224,6 @@ function LoginScreen(){
                         }/>
                     </Box>
                     
-                    {/* <Link _text={{
-                        fontSize: "xs",
-                        fontWeight: "500",
-                        color: "indigo.500"
-                    }} alignSelf="flex-end" mt="1" onPress={() => navigation.navigate('ForgotPassword')}>
-                    Forget Password?
-                    </Link> */}
                 </FormControl>
                 {errorMessage && <Text color="red.500" fontSize="xs">{errorMessage}</Text>}
                 <TouchableOpacity onPress={SignInHandler} activeOpacity={0.8}>
@@ -240,8 +236,24 @@ function LoginScreen(){
                     <Text style={styles.btntext}>Log in</Text>
                 </LinearGradient>
                 </TouchableOpacity>
+                
                 </VStack>
             </Box>
+            {loading && (
+                    <View style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.5)",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        zIndex: 10
+                    }}>
+                         <Spinner color="white" size={"lg"}/>
+                    </View>
+                )}
         </Center>
     )
 }

@@ -175,7 +175,7 @@ function UsersProfileScreen() {
 
   function renderSingleUserProfile(){
     return(
-      <Center paddingY={5}>
+      <Center paddingY={5} >
         {chatUserInfo.image ? (
           <Box>
             <Avatar size="2xl" source={source}/>
@@ -185,7 +185,7 @@ function UsersProfileScreen() {
             <Ionicons name="person-circle-outline" size={100} color="gray" />
           </Box>
           )}
-          <Text fontSize={"md"} bold> {chatUserInfo.user_name} </Text>
+          <Text fontSize={"md"} bold mt={5} color={"white"}> {chatUserInfo.user_name} </Text>
           {/* <>
             <HStack background={"red.500"} >
               <VStack >
@@ -270,7 +270,7 @@ function UsersProfileScreen() {
         <Box flexDirection="column" width="full" alignItems="center" alignContent="center">
 
         {/* Group Icon, Name, and Members Card */}
-          <Box bg="white" borderRadius="lg" p={4} mb={4} shadow={2} width="full">
+          <Box bg="black" borderRadius="lg" p={4} mb={4} shadow={2} width="full" borderWidth={0.4} borderColor={"white"}>
             {isGroupChat && userId === chatUserInfo?.groupAdmin?._id ? renderGroupProfile() : 
               isGroupChat && userId != chatUserInfo?.groupAdmin?._id ? renderGroupProfileForMembers() : renderSingleUserProfile()}
           </Box>

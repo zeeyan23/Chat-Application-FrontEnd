@@ -1987,11 +1987,11 @@ const MessageSrceen = () => {
                 ? styles.rightChatBox
                 : styles.leftChatBox,
               highlightedMessageId === item._id && {
-                borderColor: "#2E7800",
+                borderColor: "blue",
                 borderWidth: 2,
               },
               highLight === item._id && {
-                borderColor: "#2E7800",
+                borderColor: "blue",
                 borderWidth: 2,
               },
             ]}
@@ -2092,11 +2092,11 @@ const MessageSrceen = () => {
                 ? styles.rightChatBox
                 : styles.leftChatBox,
               highlightedMessageId === item._id && {
-                borderColor: "#2E7800",
+                borderColor: "blue",
                 borderWidth: 2,
               },
               highLight === item._id && {
-                borderColor: "#2E7800",
+                borderColor: "blue",
                 borderWidth: 2,
               },
             ]}
@@ -2184,11 +2184,11 @@ const MessageSrceen = () => {
                 ? styles.rightChatBox
                 : styles.leftChatBox,
               highlightedMessageId === item._id && {
-                borderColor: "#2E7800",
+                borderColor: "blue",
                 borderWidth: 2,
               },
               highLight === item._id && {
-                borderColor: "#2E7800",
+                borderColor: "blue",
                 borderWidth: 2,
               },
             ]}
@@ -2314,11 +2314,11 @@ const MessageSrceen = () => {
                 ? styles.rightChatBox
                 : styles.leftChatBox,
               highlightedMessageId === item._id && {
-                borderColor: "#2E7800",
+                borderColor: "blue",
                 borderWidth: 2,
               },
               highLight === item._id && {
-                borderColor: "#2E7800",
+                borderColor: "blue",
                 borderWidth: 2,
               },
             ]}
@@ -2411,11 +2411,11 @@ const MessageSrceen = () => {
                 ? styles.rightChatBox
                 : styles.leftChatBox,
               highlightedMessageId === item._id && {
-                borderColor: "#2E7800",
+                borderColor: "blue",
                 borderWidth: 2,
               },
               highLight === item._id && {
-                borderColor: "#2E7800",
+                borderColor: "blue",
                 borderWidth: 2,
               },
             ]}

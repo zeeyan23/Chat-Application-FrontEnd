@@ -261,8 +261,8 @@ function StarredMessagesScreen({navigation}){
                                 </Box>
                             </>
                           )
-                           : <Box background="#29F200"  padding={2}   borderRadius={8}   alignSelf="flex-start" marginTop={2}>
-                          <Text color="coolGray.600" _dark={{ color: "warmGray.200" }}>
+                           : <Box background="#29F200" paddingTop={1} paddingBottom={1} paddingRight={2} paddingLeft={2}  borderRadius={8}   alignSelf="flex-start" marginTop={2}>
+                          <Text color="coolGray.600" _dark={{ color: "warmGray.200" }} >
                             {item.message || item.fileName}
                           </Text>
                         </Box>}
