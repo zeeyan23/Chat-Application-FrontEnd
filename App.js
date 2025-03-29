@@ -244,13 +244,13 @@ export default function App() {
         <Stack.Screen
           name="CallScreen"
           component={CallScreen}
-          options={{ animation: "fade",  }}
+          options={{ animation: "fade" }}
         />
         <Stack.Screen
           name="VideoScreen"
           component={VideoScreen}
           options={{
-            headerShown: false, 
+            headerShown: false,
           }}
         />
         <Stack.Screen
@@ -267,7 +267,7 @@ export default function App() {
           name="VoiceCallScreen"
           component={VoiceCallScreen}
           options={{
-            headerShown: false, 
+            headerShown: false,
             //presentation: "transparentModal",
           }}
         />
@@ -275,7 +275,7 @@ export default function App() {
           name="Notifications"
           component={NotificationsScreen}
           options={{
-            headerShown: false, 
+            headerShown: false,
             //presentation: "transparentModal",
           }}
         />
@@ -376,25 +376,29 @@ export default function App() {
       registerForPushNotificationsAsync().then((t) =>
         console.log("token :", Platform.OS, t)
       );
-      const subscription = Notifications.addNotificationReceivedListener(
+      const subscription = Notifications.addNotificationResponseReceivedListener(
         (response) => {
           console.log("Notifications :", response.request.content);
-          // const { screen, callerId, calleeId, isCaller, isGroup } =
-          //   response.notification.request.content.data;
-          // if (screen === "VoiceScreen" && navigationRef.isReady()) {
-          //   // navigationRef.navigate("VoiceScreen", {
-          //   //   callerId,
-          //   //   calleeId,
-          //   //   isCaller,
-          //   //   isGroup,
-          //   // });
-          // }
+          const { screen } = response.request.content.data;
+          if (navigationRef.isReady()) {
+            const info = extractCallerInfo(screen);
+            navigationRef.navigate("VoiceScreen", {
+              callerId: info.callerID,
+              callerName: info.callerName,
+            });
+          }
         }
       );
 
       // Cleanup on unmount
       return () => subscription.remove();
     }, []);
+    function extractCallerInfo(screen) {
+      let parts = screen.split("/");
+      let callerID = parts[4]; // Index 4 contains callerID
+      let callerName = parts[5]; // Index 5 contains callerName
+      return { callerID, callerName };
+    }
 
     if (!isSplashFinished) {
       return <CustomSplashScreen onFinish={() => setIsSplashFinished(true)} />;
@@ -408,10 +412,8 @@ export default function App() {
           config: {
             screens: {
               Notifications: "Notifications/:callerId/:callerName",
-             // VoiceScreen: "VoiceScreen/:callerId/:callerName/:groupId",
+              // VoiceScreen: "VoiceScreen/:callerId/:callerName/:groupId",
               VoiceScreen: "VoiceScreen/:callerId/:callerName",
-             
-              
             },
           },
           async getInitialURL() {
@@ -425,7 +427,7 @@ export default function App() {
           },
           subscribe(listener) {
             const onReceiveURL = ({ url }) => {
-              console.log('url received :',url)
+              console.log("url received :", url);
               listener(url);
             };
 
