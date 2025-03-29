@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { ActionSheetIOS, Alert, Platform, SafeAreaView } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, SafeAreaView, ScrollView } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Box, HStack, Avatar, Text, Badge, Spacer, Divider, Flex, Pressable, VStack, Center, FlatList, View, AlertDialog, Button, useDisclose } from 'native-base';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -137,7 +137,7 @@ function UsersProfileScreen() {
             </Box>
             }}
         </Pressable>
-        <Text fontSize="lg" fontWeight="bold" mt={2}>{chatUserInfo.groupName}</Text>
+        <Text fontSize="lg" fontWeight="bold" mt={2} color={"white"}>{chatUserInfo.groupName}</Text>
         <Flex direction="row" alignItems="center" justifyContent="center" justifyItems={"center"} w="full" h="10">
           <Text color="gray.500">Group</Text>
           <Entypo name="dot-single" size={20} color="grey" />
@@ -160,7 +160,7 @@ function UsersProfileScreen() {
             </Box>
             }}
         </Pressable>
-        <Text fontSize="lg" fontWeight="bold" mt={2}>{chatUserInfo.groupName}</Text>
+        <Text fontSize="lg" fontWeight="bold" mt={2} color={"white"}>{chatUserInfo.groupName}</Text>
         <Flex direction="row" justifyContent="center" alignItems={"center"} alignContent={"center"} w="full" h="10">
           <Text color="gray.500">Group </Text>
           <Box>
@@ -257,6 +257,7 @@ function UsersProfileScreen() {
   //console.log(JSON.stringify(formattedData, null, 2))
   return (
     <Box flex={1} padding={5}  background="black" safeArea width={"full"}>
+       
       <Box flexDirection="row" width={"full"} paddingBottom={5}>
         <Ionicons
           name="arrow-back-outline"
@@ -277,11 +278,12 @@ function UsersProfileScreen() {
         
           {/* Created By and Date Card */}
           {isGroupChat && <Box bg="white" borderRadius="lg" p={4} mb={4} shadow={2} width="full">
-            <HStack justifyContent="space-between" marginBottom={2}>
+            <HStack justifyContent="space-between" >
               {userId === chatUserInfo?.groupAdmin?._id ? <Text color="gray.600">Created you: {chatUserInfo.groupAdmin.user_name}</Text> :
                 <Text color="gray.600">Created by: {chatUserInfo.groupAdmin.user_name}</Text>}
               <Text color="gray.600">{moment(chatUserInfo.created_date).format('DD/MM/YYYY')}</Text>
             </HStack>
+            <Text color="gray.500" mt={2} fontWeight={"bold"}>Total Members: {formattedData.length}</Text>
           </Box>}
 
           {isGroupChat && <Box bg="white" borderTopLeftRadius={"lg"} borderTopRightRadius={"lg"} px={4} shadow={2} width="full">
@@ -312,11 +314,14 @@ function UsersProfileScreen() {
           {isGroupChat && 
           <>
             <Box bg="white" borderBottomLeftRadius="lg" borderBottomRightRadius={"lg"} px={4}  mb={4} shadow={2} width="full">
-              <Text color="gray.500">Total Members: {formattedData.length}</Text>
+              
+              
               
               <FlatList
                 data={formattedData}
-                style={{ height: Math.min(formattedData.length * 70, 230) }}
+                
+                
+                style={{ height:  Math.min(formattedData.length * 70, 250) }}
                 paddingBottom={10}
                 renderItem={({ item,index }) => {
                   const baseUrl = `${mainURL}/files/`;
@@ -339,7 +344,11 @@ function UsersProfileScreen() {
                                 <HStack space={3} alignItems="center"  bg={
                                   isPressed ? "coolGray.50" : isHovered ? "coolGray.50" : "white"
                                 }>
-                                  {source ? <Avatar size="md"marginRight={2} source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
+                                {source ? (
+                                    <Avatar width={45} height={45} borderRadius={50} source={source} />
+                                  ) : (
+                                    <Ionicons name="person-circle-outline" size={45} color="gray" />
+                                  )}
                                   <Text fontWeight="bold">{item.user_name}</Text>
                                   <Spacer />
                                   {item.role === 'Admin' && <Badge colorScheme="success">Admin</Badge>}
@@ -390,15 +399,17 @@ function UsersProfileScreen() {
 
                 <AlertDialog.Footer>
                   <Button.Group space={3} width="100%">
-                    <Button flex={1} variant="outline" colorScheme="coolGray" onPress={onClose}>
-                      Cancel
+                    <Button flex={1} variant="outline" borderWidth={"0"} colorScheme="white" fontWeight={"bold"} onPress={onClose}>
+                    <Text color="black" fontWeight={"bold"}>Cancel</Text>
                     </Button>
                     <Button 
                       flex={1} 
-                      colorScheme="red" 
+                      borderWidth={"0"}
+                      variant="unstyled"
+                      fontWeight={"bold"}
                       onPress={() => handleGroupMember(id)}
                     >
-                      Remove User
+                      <Text color="black" fontWeight={"bold"}>Remove user</Text>
                     </Button>
                   </Button.Group>
                 </AlertDialog.Footer>
@@ -409,7 +420,7 @@ function UsersProfileScreen() {
           }
         </Box>
       )}
-      
+     
     </Box>
   );
 }

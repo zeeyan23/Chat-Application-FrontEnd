@@ -164,25 +164,18 @@ function UserSettings(){
                           </Box>
                       }}
                   </Pressable>
-                    <Pressable onPress={() => {
-                      setEditType("user_name"); 
-                      setInputValue(user.user_name); 
-                      onOpen();
-                    }} paddingY={2}>
+                    <Pressable  paddingY={2}>
                         {({ isHovered, isFocused, isPressed }) => {
                             return <Box maxW="96" bg={isPressed ? 'coolGray.100' : isHovered ? 'coolGray.100' : 'coolGray.200'} p="2" rounded="8" style={{
                                 transform: [{ scale: isPressed ? 0.96 : 1}]}} paddingRight={4} paddingLeft={4}>
                                 <Text fontSize="2xl" fontWeight="semibold">
-                                    {user.user_name} <Entypo name="pencil" size={16} color="green" />
+                                    {user.user_name} 
                                 </Text>
                             </Box>
                         }}
                 </Pressable>
             </Box>
-            <Pressable onPress={() => {
-              setEditType("email"); 
-              setInputValue(user.email); 
-              onOpen();}} paddingY={2}>
+            <Pressable  paddingY={2}>
                 {({ isHovered, isFocused, isPressed }) => {
                     return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'coolGray.200'} p="3" rounded="8" style={{
                         transform: [{ scale: isPressed ? 0.96 : 1}]}}>
@@ -194,16 +187,13 @@ function UserSettings(){
                             </Text>
                             </VStack>
                             <Spacer />
-                            <Entypo name="pencil" size={18} color="green" />
+                            {/* <Entypo name="pencil" size={18} color="green" /> */}
                         </HStack>
                     </Box>
                 }}
             </Pressable>
 
-            <Pressable onPress={() => {
-              setEditType("password"); 
-              setInputValue(user.password); 
-              onOpen();}}>
+            <Pressable >
                 {({ isHovered, isFocused, isPressed }) => {
                     return <Box maxW="96" bg={isPressed ? 'coolGray.200' : isHovered ? 'coolGray.200' : 'coolGray.200'} p="3" rounded="8" style={{
                         transform: [{ scale: isPressed ? 0.96 : 1}]}}>
@@ -215,7 +205,7 @@ function UserSettings(){
                             </Text>
                             </VStack>
                             <Spacer />
-                            <Entypo name="pencil" size={18} color="green" />
+                            {/* <Entypo name="pencil" size={18} color="green" /> */}
                         </HStack>
                     </Box>
                 }}

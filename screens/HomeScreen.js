@@ -343,59 +343,74 @@ function HomeScreen() {
 
                                 return (
                                     <Box>
-                                        <HStack space={[2, 3]} justifyContent="space-between">
-                                            {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
-                                            <VStack alignSelf={"center"}>
-                                                <Text fontSize="lg" color="black" style={{ fontWeight: "bold" }}>
-                                                    {item.user_name}
-                                                </Text>
-                                            </VStack>
-                                            {userFriends.includes(item._id) ? (
-                                            <Pressable
-                                                onPress={() => openChatFriend(item)}
-                                                style={{
-                                                    backgroundColor: "#82CD47",
-                                                    padding: 10,
-                                                    width: 105,
-                                                    borderRadius: 6,
-                                                }}
-                                                >
-                                                <Text style={{ textAlign: "center", color: "white" }}>Friends</Text>
-                                            </Pressable>):  requestSent.includes(item._id) || friendRequestsReceived.some((friend) => friend._id === item._id) || friendRequests.some((friend) => friend._id === item._id) ? (
-                                <Pressable
-                                style={{
-                                    backgroundColor: "gray",
-                                    padding: 10,
-                                    width: 105,
-                                    borderRadius: 6,
-                                }}
-                                >
-                                <Text style={{ textAlign: "center", color: "white", fontSize: 13 }}>
-                                {friendRequestsReceived.some((friend) => friend._id === item._id)
-                                ? "Request Received"
-                                : "Request Sent"}
-                                </Text>
-                                </Pressable>
-                            ) :
-                            
-                                            <>
-                                            {loading && <ActivityIndicator size="large" color="#0000ff" />}
+                                       <HStack alignItems="center" justifyContent="space-between">
+  <HStack alignItems="center">
+    {source ? (
+      <Avatar size="48px" source={source}style={{ marginRight: 10 }} />
+    ) : (
+      <Ionicons name="person-circle-outline" style={{ marginRight: 10 }} size={48} color="gray" />
+    )}
+    <Text fontSize="lg" color="black" fontWeight="bold">
+      {item.user_name}
+    </Text>
+  </HStack>
 
-                                            <Pressable
-                                                onPress={() => handleFriendRequest( item._id)}
-                                                style={{
-                                                    backgroundColor: "#567189",
-                                                    padding: 10,
-                                                    borderRadius: 6,
-                                                    width: 105,
-                                                }}
-                                                disabled={loading}
-                                                >
-                                                <Text style={{ textAlign: "center", color: "white", fontSize: 13 }}>
-                                                    Add Friend
-                                                </Text>
-                                            </Pressable></>}
-                                        </HStack>
+  <Spacer />
+
+  {userFriends.includes(item._id) ? (
+    <Pressable
+      alignSelf={"center"}
+      paddingVertical={2}
+      paddingHorizontal={7}
+      onPress={() => openChatFriend(item)}
+      style={{
+        backgroundColor: "#82CD47",
+        borderRadius: 6,
+      }}
+    >
+      <Text style={{ textAlign: "center", color: "white" }}>Friends</Text>
+    </Pressable>
+  ) : requestSent.includes(item._id) || 
+    friendRequestsReceived.some((friend) => friend._id === item._id) || 
+    friendRequests.some((friend) => friend._id === item._id) ? (
+    <Pressable
+      style={{
+        backgroundColor: "gray",
+        padding: 10,
+        width: 105,
+        borderRadius: 6,
+      }}
+    >
+      <Text style={{ textAlign: "center", color: "white", fontSize: 13 }}>
+        {friendRequestsReceived.some((friend) => friend._id === item._id)
+          ? "Request Received"
+          : "Request Sent"}
+      </Text>
+    </Pressable>
+  ) : (
+    <>
+      {loading && <ActivityIndicator size="large" color="#0000ff" />}
+      <Pressable
+        onPress={() => handleFriendRequest(item._id)}
+        style={{
+          backgroundColor: "#567189",
+          //padding: 10,
+          borderRadius: 6,
+          //width: 105,
+        }}
+        alignSelf={"center"}
+      paddingVertical={5}
+      paddingHorizontal={15}
+        disabled={loading}
+      >
+        <Text style={{ textAlign: "center", color: "white", fontSize: 13 }}>
+          Add Friend
+        </Text>
+      </Pressable>
+    </>
+  )}
+</HStack>
+
                                     </Box>
                                 );
                             }}
@@ -408,8 +423,8 @@ function HomeScreen() {
                         />
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button onPress={submitSearch}>
-                            Submit
+                        <Button onPress={submitSearch} padding={2}>
+                            Search friend
                         </Button>
                     </Modal.Footer>
                 </Modal.Content>

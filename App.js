@@ -146,7 +146,7 @@ export default function App() {
             headerShown: true,
             headerStyle: {
               backgroundColor: "black",
-              borderBottomWidth: 0.4,
+              borderBottomWidth: 0.3,
               borderBottomColor: "white",
             },
             animation: "fade",

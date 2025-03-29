@@ -566,6 +566,8 @@ const MessageSrceen = () => {
               )}
               <Pressable
                 width={"48"}
+                borderBottomWidth={0.3}
+                borderBottomColor= "grey"
                 onPress={() => {
                   viewUsersProfile(isGroupChat ? groupId : recipentId);
                 }}
@@ -579,8 +581,8 @@ const MessageSrceen = () => {
                       bg={
                         isPressed ? "#666666" : isHovered ? "#666666" : "black"
                       }
-                      borderBottomWidth={1}
-                      borderBottomColor={"white"}
+                      // borderBottomWidth={0.3}
+                      // borderBottomColor={"white"}
                     >
                       <Text
                         style={{

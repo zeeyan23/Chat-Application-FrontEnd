@@ -248,7 +248,7 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
             <HStack space={[2, 3]} justifyContent="space-between">
               {source ? <Avatar size="48px" source={source}/> : <Ionicons name="person-circle-outline" size={48} color="gray" />}
               <VStack alignSelf={!item.lastMessage && "center"}>
-                <Text fontSize="md" color="white" >{item.type === 'friend' ? item.user_name : item.groupName}</Text>
+                <Text fontSize="md" color="white" marginBottom={1} >{item.type === 'friend' ? item.user_name : item.groupName}</Text>
                 {item.lastMessage ? <Text 
                   style={{ marginTop: 3, color: "gray", fontWeight: "500" }} 
                   numberOfLines={1} 
@@ -275,8 +275,15 @@ function UserChat({ item, selectedChats, setSelectedChats,onPinUpdate, onChatUpd
                       <Entypo name="text-document-inverted" size={15} color="grey" style={{alignSelf:"center"}}/>
                       <Text color={"grey"}>{item.lastMessage?.messageType}</Text>
                     </> : item.lastMessage?.messageType === "audio" ? <>
-                      <Ionicons name="mic" size={15} color="grey" style={{alignSelf:"center"}}/>
-                      <Text color={"grey"}>{item.lastMessage?.messageType}</Text>
+                    <Box flexDirection="row" justifyContent="center" alignItems="center" >
+  <Ionicons name="mic" size={15} color="grey" />
+  <Text color="grey" textAlign="center" marginLeft={2} lineHeight={15}>
+    {item.lastMessage?.messageType}
+  </Text>
+</Box>
+
+
+                      
                     </> : ""}
                 </Text> : ""}
 
