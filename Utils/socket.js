@@ -54,13 +54,13 @@ class SocketService {
           duration: 5000,
           placement: "top",
         });
-        // navigationRef.navigate("VoiceScreen", {
-        //   callerId: data.callerId,
-        //   calleeId: data.calleeId,
-        //   isCaller: false,
-        //   callerInfo: data.callerInfo,
-        //   calleeInfo: data.calleeInfo,
-        // });
+        navigationRef.navigate("VoiceScreen", {
+          callerId: data.callerId,
+          calleeId: data.calleeId,
+          isCaller: false,
+          callerInfo: data.callerInfo,
+          calleeInfo: data.calleeInfo,
+        });
       // }
     });
     this.socket.on("incoming_group_voice_call", (data) => {

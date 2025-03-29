@@ -257,6 +257,7 @@ function VoiceCallScreen({ navigation }) {
         agoraEngineRef.current?.enableLocalVideo(false); // Disable camera
         agoraEngineRef.current?.stopPreview(); // Stop video preview
         agoraEngineRef.current?.leaveChannel();
+        navigation.goBack();
       } else {
         agoraEngineRef.current?.muteLocalAudioStream(true); // Mute mic
         agoraEngineRef.current?.enableLocalVideo(false); // Disable camera
