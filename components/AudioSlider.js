@@ -136,6 +136,9 @@ export default class AudioSlider extends PureComponent {
   };
 
   play = async () => {
+    await Audio.setAudioModeAsync({
+      playThroughEarpieceAndroid: true,
+    });
     if (this.state.pausedPosition > 0) {
       // If there is a saved position, start from there
       await this.soundObject.setPositionAsync(this.state.pausedPosition);
@@ -186,15 +189,9 @@ export default class AudioSlider extends PureComponent {
   async componentDidMount() {
     this.soundObject = new Audio.Sound();
 
-    // await Audio.setAudioModeAsync({
-    //   allowsRecordingIOS: false,
-    //   playsInSilentModeIOS: true,
-    //   staysActiveInBackground: true,
-    //   interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
-    //   shouldDuckAndroid: true,
-    //   playThroughEarpieceAndroid: false,
-    //   outputAudioPort: Audio.OUTPUT_AUDIO_PORT_SPEAKER, // 👈 Forces loudspeaker
-    // });
+    await Audio.setAudioModeAsync({
+      playThroughEarpieceAndroid: true,
+    });
     //    console.log('Im here')
     //     await this.soundObject
     //       .loadAsync({ uri: this.props.audio.uri })
