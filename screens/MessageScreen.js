@@ -1589,6 +1589,7 @@ const MessageSrceen = () => {
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
+        playThroughEarpieceAndroid:true
       });
 
       const newRecording = new Audio.Recording();

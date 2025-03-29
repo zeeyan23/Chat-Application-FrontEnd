@@ -12,6 +12,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 function VoiceScreen({route}){
     const { callerId, calleeId, isCaller, callerInfo, calleeInfo,isGroup, isCalling, groupId, recipientId, participants = [], callerImage, callerName,userId, memberId } = route.params;
+    console.log('params :',route.params)
     const navigation = useNavigation();
     const [callAccepted, setCallAccepted] = useState(false);
     const socket = socketInstance.getSocket();
@@ -77,6 +78,7 @@ function VoiceScreen({route}){
 
 
       const handleCallApproved = (data) => {
+        console.log('data for accepted Call :',data)
         if (!callAccepted) {
           clearTimeout(timeoutRef);
           setCallTimedOut(false);
@@ -87,6 +89,7 @@ function VoiceScreen({route}){
             isCaller: data.isCaller,
             callerInfo: data.callerInfo,
             calleeInfo: data.calleeInfo,
+            callerName: route.params?.callerName
           });
         }
       }
@@ -104,7 +107,8 @@ function VoiceScreen({route}){
               isGroup: true,
               callerId: callerId,
               isCaller:true,
-              userId: userId
+              userId: userId,
+              callerName:route.params?.callerName
             });
         });
 
@@ -156,6 +160,7 @@ function VoiceScreen({route}){
             isCaller: false,
             callerInfo: callerInfo,
             calleeInfo: calleeInfo,
+            callerName:route.params?.callerName
           });
         }
       }
