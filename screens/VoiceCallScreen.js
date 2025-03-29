@@ -35,12 +35,14 @@ import CustomButton from "../components/CustomButton";
 import socketInstance from "../Utils/socket";
 import { UserType } from "../Context/UserContext";
 import axios from "axios";
+import { useRoute } from "@react-navigation/native";
 
 const appId = "bb4384dc3e7f4eba9d8b371263ac938e";
 const channelName = "voice_call";
 const uid = 0;
 
-function VoiceCallScreen({ route, navigation }) {
+function VoiceCallScreen({ navigation }) {
+  const route = useRoute();
   // const { channelId, recipientId,isHost, isGroup,  } = route.params;
   const {
     callerId,
@@ -51,8 +53,9 @@ function VoiceCallScreen({ route, navigation }) {
     isGroup,
     participants: initialParticipants = [],
     memberId,
-  } = route.params;
-  console.log("callerID :", callerId);
+    callerName,
+  } = route.params; 
+  console.log("params voice call screen :", callerId, route.params, calleeInfo);
   const toast = useToast();
   const agoraEngineRef = useRef(null);
   const [isJoined, setIsJoined] = useState(false);
@@ -62,9 +65,7 @@ function VoiceCallScreen({ route, navigation }) {
   const eventHandler = useRef(null);
   const baseUrl = `${mainURL}/files/`;
   const socket = socketInstance.getSocket();
-  const { userId, setUserId } = useContext(UserType);
-
-  console.log("voice call screen", participants);
+  const { userId, setUserId } = useContext(UserType); 
   useEffect(() => {
     return () => {
       // Perform cleanup when component unmounts
@@ -155,8 +156,7 @@ function VoiceCallScreen({ route, navigation }) {
           setParticipants((prev) => [...prev, { id: uid, userName: uid }]);
           Notifier.showNotification({
             title: "Joined",
-            description:
-              `${uid} has joined the call`,
+            description: `${uid} has joined the call`,
             Component: NotifierComponents.Alert,
             componentProps: {
               alertType: "success",
@@ -164,7 +164,6 @@ function VoiceCallScreen({ route, navigation }) {
             showAnimationDuration: 800,
             showEasing: Easing.bounce,
           });
-          
         }
         setMessage(`Remote user ${uid} joined`);
         setRemoteUid(uid);
@@ -175,16 +174,14 @@ function VoiceCallScreen({ route, navigation }) {
         if (isGroup) {
           Notifier.showNotification({
             title: "Left",
-            description:
-              `${uid} has left the call`,
+            description: `${uid} has left the call`,
             Component: NotifierComponents.Alert,
             componentProps: {
               alertType: "error",
             },
             showAnimationDuration: 800,
             showEasing: Easing.bounce,
-          });
-          console.log("particpants :", participants);
+          }); 
           setParticipants((prevParticipants) =>
             prevParticipants.filter((participant) => participant.id !== uid)
           );
@@ -217,8 +214,7 @@ function VoiceCallScreen({ route, navigation }) {
       const response = await fetch(
         `${mainURL}/generate_voice_token?channelName=${channelName}&uid=${uid}`
       );
-      const data = await response.json();
-      console.log("data token", data.token);
+      const data = await response.json(); 
       const token = data.token;
       agoraEngineRef.current?.joinChannel(token, channelName, uid, {
         channelProfile: ChannelProfileType.ChannelProfileCommunication,
@@ -244,7 +240,7 @@ function VoiceCallScreen({ route, navigation }) {
             isCaller: isCaller,
           });
           console.log(userId);
-          navigation.goBack()
+          navigation.goBack();
         } else {
           console.log(memberId);
           agoraEngineRef.current?.leaveChannel();
@@ -331,7 +327,7 @@ function VoiceCallScreen({ route, navigation }) {
       )}
     />
   );
-
+  console.log("params :", route.params);
   const renderCallerInfo = () => (
     <VStack alignItems="center" space={2} my={3}>
       <Center
@@ -351,7 +347,7 @@ function VoiceCallScreen({ route, navigation }) {
         )}
       </Center>
       <Text color="white" fontSize="md" bold>
-        {callerInfo?.user_name || "Unknown Caller"}
+        {callerInfo?.user_name || callerName}
       </Text>
     </VStack>
   );
@@ -375,7 +371,13 @@ function VoiceCallScreen({ route, navigation }) {
         )}
       </Center>
       <Text color="white" fontSize="md" bold>
-        {calleeInfo?.user_name || "Unknown Callee"}
+        {calleeInfo?.user_name
+          ? calleeInfo.user_name
+          : callerInfo.user_name
+          ? callerInfo.user_name
+          : callerName
+          ? callerName
+          : "Unknown Callee"}
       </Text>
     </VStack>
   );

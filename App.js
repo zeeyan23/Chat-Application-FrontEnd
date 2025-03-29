@@ -39,6 +39,7 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { NotifierWrapper } from "react-native-notifier";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import NotificationsScreen from "./screens/notifications";
 export const navigationRef = createNavigationContainerRef();
 const firebaseConfig = {
   apiKey: "AIzaSyDNMObk5i4DCZE8hm7CU4PeYAs9j3PkbFM",
@@ -243,15 +244,13 @@ export default function App() {
         <Stack.Screen
           name="CallScreen"
           component={CallScreen}
-          options={{ animation: "fade", presentation: "card" }}
+          options={{ animation: "fade",  }}
         />
         <Stack.Screen
           name="VideoScreen"
           component={VideoScreen}
           options={{
-            headerShown: false,
-            animation: "fade",
-            presentation: "card",
+            headerShown: false, 
           }}
         />
         <Stack.Screen
@@ -268,8 +267,15 @@ export default function App() {
           name="VoiceCallScreen"
           component={VoiceCallScreen}
           options={{
-            headerShown: false,
-            animation: "fade",
+            headerShown: false, 
+            //presentation: "transparentModal",
+          }}
+        />
+        <Stack.Screen
+          name="Notifications"
+          component={NotificationsScreen}
+          options={{
+            headerShown: false, 
             //presentation: "transparentModal",
           }}
         />
@@ -401,9 +407,11 @@ export default function App() {
           prefixes: [Linking.createURL("/")],
           config: {
             screens: {
-              Notifications: "Notifications",
-              VoiceScreen: "VoiceScreen/:callerId/:callerName/:groupId",
+              Notifications: "Notifications/:callerId/:callerName",
+             // VoiceScreen: "VoiceScreen/:callerId/:callerName/:groupId",
               VoiceScreen: "VoiceScreen/:callerId/:callerName",
+             
+              
             },
           },
           async getInitialURL() {
@@ -417,6 +425,7 @@ export default function App() {
           },
           subscribe(listener) {
             const onReceiveURL = ({ url }) => {
+              console.log('url received :',url)
               listener(url);
             };
 
