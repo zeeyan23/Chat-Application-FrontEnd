@@ -91,7 +91,7 @@ import MessageDeleteDialog from "../components/MessagesDeleteDialog";
 import socketInstance from "../Utils/socket";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
-
+import { compress } from "react-native-video-compressor";
 const MessageSrceen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -1170,7 +1170,24 @@ const MessageSrceen = () => {
         quality: 0.8, // Image/Video quality (0.0 to 1.0)
       });
 
-      if (!result.canceled) {
+      // if (!result.canceled) {
+      //   handleSelectedMedia(result);
+      // }
+
+      if (!result.canceled && result.assets[0].type === "video") {
+        const videoUri = result.assets[0].uri;
+  
+        // Compress the video
+        const compressedVideoUri = await compress(videoUri, {
+          compressionMethod: "auto", // Auto quality adjustment
+          bitrate: 800000, // Lower bitrate reduces file size
+          maxSize: 10, // Max file size in MB
+        });
+  
+        console.log("Compressed video URI:", compressedVideoUri);
+  
+        handleSelectedMedia({ ...result, assets: [{ ...result.assets[0], uri: compressedVideoUri }] });
+      } else {
         handleSelectedMedia(result);
       }
     } catch (error) {

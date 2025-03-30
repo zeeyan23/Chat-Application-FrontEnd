@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useContext, memo } from "react";
+import { useRef, useState, useEffect, useContext, memo, useMemo } from "react";
 import { SafeAreaView, StyleSheet, Text, Alert } from "react-native";
 import { PermissionsAndroid, Platform } from "react-native";
 import {
@@ -384,6 +384,9 @@ const VideoCallScreen = ({ route, navigation }) => {
   //         ? [...new Set([firstJoinedUid, ...remoteUids])]
   //         : remoteUids;
   // }, [firstJoinedUid, remoteUids]);
+  const displayedUids = useMemo(() => {
+    return [userId, ...new Set(remoteUids)];
+}, [userId, remoteUids]);
 
   console.log("remoteUids", remoteUids);
   useEffect(() => {
@@ -403,52 +406,32 @@ const VideoCallScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <Box style={styles.videoContainer}>
-        {isGroup ? (
-          // Grid layout for group participants
-          <>
-            <Box>
-              <FlatList
-                data={remoteUids}
-                keyExtractor={(item) => item.toString()}
-                renderItem={({ item }) => <VideoItem uid={item} />}
-                numColumns={2}
-              />
-              <RtcSurfaceView
-              key={userId}
-                canvas={{
-                  uid: userId,
-                  sourceType: VideoSourceType.VideoSourceCamera,
-                }}
-                style={styles.fullScreenVideo}
-              />
-              <RtcSurfaceView
-              key={calleeId}
-                canvas={{
-                  uid: calleeId,
-                  sourceType: VideoSourceType.VideoSourceCamera,
-                }}
-                style={styles.fullScreenVideo}
-              />
-            </Box>
-          </>
-        ) : (
-          // Full screen for one-to-one
-          <Box style={styles.oneToOneContainer}>
-            {remoteUids.length > 0 ? (
-              renderParticipant(remoteUids[0])
-            ) : (
-              <Text style={styles.waitingText}>Waiting for participant...</Text>
-            )}
+      {isGroup ? (
+  <FlatList
+    data={displayedUids}
+    keyExtractor={(item) => item.toString()}
+    renderItem={({ item }) => (
+      <RtcSurfaceView
+        key={item}
+        canvas={{
+          uid: item,
+          sourceType: item === userId ? VideoSourceType.VideoSourceCamera : VideoSourceType.VideoSourceRemote,
+        }}
+        style={styles.remoteVideoBox}
+      />
+    )}
+    numColumns={2}
+  />
+) : (
+  <Box style={styles.oneToOneContainer}>
+    {remoteUids.length > 0 ? (
+      renderParticipant(remoteUids[0])
+    ) : (
+      <Text style={styles.waitingText}>Waiting for participant...</Text>
+    )}
+  </Box>
+)}
 
-            {/* <Box style={styles.localVideoContainerOneToOne}>
-                        <RtcSurfaceView
-                            canvas={{ uid: 0, sourceType: VideoSourceType.VideoSourceCamera }}
-                            style={styles.localVideoSmall}
-                        />
-                        <Text style={styles.userName}>You</Text>
-                    </Box> */}
-          </Box>
-        )}
       </Box>
 
       {/* Control Buttons */}

@@ -52,6 +52,7 @@
     "react-native-screens": "~4.1.0",
     "react-native-svg": "^15.10.1",
     "react-native-toast-message": "^2.2.1",
+    "react-native-video-compressor": "^0.0.3",
     "react-native-webrtc": "^124.0.5",
     "socket.io-client": "^4.8.1"
   },
