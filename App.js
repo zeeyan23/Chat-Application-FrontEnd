@@ -40,6 +40,7 @@ import { Platform } from "react-native";
 import { NotifierWrapper } from "react-native-notifier";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import NotificationsScreen from "./screens/notifications";
+import { useSocket } from "./Utils/useSockets";
 export const navigationRef = createNavigationContainerRef();
 const firebaseConfig = {
   apiKey: "AIzaSyDNMObk5i4DCZE8hm7CU4PeYAs9j3PkbFM",
@@ -65,6 +66,8 @@ const auth = initializeAuth(app, {
 const Stack = createStackNavigator();
 export default function App() {
   const [isSplashFinished, setIsSplashFinished] = useState(false);
+  const { socket, isConnected } = useSocket();
+  console.log("socket hook :", isConnected);
   useEffect(() => {
     async function getPermission() {
       const { status } = await Notifications.getPermissionsAsync();
@@ -376,8 +379,8 @@ export default function App() {
       registerForPushNotificationsAsync().then((t) =>
         console.log("token :", Platform.OS, t)
       );
-      const subscription = Notifications.addNotificationResponseReceivedListener(
-        (response) => {
+      const subscription =
+        Notifications.addNotificationResponseReceivedListener((response) => {
           console.log("Notifications :", response.request.content);
           const { screen } = response.request.content.data;
           if (navigationRef.isReady()) {
@@ -387,8 +390,7 @@ export default function App() {
               callerName: info.callerName,
             });
           }
-        }
-      );
+        });
 
       // Cleanup on unmount
       return () => subscription.remove();
